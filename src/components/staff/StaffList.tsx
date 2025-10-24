@@ -1,0 +1,406 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
+import Link from "next/link";
+
+interface StaffWithDetails extends User {
+  todayAttendance?: AttendanceRecord;
+  todayReport?: DailyReport;
+  activeAlerts: Alert[];
+  lastLogin?: string;
+  totalReports: number;
+  attendanceRate: number;
+}
+
+interface StaffListProps {
+  searchQuery?: string;
+  statusFilter?: "all" | "active" | "inactive" | "alerts";
+}
+
+export default function StaffList({ searchQuery = "", statusFilter = "all" }: StaffListProps) {
+  const [staffList, setStaffList] = useState<StaffWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"name" | "status" | "reports" | "attendance">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const fetchStaffDetails = async () => {
+    try {
+      setLoading(true);
+      const today = new Date().toISOString().split("T")[0];
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      // Fetch all staff members
+      const { data: staff, error: staffError } = await supabase.from("users").select("*").eq("role", "staff").order("name");
+
+      if (staffError) throw staffError;
+
+      // Fetch today's attendance records
+      const { data: todayAttendance, error: attendanceError } = await supabase.from("attendance_records").select("*").eq("date", today);
+
+      if (attendanceError) throw attendanceError;
+
+      // Fetch today's daily reports
+      const { data: todayReports, error: reportsError } = await supabase.from("daily_reports").select("*").eq("date", today);
+
+      if (reportsError) throw reportsError;
+
+      // Fetch active alerts
+      const { data: alerts, error: alertsError } = await supabase.from("alerts").select("*").eq("status", "active");
+
+      if (alertsError) throw alertsError;
+
+      // Fetch recent access logs
+      const { data: accessLogs, error: logsError } = await supabase.from("access_logs").select("user_id, login_time").order("login_time", { ascending: false });
+
+      if (logsError) throw logsError;
+
+      // Fetch report counts for the last 30 days
+      const { data: reportCounts, error: reportCountsError } = await supabase
+        .from("daily_reports")
+        .select("staff_id")
+        .gte("date", thirtyDaysAgo)
+        .eq("status", "submitted");
+
+      if (reportCountsError) throw reportCountsError;
+
+      // Fetch attendance records for the last 30 days to calculate attendance rate
+      const { data: attendanceRecords, error: attendanceRecordsError } = await supabase
+        .from("attendance_records")
+        .select("staff_id, date")
+        .gte("date", thirtyDaysAgo);
+
+      if (attendanceRecordsError) throw attendanceRecordsError;
+
+      // Combine data
+      const staffWithDetails: StaffWithDetails[] = ((staff as User[]) || []).map((staffMember) => {
+        const todayAttendanceRecord = ((todayAttendance as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
+        const todayReportRecord = ((todayReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
+        const activeAlertsForStaff = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
+        const lastLogin = ((accessLogs as any[]) || []).find((log) => log.user_id === staffMember.id)?.login_time;
+
+        // Calculate total reports in last 30 days
+        const totalReports = ((reportCounts as any[]) || []).filter((report) => report.staff_id === staffMember.id).length;
+
+        // Calculate attendance rate (days with any attendance record / 30 days)
+        const attendanceDays = new Set(
+          ((attendanceRecords as AttendanceRecord[]) || []).filter((record) => record.staff_id === staffMember.id).map((record) => record.date)
+        ).size;
+        const attendanceRate = Math.round((attendanceDays / 30) * 100);
+
+        return {
+          ...staffMember,
+          todayAttendance: todayAttendanceRecord,
+          todayReport: todayReportRecord,
+          activeAlerts: activeAlertsForStaff,
+          lastLogin,
+          totalReports,
+          attendanceRate,
+        };
+      });
+
+      setStaffList(staffWithDetails);
+    } catch (error) {
+      console.error("Error fetching staff details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter and sort staff
+  const getFilteredAndSortedStaff = () => {
+    let filtered = [...staffList];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (staff) => staff.name.toLowerCase().includes(searchQuery.toLowerCase()) || staff.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((staff) => {
+        switch (statusFilter) {
+          case "active":
+            return staff.todayAttendance || staff.todayReport;
+          case "inactive":
+            return !staff.todayAttendance && !staff.todayReport;
+          case "alerts":
+            return staff.activeAlerts.length > 0;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+
+      switch (sortBy) {
+        case "name":
+          aValue = a.name;
+          bValue = b.name;
+          break;
+        case "status":
+          aValue = getActivityScore(a);
+          bValue = getActivityScore(b);
+          break;
+        case "reports":
+          aValue = a.totalReports;
+          bValue = b.totalReports;
+          break;
+        case "attendance":
+          aValue = a.attendanceRate;
+          bValue = b.attendanceRate;
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof aValue === "string") {
+        return sortOrder === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      } else {
+        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+      }
+    });
+
+    return filtered;
+  };
+
+  const getActivityScore = (staff: StaffWithDetails) => {
+    let score = 0;
+    if (staff.todayAttendance?.wake_up_time) score += 1;
+    if (staff.todayAttendance?.departure_time) score += 1;
+    if (staff.todayAttendance?.arrival_time) score += 1;
+    if (staff.todayReport?.status === "submitted") score += 1;
+    return score;
+  };
+
+  const handleSort = (column: typeof sortBy) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  const formatLastLogin = (loginTime?: string) => {
+    if (!loginTime) return "未ログイン";
+    const date = new Date(loginTime);
+    const now = new Date();
+    const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffHours < 1) return "1時間以内";
+    if (diffHours < 24) return `${diffHours}時間前`;
+    return date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
+  };
+
+  const getStatusBadge = (staff: StaffWithDetails) => {
+    const score = getActivityScore(staff);
+    const hasAlerts = staff.activeAlerts.length > 0;
+
+    if (hasAlerts) {
+      return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">要注意</span>;
+    }
+    if (score === 4) {
+      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">完了</span>;
+    }
+    if (score > 0) {
+      return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">進行中</span>;
+    }
+    return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">未開始</span>;
+  };
+
+  useEffect(() => {
+    fetchStaffDetails();
+
+    // Set up real-time subscriptions
+    const attendanceSubscription = supabase
+      .channel("staff_attendance_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => {
+        fetchStaffDetails();
+      })
+      .subscribe();
+
+    const reportsSubscription = supabase
+      .channel("staff_reports_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => {
+        fetchStaffDetails();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(attendanceSubscription);
+      supabase.removeChannel(reportsSubscription);
+    };
+  }, []);
+
+  const filteredStaff = getFilteredAndSortedStaff();
+
+  if (loading) {
+    return (
+      <div className="bg-white shadow-sm rounded-lg p-6">
+        <div className="animate-pulse space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium text-gray-900">スタッフ一覧 ({filteredStaff.length})</h3>
+          <button
+            onClick={fetchStaffDetails}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            更新
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                onClick={() => handleSort("name")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center">
+                  スタッフ
+                  {sortBy === "name" && (
+                    <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort("status")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center">
+                  本日のステータス
+                  {sortBy === "status" && (
+                    <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort("reports")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center">
+                  月間報告数
+                  {sortBy === "reports" && (
+                    <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort("attendance")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center">
+                  出勤率
+                  {sortBy === "attendance" && (
+                    <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最終ログイン</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredStaff.map((staff) => (
+              <tr key={staff.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-gray-600">{staff.name.charAt(0)}</span>
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">{staff.name}</div>
+                      <div className="text-sm text-gray-500">{staff.email}</div>
+                      {staff.phone && <div className="text-xs text-gray-400">{staff.phone}</div>}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center space-x-2">
+                    {getStatusBadge(staff)}
+                    {staff.activeAlerts.length > 0 && <span className="text-xs text-red-600">{staff.activeAlerts.length}件のアラート</span>}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">進捗: {getActivityScore(staff)}/4</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.totalReports}件</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="text-sm text-gray-900">{staff.attendanceRate}%</div>
+                    <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          staff.attendanceRate >= 80 ? "bg-green-500" : staff.attendanceRate >= 60 ? "bg-yellow-500" : "bg-red-500"
+                        }`}
+                        style={{ width: `${staff.attendanceRate}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatLastLogin(staff.lastLogin)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <Link href={`/manager/staff/${staff.id}`} className="text-blue-600 hover:text-blue-900 mr-4">
+                    詳細
+                  </Link>
+                  <Link href={`/manager/staff/${staff.id}/history`} className="text-gray-600 hover:text-gray-900">
+                    履歴
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {filteredStaff.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">👤</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">スタッフが見つかりません</h3>
+          <p className="text-gray-600">{searchQuery || statusFilter !== "all" ? "検索条件を変更してください" : "スタッフを追加してください"}</p>
+        </div>
+      )}
+    </div>
+  );
+}

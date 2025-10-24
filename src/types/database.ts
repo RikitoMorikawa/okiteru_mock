@@ -1,0 +1,160 @@
+export type UserRole = "manager" | "staff";
+export type AttendanceStatus = "pending" | "partial" | "complete";
+export type ReportStatus = "draft" | "submitted";
+export type ShiftStatus = "scheduled" | "confirmed" | "completed";
+export type AlertType = "missing_wakeup" | "missing_departure" | "missing_arrival" | "missing_report";
+export type AlertStatus = "active" | "dismissed";
+
+export interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  name: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  staff_id: string;
+  date: string;
+  wake_up_time?: string;
+  departure_time?: string;
+  arrival_time?: string;
+  route_photo_url?: string;
+  appearance_photo_url?: string;
+  status: AttendanceStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyReport {
+  id: string;
+  staff_id: string;
+  date: string;
+  content: string;
+  submitted_at: string;
+  status: ReportStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftSchedule {
+  id: string;
+  staff_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  location?: string;
+  notes?: string;
+  status: ShiftStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Alert {
+  id: string;
+  staff_id: string;
+  type: AlertType;
+  message: string;
+  triggered_at: string;
+  dismissed_at?: string;
+  status: AlertStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccessLog {
+  id: string;
+  user_id: string;
+  login_time: string;
+  logout_time?: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: User;
+        Insert: Omit<User, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<User, "id" | "created_at" | "updated_at">>;
+      };
+      attendance_records: {
+        Row: AttendanceRecord;
+        Insert: Omit<AttendanceRecord, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<AttendanceRecord, "id" | "created_at" | "updated_at">>;
+      };
+      daily_reports: {
+        Row: DailyReport;
+        Insert: Omit<DailyReport, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<DailyReport, "id" | "created_at" | "updated_at">>;
+      };
+      shift_schedules: {
+        Row: ShiftSchedule;
+        Insert: Omit<ShiftSchedule, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<ShiftSchedule, "id" | "created_at" | "updated_at">>;
+      };
+      alerts: {
+        Row: Alert;
+        Insert: Omit<Alert, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<Alert, "id" | "created_at" | "updated_at">>;
+      };
+      access_logs: {
+        Row: AccessLog;
+        Insert: Omit<AccessLog, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<AccessLog, "id" | "created_at">>;
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      is_manager: {
+        Args: { user_id: string };
+        Returns: boolean;
+      };
+      get_user_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: UserRole;
+      };
+    };
+    Enums: {
+      user_role: UserRole;
+      attendance_status: AttendanceStatus;
+      report_status: ReportStatus;
+      shift_status: ShiftStatus;
+      alert_type: AlertType;
+      alert_status: AlertStatus;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+}
