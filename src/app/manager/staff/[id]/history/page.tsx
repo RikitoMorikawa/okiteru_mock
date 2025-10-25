@@ -53,7 +53,7 @@ export default function StaffHistoryPage() {
         .eq("staff_id", staffId)
         .gte("date", dateRange.startDate)
         .lte("date", dateRange.endDate)
-        .order("date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (attendanceError) throw attendanceError;
 
@@ -64,7 +64,7 @@ export default function StaffHistoryPage() {
         .eq("staff_id", staffId)
         .gte("date", dateRange.startDate)
         .lte("date", dateRange.endDate)
-        .order("date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (reportsError) throw reportsError;
 
@@ -231,7 +231,7 @@ export default function StaffHistoryPage() {
                     id: `session-${record.id}`,
                     attendanceRecord: record,
                     dailyReport: matchingReport,
-                    sortDate: new Date(record.date),
+                    sortDate: new Date(record.created_at),
                   });
                 });
 
@@ -246,7 +246,7 @@ export default function StaffHistoryPage() {
                       id: `report-only-${report.id}`,
                       attendanceRecord: {} as AttendanceRecord, // Empty attendance record
                       dailyReport: report,
-                      sortDate: new Date(report.date),
+                      sortDate: new Date(report.created_at),
                     });
                   }
                 });
