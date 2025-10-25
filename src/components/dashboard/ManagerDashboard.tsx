@@ -310,6 +310,19 @@ export default function ManagerDashboard() {
                     </div>
 
                     <Link
+                      href="/register"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        スタッフ新規登録
+                      </div>
+                    </Link>
+
+                    <Link
                       href="/manager/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                       onClick={() => setShowProfileMenu(false)}
