@@ -8,29 +8,29 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      const { wake_up_time, notes } = await request.json();
+      const { arrival_time, appearance_photo_url, notes } = await request.json();
 
       // Validate required fields
-      if (!wake_up_time) {
+      if (!arrival_time) {
         return NextResponse.json(
           {
             error: {
-              code: "MISSING_WAKE_UP_TIME",
-              message: "起床時間は必須です",
+              code: "MISSING_ARRIVAL_TIME",
+              message: "到着時間は必須です",
             },
           },
           { status: 400 }
         );
       }
 
-      // Validate wake_up_time format
-      const wakeUpDate = new Date(wake_up_time);
-      if (isNaN(wakeUpDate.getTime())) {
+      // Validate arrival_time format
+      const arrivalDate = new Date(arrival_time);
+      if (isNaN(arrivalDate.getTime())) {
         return NextResponse.json(
           {
             error: {
-              code: "INVALID_WAKE_UP_TIME",
-              message: "有効な起床時間を入力してください",
+              code: "INVALID_ARRIVAL_TIME",
+              message: "有効な到着時間を入力してください",
             },
           },
           { status: 400 }
@@ -41,36 +41,46 @@ export async function POST(request: NextRequest) {
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Check if attendance record already exists for today
+      // Check if attendance record exists for today
       const { data: existingRecord } = await supabaseAdmin
         .from("attendance_records")
-        .select("id, wake_up_time")
+        .select("id, arrival_time, wake_up_time, departure_time")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
         .single();
 
       if (existingRecord) {
-        if (existingRecord.wake_up_time) {
+        if (existingRecord.arrival_time) {
           return NextResponse.json(
             {
               error: {
-                code: "WAKE_UP_ALREADY_RECORDED",
-                message: "本日の起床時間は既に記録されています",
+                code: "ARRIVAL_ALREADY_RECORDED",
+                message: "本日の到着時間は既に記録されています",
               },
             },
             { status: 409 }
           );
         }
 
-        // Update existing record with wake up time and notes
+        // Update existing record with arrival time
         const updateData: any = {
-          wake_up_time: wakeUpDate.toISOString(),
+          arrival_time: arrivalDate.toISOString(),
           updated_at: new Date().toISOString(),
         };
 
-        // Add notes if provided and column exists
+        if (appearance_photo_url) {
+          updateData.appearance_photo_url = appearance_photo_url;
+        }
+
         if (notes && notes.trim()) {
           updateData.notes = notes.trim();
+        }
+
+        // Check if all attendance items are complete
+        const isComplete = existingRecord.wake_up_time && existingRecord.departure_time && arrivalDate;
+
+        if (isComplete) {
+          updateData.status = "complete";
         }
 
         const { data: updatedRecord, error: updateError } = await supabaseAdmin
@@ -81,12 +91,12 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (updateError) {
-          console.error("Wake up time update error:", updateError);
+          console.error("Arrival time update error:", updateError);
           return NextResponse.json(
             {
               error: {
                 code: "UPDATE_FAILED",
-                message: "起床時間の更新に失敗しました",
+                message: "到着時間の更新に失敗しました",
               },
             },
             { status: 500 }
@@ -94,7 +104,7 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-          message: "起床時間が記録されました",
+          message: "到着時間が記録されました",
           record: updatedRecord,
         });
       }
@@ -103,11 +113,14 @@ export async function POST(request: NextRequest) {
       const insertData: any = {
         staff_id: req.user.id,
         date: dateStr,
-        wake_up_time: wakeUpDate.toISOString(),
-        status: "partial", // Will be updated as more data is added
+        arrival_time: arrivalDate.toISOString(),
+        status: "partial",
       };
 
-      // Add notes if provided
+      if (appearance_photo_url) {
+        insertData.appearance_photo_url = appearance_photo_url;
+      }
+
       if (notes && notes.trim()) {
         insertData.notes = notes.trim();
       }
@@ -115,12 +128,12 @@ export async function POST(request: NextRequest) {
       const { data: newRecord, error: insertError } = await supabaseAdmin.from("attendance_records").insert(insertData).select().single();
 
       if (insertError) {
-        console.error("Wake up time insert error:", insertError);
+        console.error("Arrival time insert error:", insertError);
         return NextResponse.json(
           {
             error: {
               code: "INSERT_FAILED",
-              message: "起床時間の記録に失敗しました",
+              message: "到着時間の記録に失敗しました",
             },
           },
           { status: 500 }
@@ -128,16 +141,16 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({
-        message: "起床時間が記録されました",
+        message: "到着時間が記録されました",
         record: newRecord,
       });
     } catch (error) {
-      console.error("Wake up API error:", error);
+      console.error("Arrival API error:", error);
       return NextResponse.json(
         {
           error: {
             code: "INTERNAL_ERROR",
-            message: "起床時間の記録に失敗しました",
+            message: "到着時間の記録に失敗しました",
           },
         },
         { status: 500 }

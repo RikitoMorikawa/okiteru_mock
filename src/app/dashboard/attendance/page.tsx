@@ -128,11 +128,6 @@ function AttendanceContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Page Header */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">勤怠報告</h2>
-                  <p className="text-gray-600">本日の勤怠状況を報告してください。各項目をクリックして報告を開始できます。</p>
-                </div>
 
                 {/* Current Time Display */}
                 <div className="bg-white rounded-lg shadow-sm p-4">

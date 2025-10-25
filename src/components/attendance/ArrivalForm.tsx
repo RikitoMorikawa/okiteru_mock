@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api-client";
 import PhotoUpload from "@/components/ui/PhotoUpload";
 import { uploadAppearancePhoto, getTodayDateString, validateImageFile } from "@/lib/storage";
 
@@ -73,10 +74,10 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
       formData.append("appearance_photo", appearancePhoto);
       formData.append("notes", notes.trim());
 
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/attendance/arrival", {
-        method: "POST",
-        body: formData,
+      const response = await api.post("/api/attendance/arrival", {
+        arrival_time: arrivalDateTime.toISOString(),
+        appearance_photo_url: appearancePhoto ? "placeholder_appearance_photo_url" : null, // TODO: Implement photo upload
+        notes: notes.trim(),
       });
 
       if (!response.ok) {
@@ -84,7 +85,13 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
         throw new Error(errorData.error?.message || "到着報告の送信に失敗しました");
       }
 
-      // Success
+      // Success - trigger a custom event to notify other components
+      window.dispatchEvent(
+        new CustomEvent("attendanceUpdated", {
+          detail: { type: "arrival", timestamp: new Date() },
+        })
+      );
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
