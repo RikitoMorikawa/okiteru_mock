@@ -250,9 +250,7 @@ function AttendanceContent() {
                         <div>
                           <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
                           <p className="text-sm text-blue-700">
-                            本日の業務は既に完了しています。データは管理者が確認できるよう保存されています。
-                            <br />
-                            「翌日開始」ボタンで新しい日のタスクを開始できます。
+                            「翌日開始」ボタンで更新できます。
                           </p>
                         </div>
                       </div>
