@@ -77,12 +77,16 @@ export default function AttendanceHistoryViewer({ attendanceData, staffId, dateR
       complete: "bg-green-100 text-green-800",
       partial: "bg-yellow-100 text-yellow-800",
       pending: "bg-gray-100 text-gray-800",
+      active: "bg-blue-100 text-blue-800",
+      reset: "bg-red-100 text-red-800",
     };
 
     const labels = {
       complete: "完了",
       partial: "部分的",
       pending: "未完了",
+      active: "進行中",
+      reset: "リセット",
     };
 
     return <span className={`px-2 py-1 text-xs font-medium rounded-full ${badges[status]}`}>{labels[status]}</span>;
