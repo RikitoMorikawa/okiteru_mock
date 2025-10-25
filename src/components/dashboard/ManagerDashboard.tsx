@@ -243,11 +243,11 @@ export default function ManagerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="総スタッフ数" value={stats.totalStaff} icon="👥" color="blue" />
-          <StatCard title="本日活動中" value={stats.activeToday} subtitle={`${stats.activityRate}%`} icon="✅" color="green" />
-          <StatCard title="アクティブアラート" value={stats.totalAlerts} icon="🚨" color={stats.totalAlerts > 0 ? "red" : "gray"} />
-          <StatCard title="完了報告" value={stats.completedReports} subtitle={`/ ${stats.totalStaff}`} icon="📝" color="purple" />
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <StatCard title="総スタッフ数" mobileTitle="スタッフ" value={stats.totalStaff} icon="👥" color="blue" />
+          <StatCard title="本日活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
+          <StatCard title="アクティブアラート" mobileTitle="アラート" value={stats.totalAlerts} icon="🚨" color={stats.totalAlerts > 0 ? "red" : "gray"} />
+          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.totalStaff}`} icon="📝" color="purple" />
         </div>
 
         {/* Filters */}
@@ -310,13 +310,14 @@ export default function ManagerDashboard() {
 
 interface StatCardProps {
   title: string;
+  mobileTitle?: string;
   value: number;
   subtitle?: string;
   icon: string;
   color: "blue" | "green" | "red" | "purple" | "gray";
 }
 
-function StatCard({ title, value, subtitle, icon, color }: StatCardProps) {
+function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCardProps) {
   const colorClasses = {
     blue: "bg-blue-50 text-blue-600 border-blue-200",
     green: "bg-green-50 text-green-600 border-green-200",
@@ -326,16 +327,19 @@ function StatCard({ title, value, subtitle, icon, color }: StatCardProps) {
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-6 border-l-4 ${colorClasses[color]}`}>
+    <div className={`bg-white rounded-lg shadow-sm p-3 sm:p-6 border-l-4 ${colorClasses[color]}`}>
       <div className="flex items-center">
         <div className="flex-shrink-0">
-          <span className="text-2xl">{icon}</span>
+          <span className="text-lg sm:text-2xl">{icon}</span>
         </div>
-        <div className="ml-4 flex-1">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+        <div className="ml-2 sm:ml-4 flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+            <span className="sm:hidden">{mobileTitle || title}</span>
+            <span className="hidden sm:inline">{title}</span>
+          </p>
           <div className="flex items-baseline">
-            <p className="text-2xl font-semibold text-gray-900">{value}</p>
-            {subtitle && <p className="ml-2 text-sm text-gray-500">{subtitle}</p>}
+            <p className="text-lg sm:text-2xl font-semibold text-gray-900">{value}</p>
+            {subtitle && <p className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500 truncate">{subtitle}</p>}
           </div>
         </div>
       </div>
