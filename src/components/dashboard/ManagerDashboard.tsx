@@ -96,17 +96,35 @@ export default function ManagerDashboard() {
 
       if (alertsError) throw alertsError;
 
-      // Fetch recent access logs
-      const { data: accessLogs, error: logsError } = await supabase.from("access_logs").select("user_id, login_time").order("login_time", { ascending: false });
+      // Fetch the most recent access log for each user more efficiently
+      const staffIds = ((staff as User[]) || []).map((s) => s.id);
+      const { data: accessLogs, error: accessLogsError } = await supabase
+        .from("access_logs")
+        .select("user_id, login_time")
+        .in("user_id", staffIds)
+        .order("user_id, login_time", { ascending: false });
 
-      if (logsError) throw logsError;
+      // Create a map for quick lookup of last login times
+      const lastLoginMap = new Map();
+      if (accessLogs) {
+        // Group by user_id and get the most recent login for each user
+        const userLogins = new Map();
+        accessLogs.forEach((log: any) => {
+          if (!userLogins.has(log.user_id) || new Date(log.login_time) > new Date(userLogins.get(log.user_id))) {
+            userLogins.set(log.user_id, log.login_time);
+          }
+        });
+        userLogins.forEach((loginTime, userId) => {
+          lastLoginMap.set(userId, loginTime);
+        });
+      }
 
       // Combine data
       const staffWithStatus: StaffWithStatus[] = ((staff as User[]) || []).map((staffMember) => {
         const todayAttendance = ((attendanceRecords as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
         const activeAlerts = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
-        const lastLogin = ((accessLogs as any[]) || []).find((log) => log.user_id === staffMember.id)?.login_time;
+        const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
           ...staffMember,

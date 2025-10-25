@@ -99,6 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[signIn] Calling refreshUser with userId:", data.user.id);
       await refreshUser(data.user.id);
       console.log("[signIn] refreshUser completed");
+
+      // Log user access
+      try {
+        const { logUserAccess } = await import("@/lib/auth");
+        await logUserAccess(data.user.id);
+      } catch (logError) {
+        console.error("[signIn] Error logging user access:", logError);
+      }
     }
   };
 
