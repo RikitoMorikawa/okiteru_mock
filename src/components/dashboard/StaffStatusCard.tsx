@@ -10,6 +10,8 @@ interface StaffWithStatus extends User {
   todayReport?: DailyReport;
   activeAlerts: Alert[];
   lastLogin?: string;
+  hasResetToday?: boolean; // リセットされたかどうか
+  hasActiveRecord?: boolean; // アクティブな記録があるかどうか
 }
 
 interface StaffStatusCardProps {
@@ -26,7 +28,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
       { name: "起床報告", completed: !!staff.todayAttendance?.wake_up_time },
       { name: "出発報告", completed: !!staff.todayAttendance?.departure_time },
       { name: "到着報告", completed: !!staff.todayAttendance?.arrival_time },
-      { name: "日報提出", completed: staff.todayReport?.status === "submitted" },
+      { name: "日報提出", completed: staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" },
     ];
 
     const completed = tasks.filter((task) => task.completed).length;
@@ -40,6 +42,16 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const getOverallStatus = () => {
     const { percentage } = getCompletionStatus();
     const hasAlerts = staff.activeAlerts.length > 0;
+
+    // リセットされたユーザーは「報告済み」として表示
+    if (staff.hasResetToday && !staff.hasActiveRecord) {
+      return { status: "reset", label: "報告済み", color: "purple" };
+    }
+
+    // 日報が提出されている場合は「完了」として表示
+    if (staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived") {
+      return { status: "complete", label: "完了", color: "green" };
+    }
 
     if (hasAlerts) return { status: "alert", label: "要注意", color: "red" };
     if (percentage === 100) return { status: "complete", label: "完了", color: "green" };
@@ -95,6 +107,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     green: "bg-green-100 text-green-800 border-green-200",
     yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
     gray: "bg-gray-100 text-gray-800 border-gray-200",
+    purple: "bg-purple-100 text-purple-800 border-purple-200",
   };
 
   const borderColors = {
@@ -102,6 +115,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     green: "border-green-300",
     yellow: "border-yellow-300",
     gray: "border-gray-300",
+    purple: "border-purple-300",
   };
 
   return (
@@ -126,15 +140,33 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>本日の進捗</span>
             <span>
-              {completed}/{total}
+              {staff.hasResetToday && !staff.hasActiveRecord
+                ? "リセット済み"
+                : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
+                ? "完了"
+                : `${completed}/${total}`}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all duration-300 ${
-                color === "green" ? "bg-green-500" : color === "yellow" ? "bg-yellow-500" : color === "red" ? "bg-red-500" : "bg-gray-400"
+                color === "green"
+                  ? "bg-green-500"
+                  : color === "yellow"
+                  ? "bg-yellow-500"
+                  : color === "red"
+                  ? "bg-red-500"
+                  : color === "purple"
+                  ? "bg-purple-500"
+                  : "bg-gray-400"
               }`}
-              style={{ width: `${percentage}%` }}
+              style={{
+                width: `${
+                  (staff.hasResetToday && !staff.hasActiveRecord) || staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
+                    ? 100
+                    : percentage
+                }%`,
+              }}
             ></div>
           </div>
         </div>
@@ -157,22 +189,35 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
         {/* Quick Status */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">起床</div>
-            <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">出発</div>
-            <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time)}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">到着</div>
-            <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time)}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-gray-500 mb-1">日報</div>
-            <div className="text-sm font-medium">{staff.todayReport?.status === "submitted" ? "提出済" : "未提出"}</div>
-          </div>
+          {staff.hasResetToday && !staff.hasActiveRecord ? (
+            // リセット済みの場合の表示
+            <div className="col-span-2 text-center">
+              <div className="text-xs text-gray-500 mb-1">ステータス</div>
+              <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
+            </div>
+          ) : (
+            // 通常の表示
+            <>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">起床</div>
+                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">出発</div>
+                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">到着</div>
+                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">日報</div>
+                <div className="text-sm font-medium">
+                  {staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" ? "提出済" : "未提出"}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Expand/Collapse Button */}

@@ -14,6 +14,8 @@ interface StaffWithStatus extends User {
   todayReport?: DailyReport;
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
+  hasResetToday?: boolean; // リセットされたかどうか
+  hasActiveRecord?: boolean; // アクティブな記録があるかどうか
 }
 
 export default function ManagerDashboard() {
@@ -119,17 +121,34 @@ export default function ManagerDashboard() {
           .filter((record) => record.staff_id === staffMember.id)
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        // Find the first non-reset record (should be the active one)
-        const todayAttendance = staffAttendanceRecords.find((record) => record.status !== "reset");
+        // Find the most recent attendance record (including reset records)
+        const todayAttendance = staffAttendanceRecords[0]; // Most recent record
+
+        // Check if user has been reset today (has reset record but no active record)
+        const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
+        const hasActiveRecord = staffAttendanceRecords.some((record) => record.status !== "reset");
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
+        // Debug log for specific user
+        if (staffMember.name === "斉藤三郎") {
+          console.log(`[DEBUG] ${staffMember.name}:`, {
+            staffAttendanceRecords,
+            hasResetToday,
+            hasActiveRecord,
+            todayReport: !!todayReport,
+            todayAttendance,
+          });
+        }
+
         return {
           ...staffMember,
-          todayAttendance,
+          todayAttendance: hasActiveRecord ? todayAttendance : undefined, // リセットのみの場合はundefined
           todayReport,
           activeAlerts: [], // Keep for compatibility but empty
           lastLogin,
+          hasResetToday,
+          hasActiveRecord,
         };
       });
 
@@ -163,11 +182,11 @@ export default function ManagerDashboard() {
             // 活動中: 到着報告完了したが日報未提出のユーザー
             return staff.todayAttendance?.arrival_time && !staff.todayReport;
           case "completed":
-            // 完了: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）
-            return staff.todayReport;
+            // 完了: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
+            return staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord);
           case "inactive":
-            // 未活動: 何も活動していないユーザー
-            return !staff.todayAttendance && !staff.todayReport;
+            // 未活動: 何も活動していないユーザー（リセットされたユーザーは除く）
+            return !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday;
           default:
             return true;
         }
@@ -212,10 +231,18 @@ export default function ManagerDashboard() {
     const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
     // 活動中: 到着報告完了したが日報未提出のユーザー
     const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
-    // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）
-    const completedReports = staffList.filter((staff) => staff.todayReport).length;
+    // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
+    const completedReports = staffList.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)).length;
 
-    const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport);
+    const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
+
+    // Debug log
+    console.log("[DEBUG] Stats calculation:", {
+      totalStaff,
+      completedReports,
+      staffWithReports: staffList.filter((staff) => staff.todayReport).map((s) => s.name),
+      staffWithReset: staffList.filter((staff) => staff.hasResetToday && !staff.hasActiveRecord).map((s) => s.name),
+    });
 
     return {
       totalStaff,
