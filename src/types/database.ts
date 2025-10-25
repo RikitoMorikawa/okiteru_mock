@@ -20,8 +20,13 @@ export interface AttendanceRecord {
   staff_id: string;
   date: string;
   wake_up_time?: string;
+  wake_up_notes?: string;
   departure_time?: string;
+  departure_notes?: string;
   arrival_time?: string;
+  arrival_location?: string;
+  arrival_gps_location?: string;
+  arrival_notes?: string;
   route_photo_url?: string;
   appearance_photo_url?: string;
   status: AttendanceStatus;

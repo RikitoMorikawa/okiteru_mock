@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      const { arrival_time, location, notes } = await request.json();
+      const { arrival_time, arrival_location, arrival_gps_location, notes } = await request.json();
 
       // Validate required fields
       if (!arrival_time) {
@@ -17,6 +17,18 @@ export async function POST(request: NextRequest) {
             error: {
               code: "MISSING_ARRIVAL_TIME",
               message: "到着時間は必須です",
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      if (!arrival_location || !arrival_location.trim()) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "MISSING_ARRIVAL_LOCATION",
+              message: "到着場所は必須です",
             },
           },
           { status: 400 }
@@ -68,12 +80,16 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         };
 
-        if (location && location.trim()) {
-          updateData.location = location.trim();
+        if (arrival_location && arrival_location.trim()) {
+          updateData.arrival_location = arrival_location.trim();
+        }
+
+        if (arrival_gps_location && arrival_gps_location.trim()) {
+          updateData.arrival_gps_location = arrival_gps_location.trim();
         }
 
         if (notes && notes.trim()) {
-          updateData.notes = notes.trim();
+          updateData.arrival_notes = notes.trim();
         }
 
         // Check if all attendance items are complete
@@ -117,12 +133,16 @@ export async function POST(request: NextRequest) {
         status: "partial",
       };
 
-      if (location && location.trim()) {
-        insertData.location = location.trim();
+      if (arrival_location && arrival_location.trim()) {
+        insertData.arrival_location = arrival_location.trim();
+      }
+
+      if (arrival_gps_location && arrival_gps_location.trim()) {
+        insertData.arrival_gps_location = arrival_gps_location.trim();
       }
 
       if (notes && notes.trim()) {
-        insertData.notes = notes.trim();
+        insertData.arrival_notes = notes.trim();
       }
 
       const { data: newRecord, error: insertError } = await (supabaseAdmin as any).from("attendance_records").insert(insertData).select().single();

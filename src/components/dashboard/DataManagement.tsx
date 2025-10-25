@@ -137,10 +137,34 @@ export default function DataManagement() {
                           <span className="text-sm font-medium">出勤記録</span>
                           {getStatusBadge(attendance.status)}
                         </div>
-                        <div className="space-y-1 text-xs text-gray-600">
-                          <div>起床: {formatTime(attendance.wake_up_time)}</div>
-                          <div>出発: {formatTime(attendance.departure_time)}</div>
-                          <div>到着: {formatTime(attendance.arrival_time)}</div>
+                        <div className="space-y-2 text-xs text-gray-600">
+                          {/* Wake Up */}
+                          {attendance.wake_up_time && (
+                            <div className="border-l-2 border-green-300 pl-2">
+                              <div className="font-medium text-green-700">起床: {formatTime(attendance.wake_up_time)}</div>
+
+                              {attendance.wake_up_notes && <div>💭 {attendance.wake_up_notes}</div>}
+                            </div>
+                          )}
+
+                          {/* Departure */}
+                          {attendance.departure_time && (
+                            <div className="border-l-2 border-blue-300 pl-2">
+                              <div className="font-medium text-blue-700">出発: {formatTime(attendance.departure_time)}</div>
+
+                              {attendance.departure_notes && <div>💭 {attendance.departure_notes}</div>}
+                            </div>
+                          )}
+
+                          {/* Arrival */}
+                          {attendance.arrival_time && (
+                            <div className="border-l-2 border-purple-300 pl-2">
+                              <div className="font-medium text-purple-700">到着: {formatTime(attendance.arrival_time)}</div>
+                              {attendance.arrival_location && <div>🏢 {attendance.arrival_location}</div>}
+                              {attendance.arrival_gps_location && <div>📍 GPS: {attendance.arrival_gps_location}</div>}
+                              {attendance.arrival_notes && <div>💭 {attendance.arrival_notes}</div>}
+                            </div>
+                          )}
                         </div>
                         {(attendance.route_photo_url || attendance.appearance_photo_url) && (
                           <div className="mt-2 text-xs text-blue-600">

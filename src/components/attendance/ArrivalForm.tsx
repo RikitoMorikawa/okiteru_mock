@@ -15,9 +15,42 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
     return now.toTimeString().slice(0, 5); // HH:MM format
   });
   const [location, setLocation] = useState("");
+  const [gpsLocation, setGpsLocation] = useState("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [gpsObtained, setGpsObtained] = useState(false);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true);
+    setError("");
+
+    if (!navigator.geolocation) {
+      setError("このブラウザでは位置情報がサポートされていません");
+      setIsGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setGpsLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        setGpsObtained(true);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error("位置情報取得エラー:", error);
+        setError("位置情報の取得に失敗しました。");
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +79,8 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
 
       const response = await api.post("/api/attendance/arrival", {
         arrival_time: arrivalDateTime.toISOString(),
-        location: location.trim(),
+        arrival_location: location.trim(),
+        arrival_gps_location: gpsLocation.trim(),
         notes: notes.trim(),
       });
 
@@ -111,7 +145,30 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
           <p className="mt-1 text-sm text-gray-500">到着した時間を選択してください</p>
         </div>
 
-        {/* Location */}
+        {/* GPS Location */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">GPS位置情報</label>
+          <div className="flex items-center space-x-3">
+            <div className="flex-1">
+              {gpsObtained ? (
+                <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">✅ GPS位置情報を取得しました</div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-500">GPS位置情報が未取得です</div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={getCurrentLocation}
+              disabled={isGettingLocation}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGettingLocation ? "取得中..." : "📍 GPS取得"}
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">正確な位置情報のためGPS取得を推奨します</p>
+        </div>
+
+        {/* Manual Location */}
         <div>
           <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
             到着場所 <span className="text-red-500">*</span>
@@ -126,7 +183,7 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
             required
             maxLength={100}
           />
-          <p className="mt-1 text-sm text-gray-500">到着した場所を入力してください</p>
+          <p className="mt-1 text-sm text-gray-500">到着した場所の名称や住所を入力してください</p>
         </div>
 
         {/* Notes */}

@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (notes && notes.trim()) {
-          updateData.notes = notes.trim();
+          updateData.departure_notes = notes.trim();
         }
 
         const { data: updatedRecord, error: updateError } = await (supabaseAdmin as any)
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (notes && notes.trim()) {
-        insertData.notes = notes.trim();
+        insertData.departure_notes = notes.trim();
       }
 
       const { data: newRecord, error: insertError } = await (supabaseAdmin as any).from("attendance_records").insert(insertData).select().single();

@@ -62,15 +62,15 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Update existing record with wake up time and notes
+        // Update existing record with wake up time, location and notes
         const updateData: any = {
           wake_up_time: wakeUpDate.toISOString(),
           updated_at: new Date().toISOString(),
         };
 
-        // Add notes if provided and column exists
+        // Add wake up notes if provided
         if (notes && notes.trim()) {
-          updateData.notes = notes.trim();
+          updateData.wake_up_notes = notes.trim();
         }
 
         const { data: updatedRecord, error: updateError } = await (supabaseAdmin as any)
@@ -107,9 +107,9 @@ export async function POST(request: NextRequest) {
         status: "partial", // Will be updated as more data is added
       };
 
-      // Add notes if provided
+      // Add wake up notes if provided
       if (notes && notes.trim()) {
-        insertData.notes = notes.trim();
+        insertData.wake_up_notes = notes.trim();
       }
 
       const { data: newRecord, error: insertError } = await (supabaseAdmin as any).from("attendance_records").insert(insertData).select().single();
