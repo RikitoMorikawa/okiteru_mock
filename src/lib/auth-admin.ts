@@ -8,7 +8,7 @@ export async function createStaffMember(email: string, password: string, name: s
 
   // Check if user already exists in auth
   const { data: existingAuthUsers } = await (supabaseAdmin as any).auth.admin.listUsers();
-  const existingAuthUser = existingAuthUsers.users.find((u) => u.email === email);
+  const existingAuthUser = existingAuthUsers.users.find((u: any) => u.email === email);
 
   if (existingAuthUser) {
     console.log("User already exists in auth:", existingAuthUser.id);
