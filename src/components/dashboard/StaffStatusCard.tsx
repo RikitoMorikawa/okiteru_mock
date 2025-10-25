@@ -58,11 +58,30 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     if (!loginTime) return "未ログイン";
     const date = new Date(loginTime);
     const now = new Date();
-    const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffHours < 1) return "1時間以内";
-    if (diffHours < 24) return `${diffHours}時間前`;
-    return date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
+    if (diffMinutes < 1) return "1分以内";
+    if (diffMinutes < 60) return `${diffMinutes}分前`;
+    if (diffHours < 24) {
+      const remainingMinutes = diffMinutes % 60;
+      if (remainingMinutes === 0) {
+        return `${diffHours}時間前`;
+      } else {
+        return `${diffHours}時間${remainingMinutes}分前`;
+      }
+    }
+    if (diffDays < 7) return `${diffDays}日前`;
+
+    // 1週間以上前は日付を表示
+    return date.toLocaleDateString("ja-JP", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const { tasks, completed, total, percentage } = getCompletionStatus();
