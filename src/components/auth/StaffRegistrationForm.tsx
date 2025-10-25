@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { api } from "@/lib/api-client";
 
 interface StaffRegistrationFormProps {
   onSuccess?: () => void;
@@ -89,17 +90,11 @@ export default function StaffRegistrationForm({ onSuccess, onCancel }: StaffRegi
     setError("");
 
     try {
-      const response = await fetch("/api/staff", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          name: formData.name.trim(),
-          phone: formData.phone.trim() || undefined,
-        }),
+      const response = await api.post("/api/staff", {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name.trim(),
+        phone: formData.phone.trim() || undefined,
       });
 
       if (!response.ok) {

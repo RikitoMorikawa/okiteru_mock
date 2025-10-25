@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "../supabase";
+import { supabaseAdmin } from "../supabase-admin";
 import { AuthUser } from "../auth";
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -28,10 +29,14 @@ export async function withAuth(request: NextRequest, handler: (req: Authenticate
       return NextResponse.json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } }, { status: 401 });
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase.from("users").select("*").eq("id", user.id).single();
+    // Get user profile using admin client to bypass RLS
+    console.log("[withAuth] Looking for profile with user ID:", user.id);
+    const { data: profile, error: profileError } = await supabaseAdmin.from("users").select("*").eq("id", user.id).single();
+
+    console.log("[withAuth] Profile query result:", { profile, profileError });
 
     if (profileError || !profile) {
+      console.error("[withAuth] Profile not found:", { userId: user.id, profileError });
       return NextResponse.json({ error: { code: "USER_NOT_FOUND", message: "User profile not found" } }, { status: 404 });
     }
 

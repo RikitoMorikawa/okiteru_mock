@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware/auth";
-import { updateUserProfile } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";
@@ -49,18 +49,25 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      // Update user profile
-      const updatedUser = await updateUserProfile(req.user.id, {
-        name: name.trim(),
-        phone: phone && typeof phone === "string" ? phone.trim() || undefined : undefined,
-      });
+      // Update user profile using admin client to bypass RLS
+      const { data: updatedUser, error: updateError } = await supabaseAdmin
+        .from("users")
+        .update({
+          name: name.trim(),
+          phone: phone && typeof phone === "string" ? phone.trim() || undefined : undefined,
+        })
+        .eq("id", req.user.id)
+        .select()
+        .single();
 
-      if (!updatedUser) {
+      if (updateError || !updatedUser) {
+        console.error("Profile update error:", updateError);
         return NextResponse.json(
           {
             error: {
               code: "UPDATE_FAILED",
               message: "Failed to update profile",
+              details: updateError?.message,
             },
           },
           { status: 500 }

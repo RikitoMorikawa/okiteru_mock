@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api-client";
 
 interface UserProfileProps {
   editable?: boolean;
@@ -121,15 +122,9 @@ function EditProfileForm({ user, onSave }: EditProfileFormProps) {
     setError("");
 
     try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          phone: formData.phone.trim() || null,
-        }),
+      const response = await api.put("/api/profile", {
+        name: formData.name.trim(),
+        phone: formData.phone.trim() || null,
       });
 
       if (!response.ok) {
