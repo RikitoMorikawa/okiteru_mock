@@ -122,13 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("[useAuth] Auth state change detected:", event, session?.user?.id);
 
+      // Don't call refreshUser during sign in - it will be called explicitly
       if (event === "SIGNED_OUT") {
         console.log("[useAuth] User signed out, clearing user state");
         setUser(null);
-      } else if (event === "SIGNED_IN" && session?.user) {
-        console.log("[useAuth] User signed in, refreshing user data");
-        await refreshUser(session.user.id);
       }
+      // Remove the SIGNED_IN handler to prevent double refresh
     });
 
     return () => {
