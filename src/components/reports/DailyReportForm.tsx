@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api-client";
 
 interface DailyReportData {
   date: string;
@@ -49,17 +50,14 @@ export default function DailyReportForm() {
 
   const loadExistingReport = async () => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch(`/api/reports/daily?date=${today}`);
+      const response = await api.get(`/api/reports/daily?date=${today}`);
 
       if (response.ok) {
-        const data: DailyReportData = await response.json();
-        if (data) {
-          setReportContent(data.content);
-          setIsDraft(data.status === "draft");
-          if (data.status === "submitted") {
-            setSuccessMessage("本日の日報は既に提出済みです");
-          }
+        const data = await response.json();
+        if (data.report) {
+          setReportContent(data.report.content);
+          setIsDraft(false); // If it exists, it's already submitted
+          setSuccessMessage("本日の日報は既に提出済みです");
         }
       }
     } catch (error) {
@@ -77,17 +75,9 @@ export default function DailyReportForm() {
     setError("");
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/reports/daily", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          date: today,
-          content: reportContent.trim(),
-          status: "draft",
-        }),
+      const response = await api.post("/api/reports/daily", {
+        content: reportContent.trim(),
+        // Note: We're not saving drafts separately, just submitting the report
       });
 
       if (!response.ok) {
@@ -125,17 +115,8 @@ export default function DailyReportForm() {
     setError("");
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/reports/daily", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          date: today,
-          content: reportContent.trim(),
-          status: "submitted",
-        }),
+      const response = await api.post("/api/reports/daily", {
+        content: reportContent.trim(),
       });
 
       if (!response.ok) {
@@ -145,6 +126,9 @@ export default function DailyReportForm() {
 
       setIsDraft(false);
       setSuccessMessage("日報を提出しました");
+
+      // Trigger attendance status update
+      window.dispatchEvent(new Event("attendanceUpdated"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "日報の提出に失敗しました");
     } finally {

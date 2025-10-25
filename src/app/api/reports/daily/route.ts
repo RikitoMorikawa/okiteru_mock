@@ -1,0 +1,161 @@
+import { NextRequest, NextResponse } from "next/server";
+import { withAuth } from "@/lib/middleware/auth";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+
+// Force dynamic rendering for this route
+export const dynamic = "force-dynamic";
+
+export async function POST(request: NextRequest) {
+  return withAuth(request, async (req) => {
+    try {
+      const body = await request.json();
+      const { content, workHours, achievements, challenges, tomorrow } = body;
+
+      // Validate required fields
+      if (!content) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "業務内容は必須です",
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      // Get today's date
+      const today = new Date();
+      const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      // Check if daily report already exists for today
+      const { data: existingReport } = await (supabaseAdmin as any).from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
+
+      if (existingReport) {
+        // Update existing report
+        const { error: updateError } = await (supabaseAdmin as any)
+          .from("daily_reports")
+          .update({
+            content,
+            work_hours: workHours,
+            achievements,
+            challenges,
+            tomorrow_plan: tomorrow,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingReport.id);
+
+        if (updateError) {
+          console.error("Update daily report error:", updateError);
+          return NextResponse.json(
+            {
+              error: {
+                code: "DATABASE_ERROR",
+                message: "日報の更新に失敗しました",
+              },
+            },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          message: "日報を更新しました",
+          reportId: existingReport.id,
+        });
+      } else {
+        // Create new report
+        const { data: newReport, error: insertError } = await (supabaseAdmin as any)
+          .from("daily_reports")
+          .insert({
+            staff_id: req.user.id,
+            date: dateStr,
+            content,
+            work_hours: workHours,
+            achievements,
+            challenges,
+            tomorrow_plan: tomorrow,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (insertError) {
+          console.error("Create daily report error:", insertError);
+          return NextResponse.json(
+            {
+              error: {
+                code: "DATABASE_ERROR",
+                message: "日報の作成に失敗しました",
+              },
+            },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          message: "日報を提出しました",
+          reportId: newReport.id,
+        });
+      }
+    } catch (error) {
+      console.error("Daily report submission error:", error);
+      return NextResponse.json(
+        {
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "日報の提出に失敗しました",
+          },
+        },
+        { status: 500 }
+      );
+    }
+  });
+}
+
+export async function GET(request: NextRequest) {
+  return withAuth(request, async (req) => {
+    try {
+      // Get today's date
+      const today = new Date();
+      const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      // Get daily report for today
+      const { data: dailyReport, error } = await (supabaseAdmin as any)
+        .from("daily_reports")
+        .select("*")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 is "not found" error, which is expected if no report exists
+        console.error("Get daily report error:", error);
+        return NextResponse.json(
+          {
+            error: {
+              code: "DATABASE_ERROR",
+              message: "日報の取得に失敗しました",
+            },
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        report: dailyReport || null,
+      });
+    } catch (error) {
+      console.error("Get daily report error:", error);
+      return NextResponse.json(
+        {
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "日報の取得に失敗しました",
+          },
+        },
+        { status: 500 }
+      );
+    }
+  });
+}
