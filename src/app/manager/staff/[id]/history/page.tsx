@@ -21,6 +21,7 @@ export default function StaffHistoryPage() {
   const [historyData, setHistoryData] = useState<StaffHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
   const dateRange = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30日前
     endDate: new Date().toISOString().split("T")[0], // 今日
@@ -111,6 +112,18 @@ export default function StaffHistoryPage() {
     ];
     const completed = tasks.filter((task) => task.completed).length;
     return { completed, total: tasks.length, percentage: Math.round((completed / tasks.length) * 100) };
+  };
+
+  const toggleReportExpansion = (sessionId: string) => {
+    setExpandedReports((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(sessionId)) {
+        newSet.delete(sessionId);
+      } else {
+        newSet.add(sessionId);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -249,7 +262,6 @@ export default function StaffHistoryPage() {
                         <div className="ml-4">
                           <h4 className="text-base font-semibold text-gray-900">
                             {formatDate(hasAttendance ? session.attendanceRecord.date : session.dailyReport!.date)}
-                            {hasAttendance && session.dailyReport ? " - 勤怠記録 + 日報" : hasAttendance ? " - 勤怠記録のみ" : " - 日報のみ"}
                           </h4>
                         </div>
                       </div>
@@ -321,26 +333,44 @@ export default function StaffHistoryPage() {
                           {/* Daily Report Section */}
                           {session.dailyReport && (
                             <div className="bg-white rounded-md p-3">
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="text-sm font-medium text-gray-900">日報</h5>
-                                <span
-                                  className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                                    session.dailyReport.status === "submitted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                                  }`}
+                              <button
+                                onClick={() => toggleReportExpansion(session.id)}
+                                className="w-full flex items-center justify-between mb-3 hover:bg-gray-50 -m-3 p-3 rounded-md transition-colors"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <h5 className="text-sm font-medium text-gray-900">日報</h5>
+                                  <span
+                                    className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                      session.dailyReport.status === "submitted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                                    }`}
+                                  >
+                                    {session.dailyReport.status === "submitted" ? "提出済" : "下書き"}
+                                  </span>
+                                </div>
+                                <svg
+                                  className={`w-4 h-4 text-gray-500 transition-transform ${expandedReports.has(session.id) ? "rotate-180" : ""}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
                                 >
-                                  {session.dailyReport.status === "submitted" ? "提出済" : "下書き"}
-                                </span>
-                              </div>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
 
-                              {/* Content */}
-                              <div className="text-sm text-gray-600 mb-3">
-                                <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
-                              </div>
+                              {/* Collapsible Content */}
+                              {expandedReports.has(session.id) && (
+                                <div className="space-y-3">
+                                  {/* Content */}
+                                  <div className="text-sm text-gray-600">
+                                    <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
+                                  </div>
 
-                              {/* Submission Time */}
-                              {session.dailyReport.submitted_at && (
-                                <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                                  提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
+                                  {/* Submission Time */}
+                                  {session.dailyReport.submitted_at && (
+                                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
+                                      提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
