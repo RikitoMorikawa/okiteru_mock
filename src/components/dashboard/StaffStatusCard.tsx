@@ -215,9 +215,6 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
             {/* Action Buttons */}
             <div className="mt-4 flex space-x-2">
-              <button className="flex-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100">
-                詳細表示
-              </button>
               <button className="flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100">
                 履歴表示
               </button>
