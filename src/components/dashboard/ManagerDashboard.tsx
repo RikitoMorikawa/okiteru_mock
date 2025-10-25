@@ -158,15 +158,17 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
-    const activeToday = staffList.filter((staff) => staff.todayAttendance || staff.todayReport).length;
+    const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport);
+    const activeToday = activeStaff.length;
     const totalAlerts = staffList.reduce((sum, staff) => sum + staff.activeAlerts.length, 0);
-    const completedReports = staffList.filter((staff) => staff.todayReport?.status === "submitted").length;
+    const completedReports = activeStaff.filter((staff) => staff.todayReport?.status === "submitted").length;
 
     return {
       totalStaff,
       activeToday,
       totalAlerts,
       completedReports,
+      activeStaff: activeStaff.length,
       activityRate: totalStaff > 0 ? Math.round((activeToday / totalStaff) * 100) : 0,
     };
   };
@@ -247,7 +249,7 @@ export default function ManagerDashboard() {
           <StatCard title="総スタッフ数" mobileTitle="スタッフ" value={stats.totalStaff} icon="👥" color="blue" />
           <StatCard title="本日活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="アクティブアラート" mobileTitle="アラート" value={stats.totalAlerts} icon="🚨" color={stats.totalAlerts > 0 ? "red" : "gray"} />
-          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.totalStaff}`} icon="📝" color="purple" />
+          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
         </div>
 
         {/* Filters */}
