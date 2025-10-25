@@ -138,7 +138,7 @@ export default function StaffDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-6">
           {/* Navigation Sidebar */}
           <div className="lg:col-span-1">
             <StaffNavigation />
@@ -147,7 +147,7 @@ export default function StaffDashboard() {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {/* Welcome Section */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6 mt-0 lg:mt-0">
               {/* Progress Bar */}
               <div className="">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
