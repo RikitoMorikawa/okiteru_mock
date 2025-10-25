@@ -1,5 +1,5 @@
 export type UserRole = "manager" | "staff";
-export type AttendanceStatus = "pending" | "partial" | "complete";
+export type AttendanceStatus = "pending" | "partial" | "complete" | "active" | "reset";
 export type ReportStatus = "draft" | "submitted";
 export type ShiftStatus = "scheduled" | "confirmed" | "completed";
 export type AlertType = "missing_wakeup" | "missing_departure" | "missing_arrival" | "missing_report";

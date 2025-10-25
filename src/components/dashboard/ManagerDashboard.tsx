@@ -121,7 +121,13 @@ export default function ManagerDashboard() {
 
       // Combine data
       const staffWithStatus: StaffWithStatus[] = ((staff as User[]) || []).map((staffMember) => {
-        const todayAttendance = ((attendanceRecords as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
+        // Get the most recent active attendance record for this staff member
+        const staffAttendanceRecords = ((attendanceRecords as AttendanceRecord[]) || [])
+          .filter((record) => record.staff_id === staffMember.id)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        // Find the first non-reset record (should be the active one)
+        const todayAttendance = staffAttendanceRecords.find((record) => record.status !== "reset");
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
         const activeAlerts = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
