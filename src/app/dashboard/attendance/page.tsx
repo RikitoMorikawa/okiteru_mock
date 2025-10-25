@@ -422,13 +422,7 @@ function AttendanceContent() {
                         onClick={() => setActiveAction(action.id)}
                         className={`
                           relative p-6 rounded-lg border-2 transition-all hover:shadow-lg hover:scale-105
-                          ${
-                            isCompleted
-                              ? "border-green-200 bg-green-50 text-green-700"
-                              : isNextAction
-                              ? "border-blue-300 bg-blue-50 text-blue-700 ring-2 ring-blue-200"
-                              : action.color
-                          }
+                          ${isCompleted ? "border-gray-200 bg-gray-50 text-gray-600" : action.color}
                         `}
                       >
                         <div className="text-center">
