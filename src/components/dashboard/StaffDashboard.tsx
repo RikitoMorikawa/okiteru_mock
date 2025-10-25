@@ -12,6 +12,7 @@ interface AttendanceStatus {
   departureReported: boolean;
   arrivalReported: boolean;
   dailyReportSubmitted: boolean;
+  dayCompleted?: boolean;
   // shiftScheduleSubmitted: boolean;
 }
 
@@ -22,6 +23,7 @@ export default function StaffDashboard() {
     departureReported: false,
     arrivalReported: false,
     dailyReportSubmitted: false,
+    dayCompleted: false,
     // shiftScheduleSubmitted: false,
   });
   const [currentTime, setCurrentTime] = useState(new Date());

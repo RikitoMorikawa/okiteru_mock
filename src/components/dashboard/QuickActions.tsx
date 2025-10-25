@@ -9,6 +9,7 @@ interface AttendanceStatus {
   departureReported: boolean;
   arrivalReported: boolean;
   dailyReportSubmitted: boolean;
+  dayCompleted?: boolean; // Add day completion status from DB
   // shiftScheduleSubmitted: boolean;
 }
 
@@ -21,11 +22,9 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  // Check if today is already completed
+  // Check if today is already completed from DB status
   const isTodayCompleted = () => {
-    const today = new Date().toISOString().split("T")[0];
-    const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
-    return completedDates.includes(today);
+    return attendanceStatus.dayCompleted || false;
   };
 
   const handleCompleteDay = async () => {
@@ -37,19 +36,6 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       if (response.ok) {
         const data = await response.json();
 
-        // Mark today as completed (data preservation approach)
-        const today = new Date().toISOString().split("T")[0];
-
-        // Store completed date in localStorage for UI state management
-        const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
-        if (!completedDates.includes(today)) {
-          completedDates.push(today);
-          localStorage.setItem("completed_dates", JSON.stringify(completedDates));
-        }
-
-        // Clear any draft data for today
-        localStorage.removeItem(`daily_report_draft_${today}`);
-
         // Show success message
         alert(data.message || "本日の業務を完了しました。お疲れ様でした！");
 
@@ -57,9 +43,6 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
         if (onStatusUpdate) {
           onStatusUpdate();
         }
-
-        // Trigger a page refresh to reset the UI state
-        window.location.reload();
       } else {
         const errorData = await response.json();
         alert(errorData.error || "業務完了処理に失敗しました");
@@ -186,12 +169,21 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
               </div>
             </div>
             <button
-              onClick={() => {
-                const today = new Date().toISOString().split("T")[0];
-                const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
-                const updatedDates = completedDates.filter((date: string) => date !== today);
-                localStorage.setItem("completed_dates", JSON.stringify(updatedDates));
-                window.location.reload();
+              onClick={async () => {
+                try {
+                  const response = await api.post("/api/attendance/reopen-day", {});
+                  if (response.ok) {
+                    alert("業務を再開しました");
+                    if (onStatusUpdate) {
+                      onStatusUpdate();
+                    }
+                  } else {
+                    alert("業務再開に失敗しました");
+                  }
+                } catch (error) {
+                  console.error("Error reopening day:", error);
+                  alert("業務再開中にエラーが発生しました");
+                }
               }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
