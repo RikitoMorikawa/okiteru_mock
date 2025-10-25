@@ -244,26 +244,23 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
 
       {/* Information */}
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+        <div>
+          <div className="flex items-center mb-2">
+            <svg className="h-5 w-5 text-blue-400 flex-shrink-0 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                 clipRule="evenodd"
               />
             </svg>
-          </div>
-          <div className="ml-3">
             <h3 className="text-xs sm:text-sm font-medium text-blue-800">到着報告について</h3>
-            <div className="mt-2 text-xs sm:text-sm text-blue-700">
-              <ul className="list-disc list-inside space-y-1">
-                <li>到着後、速やかに報告してください</li>
-                <li>身だしなみの写真は必須です（顔が確認できるもの）</li>
-                <li>到着場所は正確に入力してください</li>
-                <li>遅延があった場合は理由を備考欄に記入してください</li>
-              </ul>
-            </div>
+          </div>
+          <div className="text-xs sm:text-sm text-blue-700">
+            <ul className="list-disc pl-4 space-y-1">
+              <li>到着後、速やかに報告してください</li>
+              <li>到着場所は正確に入力してください</li>
+              <li>遅延があった場合は理由を備考欄に記入してください</li>
+            </ul>
           </div>
         </div>
       </div>
