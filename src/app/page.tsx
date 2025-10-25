@@ -10,16 +10,21 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("[Home] useEffect triggered", { loading, user: user?.role });
     if (!loading && user) {
+      console.log("[Home] User authenticated, role:", user.role);
       if (user.role === "manager") {
+        console.log("[Home] Redirecting to manager dashboard");
         router.push("/manager");
       } else {
+        console.log("[Home] Redirecting to staff dashboard");
         router.push("/dashboard/attendance");
       }
     }
   }, [user, loading, router]);
 
   if (loading) {
+    console.log("[Home] Showing loading state");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -31,8 +36,11 @@ export default function Home() {
   }
 
   if (user) {
-    return null; // Will redirect to attendance
+    console.log("[Home] User found, should redirect but showing null");
+    return null; // Will redirect
   }
+
+  console.log("[Home] No user, showing login page");
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
