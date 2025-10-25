@@ -94,7 +94,7 @@ export default function StaffNavigation() {
       {/* Mobile Navigation */}
       <div className="lg:hidden">
         {/* Mobile Menu Button */}
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="fixed top-4 left-4 z-50 bg-white rounded-md p-2 shadow-lg border border-gray-200">
+        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="fixed bottom-4 left-4 z-50 bg-white rounded-md p-2 shadow-lg border border-gray-200">
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isMenuOpen ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
