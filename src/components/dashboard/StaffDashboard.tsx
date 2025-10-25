@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api-client";
 import StaffNavigation from "./StaffNavigation";
 import StatusIndicator from "./StatusIndicator";
 import QuickActions from "./QuickActions";
@@ -24,6 +25,7 @@ export default function StaffDashboard() {
     shiftScheduleSubmitted: false,
   });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(true);
 
   // Update current time every minute
   useEffect(() => {
@@ -34,10 +36,45 @@ export default function StaffDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // TODO: Fetch real attendance status from API
+  // Fetch attendance status from API
+  const fetchAttendanceStatus = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const response = await api.get("/api/attendance/status");
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceStatus(data.status);
+      } else {
+        console.error("Failed to fetch attendance status");
+      }
+    } catch (error) {
+      console.error("Error fetching attendance status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // This will be implemented when we create the attendance API
-    // For now, we'll use mock data
+    fetchAttendanceStatus();
+  }, [user]);
+
+  // Refresh status every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(fetchAttendanceStatus, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Listen for attendance updates from other components
+  useEffect(() => {
+    const handleAttendanceUpdate = () => {
+      fetchAttendanceStatus();
+    };
+
+    window.addEventListener("attendanceUpdated", handleAttendanceUpdate);
+    return () => window.removeEventListener("attendanceUpdated", handleAttendanceUpdate);
   }, []);
 
   const getGreeting = () => {
@@ -90,7 +127,6 @@ export default function StaffDashboard() {
           <div className="lg:col-span-3">
             {/* Welcome Section */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-
               {/* Progress Bar */}
               <div className="">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -106,7 +142,7 @@ export default function StaffDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <QuickActions attendanceStatus={attendanceStatus} />
+            <QuickActions attendanceStatus={attendanceStatus} onStatusUpdate={fetchAttendanceStatus} />
 
             {/* Today's Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">

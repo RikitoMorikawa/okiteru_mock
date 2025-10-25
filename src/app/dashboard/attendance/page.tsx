@@ -16,6 +16,7 @@ function AttendanceContent() {
   const searchParams = useSearchParams();
   const [activeAction, setActiveAction] = useState<AttendanceAction>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
@@ -28,6 +29,16 @@ function AttendanceContent() {
     }, 60000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  // Listen for attendance updates
+  useEffect(() => {
+    const handleAttendanceUpdate = () => {
+      setRefreshKey((prev) => prev + 1);
+    };
+
+    window.addEventListener("attendanceUpdated", handleAttendanceUpdate);
+    return () => window.removeEventListener("attendanceUpdated", handleAttendanceUpdate);
   }, []);
 
   const attendanceActions = [

@@ -12,9 +12,10 @@ interface AttendanceStatus {
 
 interface QuickActionsProps {
   attendanceStatus: AttendanceStatus;
+  onStatusUpdate?: () => void;
 }
 
-export default function QuickActions({ attendanceStatus }: QuickActionsProps) {
+export default function QuickActions({ attendanceStatus, onStatusUpdate }: QuickActionsProps) {
   const getNextAction = () => {
     if (!attendanceStatus.wakeUpReported) {
       return {

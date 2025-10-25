@@ -49,7 +49,13 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
         throw new Error(errorData.error?.message || "起床報告の送信に失敗しました");
       }
 
-      // Success
+      // Success - trigger a custom event to notify other components
+      window.dispatchEvent(
+        new CustomEvent("attendanceUpdated", {
+          detail: { type: "wakeup", timestamp: new Date() },
+        })
+      );
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");

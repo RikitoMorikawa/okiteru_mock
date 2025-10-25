@@ -62,13 +62,20 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Update existing record with wake up time
+        // Update existing record with wake up time and notes
+        const updateData: any = {
+          wake_up_time: wakeUpDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        // Add notes if provided and column exists
+        if (notes && notes.trim()) {
+          updateData.notes = notes.trim();
+        }
+
         const { data: updatedRecord, error: updateError } = await supabaseAdmin
           .from("attendance_records")
-          .update({
-            wake_up_time: wakeUpDate.toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq("id", existingRecord.id)
           .select()
           .single();
