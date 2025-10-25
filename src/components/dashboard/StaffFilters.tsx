@@ -20,19 +20,15 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
     onFiltersChange({ ...filters, status });
   };
 
-  const handleSortChange = (sortBy: FilterOptions["sortBy"]) => {
-    onFiltersChange({ ...filters, sortBy });
-  };
-
   const clearFilters = () => {
     onFiltersChange({
       search: "",
       status: "all",
-      sortBy: "name",
+      sortBy: "name", // Keep for compatibility
     });
   };
 
-  const hasActiveFilters = filters.search || filters.status !== "all" || filters.sortBy !== "name";
+  const hasActiveFilters = filters.search || filters.status !== "all";
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6">
@@ -79,26 +75,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               <option value="active">活動中</option>
               <option value="inactive">未活動</option>
               <option value="alerts">アラート</option>
-            </select>
-          </div>
-
-          {/* Sort By */}
-          <div className="flex-1 sm:flex-none">
-            <label htmlFor="sort-filter" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:hidden">
-              並び順
-            </label>
-            <label htmlFor="sort-filter" className="hidden sm:block text-sm font-medium text-gray-700 mb-1">
-              並び順
-            </label>
-            <select
-              id="sort-filter"
-              value={filters.sortBy}
-              onChange={(e) => handleSortChange(e.target.value as FilterOptions["sortBy"])}
-              className="block w-full pl-2 sm:pl-3 pr-8 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-            >
-              <option value="name">名前順</option>
-              <option value="status">ステータス順</option>
-              <option value="lastActivity">最終活動順</option>
             </select>
           </div>
 
@@ -151,21 +127,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               </button>
             </span>
           )}
-
-          {filters.sortBy !== "name" && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              <span className="sm:hidden">{getSortLabel(filters.sortBy)}</span>
-              <span className="hidden sm:inline">並び順: {getSortLabel(filters.sortBy)}</span>
-              <button
-                onClick={() => handleSortChange("name")}
-                className="ml-1 inline-flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full text-purple-400 hover:bg-purple-200 hover:text-purple-600"
-              >
-                <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          )}
         </div>
       )}
     </div>
@@ -182,16 +143,5 @@ function getStatusLabel(status: FilterOptions["status"]): string {
       return "アラート有り";
     default:
       return "すべて";
-  }
-}
-
-function getSortLabel(sortBy: FilterOptions["sortBy"]): string {
-  switch (sortBy) {
-    case "status":
-      return "ステータス順";
-    case "lastActivity":
-      return "最終活動順";
-    default:
-      return "名前順";
   }
 }
