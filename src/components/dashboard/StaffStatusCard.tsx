@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
+import StaffDetailModal from "@/components/staff/StaffDetailModal";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
@@ -17,6 +18,7 @@ interface StaffStatusCardProps {
 
 export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Calculate completion status
   const getCompletionStatus = () => {
@@ -241,10 +243,19 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
               >
                 履歴表示
               </Link>
+              <button
+                onClick={() => setShowDetailModal(true)}
+                className="flex-1 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                詳細
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      <StaffDetailModal staff={staff} isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} />
     </div>
   );
 }

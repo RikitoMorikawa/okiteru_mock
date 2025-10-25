@@ -607,26 +607,26 @@ function AttendanceContent() {
       {showNewDayConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">翌日開始の確認</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">翌日開始の確認</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">
               新しい日を開始しますか？
               <br />
               この操作により、本日の完了状態がリセットされ、新しいタスクが表示されます。
               <br />
-              <span className="text-sm text-amber-600">※ 完了済みのデータは管理者用に保存されます</span>
+              <span className="text-xs sm:text-sm text-amber-600">※ 完了済みのデータは管理者用に保存されます</span>
             </p>
 
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowNewDayConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm sm:text-base rounded-md hover:bg-gray-50 transition-colors"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleStartNewDay}
                 disabled={isStartingNewDay}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-green-600 text-white text-sm sm:text-base rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 {isStartingNewDay ? "開始中..." : "開始する"}
               </button>
