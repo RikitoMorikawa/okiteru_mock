@@ -47,6 +47,20 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", completeRecord.id);
 
+        // Also mark any existing daily reports as archived (for history tracking)
+        const { data: existingReports } = await (supabaseAdmin as any).from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", today);
+
+        if (existingReports && existingReports.length > 0) {
+          await (supabaseAdmin as any)
+            .from("daily_reports")
+            .update({
+              status: "archived",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("staff_id", req.user.id)
+            .eq("date", today);
+        }
+
         console.log(`Marked complete record as reset for user ${req.user.id} on ${today}`);
       }
 

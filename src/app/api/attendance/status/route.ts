@@ -23,8 +23,14 @@ export async function GET(request: NextRequest) {
       // Find the latest active record or complete record
       const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
 
-      // Get daily report for today
-      const { data: dailyReport } = await (supabaseAdmin as any).from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
+      // Get daily report for today (exclude archived reports)
+      const { data: dailyReport } = await (supabaseAdmin as any)
+        .from("daily_reports")
+        .select("id, status")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .neq("status", "archived")
+        .single();
 
       // Get shift schedule for today (optional - might not exist)
       const { data: shiftSchedule } = await (supabaseAdmin as any)

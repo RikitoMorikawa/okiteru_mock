@@ -28,8 +28,14 @@ export async function POST(request: NextRequest) {
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Check if daily report already exists for today
-      const { data: existingReport } = await (supabaseAdmin as any).from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
+      // Check if daily report already exists for today (exclude archived reports)
+      const { data: existingReport } = await (supabaseAdmin as any)
+        .from("daily_reports")
+        .select("id, status")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .neq("status", "archived")
+        .single();
 
       if (existingReport) {
         // Update existing report
@@ -164,12 +170,13 @@ export async function GET(request: NextRequest) {
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Get daily report for today
+      // Get daily report for today (exclude archived reports)
       const { data: dailyReport, error } = await (supabaseAdmin as any)
         .from("daily_reports")
         .select("*")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
+        .neq("status", "archived")
         .single();
 
       if (error && error.code !== "PGRST116") {
