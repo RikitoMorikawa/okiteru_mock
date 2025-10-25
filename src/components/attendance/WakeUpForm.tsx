@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api-client";
 
 interface WakeUpFormProps {
   onSuccess: () => void;
@@ -38,16 +39,9 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
         throw new Error("起床時間は現在時刻より前である必要があります");
       }
 
-      // TODO: Replace with actual API call
-      const response = await fetch("/api/attendance/wakeup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          wake_up_time: wakeUpDateTime.toISOString(),
-          notes: notes.trim(),
-        }),
+      const response = await api.post("/api/attendance/wakeup", {
+        wake_up_time: wakeUpDateTime.toISOString(),
+        notes: notes.trim(),
       });
 
       if (!response.ok) {

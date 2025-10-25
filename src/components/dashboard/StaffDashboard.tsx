@@ -90,23 +90,9 @@ export default function StaffDashboard() {
           <div className="lg:col-span-3">
             {/* Welcome Section */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {getGreeting()}、{user?.name}さん
-                  </h2>
-                  <p className="text-gray-600 mt-1">今日も一日お疲れ様です。本日の進捗を確認しましょう。</p>
-                </div>
-                <div className="hidden sm:block">
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-blue-600">{progress.percentage}%</div>
-                    <div className="text-sm text-gray-500">本日の進捗</div>
-                  </div>
-                </div>
-              </div>
 
               {/* Progress Bar */}
-              <div className="mt-4">
+              <div className="">
                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                   <span>本日のタスク進捗</span>
                   <span>
