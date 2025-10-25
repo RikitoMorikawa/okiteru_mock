@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types/database";
+import { getAddressFromCoordinates, parseGPSLocation } from "@/utils/locationUtils";
 
 interface StaffDetailModalProps {
   staff: User;
@@ -16,9 +17,17 @@ interface StorageImage {
   created_at: string;
 }
 
+interface LocationInfo {
+  gpsLocation: string;
+  address: string | null;
+  arrivalTime: string;
+  arrivalLocation: string | null;
+}
+
 export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetailModalProps) {
   const [groomingImages, setGroomingImages] = useState<StorageImage[]>([]);
   const [routeImages, setRouteImages] = useState<StorageImage[]>([]);
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -36,10 +45,10 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
 
       console.log("Fetching images for staff:", staff.id, "date:", today);
 
-      // 最新の出発報告レコードから画像URLを取得
+      // 最新の出発報告レコードから画像URLと位置情報を取得
       const { data: attendanceRecords, error: attendanceError } = (await supabase
         .from("attendance_records")
-        .select("route_photo_url, appearance_photo_url, departure_time")
+        .select("route_photo_url, appearance_photo_url, departure_time, arrival_time, arrival_gps_location, arrival_location")
         .eq("staff_id", staff.id)
         .eq("date", today)
         .not("departure_time", "is", null)
@@ -49,6 +58,9 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
           route_photo_url: string | null;
           appearance_photo_url: string | null;
           departure_time: string;
+          arrival_time: string | null;
+          arrival_gps_location: string | null;
+          arrival_location: string | null;
         }> | null;
         error: any;
       };
@@ -65,6 +77,9 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
             route_photo_url: string | null;
             appearance_photo_url: string | null;
             departure_time: string;
+            arrival_time: string | null;
+            arrival_gps_location: string | null;
+            arrival_location: string | null;
           }
         | undefined;
 
@@ -116,10 +131,38 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
           setGroomingImages([]);
           console.log("No appearance photo found");
         }
+
+        // 位置情報の処理
+        if (latestRecord.arrival_time && latestRecord.arrival_gps_location) {
+          const gpsData = parseGPSLocation(latestRecord.arrival_gps_location);
+          if (gpsData) {
+            try {
+              const address = await getAddressFromCoordinates(gpsData.latitude, gpsData.longitude);
+              setLocationInfo({
+                gpsLocation: latestRecord.arrival_gps_location,
+                address,
+                arrivalTime: latestRecord.arrival_time,
+                arrivalLocation: latestRecord.arrival_location,
+              });
+              console.log("Location info set:", { gpsLocation: latestRecord.arrival_gps_location, address });
+            } catch (error) {
+              console.error("Error getting address:", error);
+              setLocationInfo({
+                gpsLocation: latestRecord.arrival_gps_location,
+                address: null,
+                arrivalTime: latestRecord.arrival_time,
+                arrivalLocation: latestRecord.arrival_location,
+              });
+            }
+          }
+        } else {
+          setLocationInfo(null);
+        }
       } else {
         // 出発報告がない場合
         setRouteImages([]);
         setGroomingImages([]);
+        setLocationInfo(null);
         console.log("No departure record found for today");
       }
     } catch (error) {
@@ -272,6 +315,90 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
                   </div>
                 )}
               </div>
+
+              {/* 位置情報セクション */}
+              {locationInfo && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    到着位置情報
+                  </h3>
+
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start">
+                      <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">到着時刻</p>
+                        <p className="text-sm text-gray-600">{formatTime(locationInfo.arrivalTime)}</p>
+                      </div>
+                    </div>
+
+                    {locationInfo.arrivalLocation && (
+                      <div className="flex items-start">
+                        <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">報告場所</p>
+                          <p className="text-sm text-gray-600">{locationInfo.arrivalLocation}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {locationInfo.address && (
+                      <div className="flex items-start">
+                        <svg className="w-5 h-5 text-gray-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                          />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">推定住所</p>
+                          <p className="text-sm text-gray-600">{locationInfo.address}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Google Mapsリンク */}
+                    <div className="pt-2 border-t border-gray-200">
+                      <a
+                        href={`https://www.google.com/maps?q=${locationInfo.gpsLocation}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          />
+                        </svg>
+                        Google Mapsで確認
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
