@@ -91,14 +91,15 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
       // Upload photos to storage
       let routePhotoUrl = null;
       let appearancePhotoUrl = null;
+      const todayDate = getTodayDateString();
 
       if (routePhoto) {
-        const routeUploadResult = await uploadRoutePhoto(routePhoto, user!.id);
+        const routeUploadResult = await uploadRoutePhoto(routePhoto, user!.id, todayDate);
         routePhotoUrl = routeUploadResult.url;
       }
 
       if (appearancePhoto) {
-        const appearanceUploadResult = await uploadRoutePhoto(appearancePhoto, user!.id, "appearance");
+        const appearanceUploadResult = await uploadAppearancePhoto(appearancePhoto, user!.id, todayDate);
         appearancePhotoUrl = appearanceUploadResult.url;
       }
 
