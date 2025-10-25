@@ -286,15 +286,6 @@ export default function StaffHistoryPage() {
                                   }`}
                                 >
                                   勤怠記録
-                                  <span
-                                    className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
-                                      session.attendanceRecord.status === "complete"
-                                        ? "bg-green-100 text-green-700"
-                                        : session.attendanceRecord.status === "partial"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-gray-100 text-gray-700"
-                                    }`}
-                                  ></span>
                                 </button>
                               )}
                               {session.dailyReport && (
@@ -371,17 +362,25 @@ export default function StaffHistoryPage() {
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report" && session.dailyReport && (
+                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report" && (
                               <div>
-                                {/* Content */}
-                                <div className="text-sm text-gray-600 mb-4">
-                                  <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
-                                </div>
+                                {session.dailyReport ? (
+                                  <>
+                                    {/* Content */}
+                                    <div className="text-sm text-gray-600 mb-4">
+                                      <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
+                                    </div>
 
-                                {/* Submission Time */}
-                                {session.dailyReport.submitted_at && (
-                                  <div className="text-xs text-gray-500 pt-4 border-t border-gray-100">
-                                    提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
+                                    {/* Submission Time */}
+                                    {session.dailyReport.submitted_at && (
+                                      <div className="text-xs text-gray-500 pt-4 border-t border-gray-100">
+                                        提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="text-center text-gray-500 py-8">
+                                    <div className="text-sm">日報が提出されていません</div>
                                   </div>
                                 )}
                               </div>
