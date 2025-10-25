@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware/auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getTodayJST } from "@/utils/dateUtils";
 
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayJST();
 
       // Get attendance record for today
       const { data: attendanceRecord, error: fetchError } = await (supabaseAdmin as any)

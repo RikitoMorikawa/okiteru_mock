@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, Alert, FilterOptions } from "@/types/database";
 import Link from "next/link";
+import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffWithDetails extends User {
   todayAttendance?: AttendanceRecord;
@@ -28,7 +29,7 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
   const fetchStaffDetails = async () => {
     try {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayJST();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
       // Fetch all staff members

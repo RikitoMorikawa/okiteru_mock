@@ -25,7 +25,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [wordCount, setWordCount] = useState(0);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayJST();
 
   // Load existing draft on component mount
   useEffect(() => {

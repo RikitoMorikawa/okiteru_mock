@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types/database";
 import { getAddressFromCoordinates, parseGPSLocation } from "@/utils/locationUtils";
+import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffDetailModalProps {
   staff: User;
@@ -41,7 +42,7 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
   const fetchImages = async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayJST();
 
       console.log("Fetching images for staff:", staff.id, "date:", today);
 

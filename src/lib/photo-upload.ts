@@ -8,12 +8,7 @@ export interface PhotoUploadResult {
 /**
  * 写真をSupabaseストレージにアップロードする
  */
-export async function uploadPhoto(
-  file: File,
-  userId: string,
-  type: "route" | "appearance",
-  date: string = new Date().toISOString().split("T")[0]
-): Promise<PhotoUploadResult> {
+export async function uploadPhoto(file: File, userId: string, type: "route" | "appearance", date?: string): Promise<PhotoUploadResult> {
   try {
     // ファイル名を生成（ユーザーID/日付/タイプ_タイムスタンプ.拡張子）
     const timestamp = new Date().getTime();
