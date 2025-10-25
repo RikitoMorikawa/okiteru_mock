@@ -301,8 +301,7 @@ export default function StaffHistoryPage() {
                                         ? "bg-yellow-100 text-yellow-700"
                                         : "bg-gray-100 text-gray-700"
                                     }`}
-                                  >
-                                  </span>
+                                  ></span>
                                 </button>
                               )}
                               {session.dailyReport && (
@@ -317,10 +316,14 @@ export default function StaffHistoryPage() {
                                   日報
                                   <span
                                     className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
-                                      session.dailyReport.status === "submitted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                                      session.dailyReport.status === "submitted" || session.dailyReport.submitted_at || (session.dailyReport as any).archived
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-yellow-100 text-yellow-700"
                                     }`}
                                   >
-                                    {session.dailyReport.status === "submitted" ? "提出済" : "下書き"}
+                                    {session.dailyReport.status === "submitted" || session.dailyReport.submitted_at || (session.dailyReport as any).archived
+                                      ? "提出済"
+                                      : "下書き"}
                                   </span>
                                 </button>
                               )}
