@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       // Get attendance record for today
       const { data: attendanceRecord } = await (supabaseAdmin as any)
         .from("attendance_records")
-        .select("wake_up_time, departure_time, arrival_time")
+        .select("wake_up_time, departure_time, arrival_time, status")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
         .single();
@@ -40,6 +40,12 @@ export async function GET(request: NextRequest) {
         shiftScheduleSubmitted: !!shiftSchedule,
         dayCompleted: attendanceRecord?.status === "complete",
       };
+
+      // Debug logging
+      console.log(`Attendance status for user ${req.user.id} on ${dateStr}:`, {
+        attendanceRecord: attendanceRecord ? { ...attendanceRecord } : null,
+        status,
+      });
 
       return NextResponse.json({
         status,

@@ -29,10 +29,21 @@ export default function StaffDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
-  // Update current time every minute
+  // Update current time every minute and check for date changes
   useEffect(() => {
+    let lastDate = new Date().toDateString();
+
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      const now = new Date();
+      setCurrentTime(now);
+
+      // Check if date has changed (new day)
+      const currentDate = now.toDateString();
+      if (currentDate !== lastDate) {
+        lastDate = currentDate;
+        console.log("New day detected, refreshing attendance status");
+        fetchAttendanceStatus();
+      }
     }, 60000);
 
     return () => clearInterval(timer);
@@ -44,6 +55,11 @@ export default function StaffDashboard() {
 
     try {
       setLoading(true);
+
+      // First, ensure we have a record for today
+      await api.post("/api/attendance/reset-for-new-day", {});
+
+      // Then fetch the current status
       const response = await api.get("/api/attendance/status");
 
       if (response.ok) {

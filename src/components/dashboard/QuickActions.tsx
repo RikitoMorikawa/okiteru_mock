@@ -21,9 +21,13 @@ interface QuickActionsProps {
 export default function QuickActions({ attendanceStatus, onStatusUpdate }: QuickActionsProps) {
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isStartingNewDay, setIsStartingNewDay] = useState(false);
+  const [showNewDayConfirm, setShowNewDayConfirm] = useState(false);
 
   // Check if today is already completed from DB status
   const isTodayCompleted = () => {
+    console.log("Debug - Attendance Status:", attendanceStatus);
+    console.log("Debug - Day Completed:", attendanceStatus.dayCompleted);
     return attendanceStatus.dayCompleted || false;
   };
 
@@ -53,6 +57,33 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
     } finally {
       setIsCompleting(false);
       setShowConfirmDialog(false);
+    }
+  };
+
+  const handleStartNewDay = async () => {
+    try {
+      setIsStartingNewDay(true);
+
+      const response = await api.post("/api/attendance/start-new-day", {});
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || "新しい日を開始しました！");
+
+        // Refresh the attendance status
+        if (onStatusUpdate) {
+          onStatusUpdate();
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "新しい日の開始に失敗しました");
+      }
+    } catch (error) {
+      console.error("Error starting new day:", error);
+      alert("新しい日の開始中にエラーが発生しました");
+    } finally {
+      setIsStartingNewDay(false);
+      setShowNewDayConfirm(false);
     }
   };
 
@@ -165,32 +196,103 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
               <span className="text-2xl mr-3">✅</span>
               <div>
                 <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
-                <p className="text-sm text-blue-700">本日の業務は既に完了しています。データは管理者が確認できるよう保存されています。</p>
+                <p className="text-sm text-blue-700">
+                  本日の業務は既に完了しています。データは管理者が確認できるよう保存されています。
+                  <br />
+                  「翌日開始」ボタンで新しい日のタスクを開始できます。
+                </p>
               </div>
             </div>
-            <button
-              onClick={async () => {
-                try {
-                  const response = await api.post("/api/attendance/reopen-day", {});
-                  if (response.ok) {
-                    alert("業務を再開しました");
-                    if (onStatusUpdate) {
-                      onStatusUpdate();
+            <div className="flex space-x-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await api.post("/api/attendance/reopen-day", {});
+                    if (response.ok) {
+                      alert("業務を再開しました");
+                      if (onStatusUpdate) {
+                        onStatusUpdate();
+                      }
+                    } else {
+                      alert("業務再開に失敗しました");
                     }
-                  } else {
-                    alert("業務再開に失敗しました");
+                  } catch (error) {
+                    console.error("Error reopening day:", error);
+                    alert("業務再開中にエラーが発生しました");
                   }
-                } catch (error) {
-                  console.error("Error reopening day:", error);
-                  alert("業務再開中にエラーが発生しました");
-                }
-              }}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              再開
-            </button>
+                }}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                再開
+              </button>
+              <button
+                onClick={() => setShowNewDayConfirm(true)}
+                disabled={isStartingNewDay}
+                className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStartingNewDay ? "開始中..." : "翌日開始"}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Show completed tasks for reference */}
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">完了済みタスク</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {quickActionItems.map((item) => (
+              <div key={item.title} className="relative p-3 rounded-lg border-2 border-green-200 bg-green-50 text-green-700 opacity-75">
+                <div className="text-center">
+                  <div className="text-2xl mb-2">{item.icon}</div>
+                  <div className="text-sm font-medium">{item.title}</div>
+                  <div className="absolute top-1 right-1">
+                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* New Day Confirmation Dialog */}
+        {showNewDayConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">翌日開始の確認</h3>
+              <p className="text-gray-600 mb-6">
+                新しい日を開始しますか？
+                <br />
+                この操作により、本日の完了状態がリセットされ、新しいタスクが表示されます。
+                <br />
+                <span className="text-sm text-amber-600">※ 完了済みのデータは管理者用に保存されます</span>
+              </p>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowNewDayConfirm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleStartNewDay}
+                  disabled={isStartingNewDay}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {isStartingNewDay ? "開始中..." : "開始する"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
