@@ -10,6 +10,7 @@ import WakeUpForm from "@/components/attendance/WakeUpForm";
 import DepartureForm from "@/components/attendance/DepartureForm";
 import ArrivalForm from "@/components/attendance/ArrivalForm";
 import DailyReportForm from "@/components/reports/DailyReportForm";
+import ProgressIndicator from "@/components/attendance/ProgressIndicator";
 import { api } from "@/lib/api-client";
 
 type AttendanceAction = "wakeup" | "departure" | "arrival" | "report" | null;
@@ -24,8 +25,13 @@ function AttendanceContent() {
     departureReported: false,
     arrivalReported: false,
     reportSubmitted: false,
+    dayCompleted: false,
   });
   const [loading, setLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isStartingNewDay, setIsStartingNewDay] = useState(false);
+  const [showNewDayConfirm, setShowNewDayConfirm] = useState(false);
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
@@ -53,6 +59,7 @@ function AttendanceContent() {
           departureReported: data.status.departureReported,
           arrivalReported: data.status.arrivalReported,
           reportSubmitted: data.status.reportSubmitted || false,
+          dayCompleted: data.status.dayCompleted || false,
         });
       } else {
         console.error("Failed to fetch attendance status");
@@ -79,6 +86,61 @@ function AttendanceContent() {
     window.addEventListener("attendanceUpdated", handleAttendanceUpdate);
     return () => window.removeEventListener("attendanceUpdated", handleAttendanceUpdate);
   }, []);
+
+  // Check if today is completed
+  const isTodayCompleted = () => {
+    return attendanceStatus.dayCompleted || false;
+  };
+
+  const isAllTasksComplete = () => {
+    return attendanceStatus.wakeUpReported && attendanceStatus.departureReported && attendanceStatus.arrivalReported && attendanceStatus.reportSubmitted;
+  };
+
+  const handleCompleteDay = async () => {
+    try {
+      setIsCompleting(true);
+
+      const response = await api.post("/api/attendance/complete-day", {});
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || "本日の業務を完了しました。お疲れ様でした！");
+        fetchAttendanceStatus();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "業務完了処理に失敗しました");
+      }
+    } catch (error) {
+      console.error("Error completing day:", error);
+      alert("業務完了処理中にエラーが発生しました");
+    } finally {
+      setIsCompleting(false);
+      setShowConfirmDialog(false);
+    }
+  };
+
+  const handleStartNewDay = async () => {
+    try {
+      setIsStartingNewDay(true);
+
+      const response = await api.post("/api/attendance/start-new-day", {});
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message || "新しい日を開始しました！");
+        fetchAttendanceStatus();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "新しい日の開始に失敗しました");
+      }
+    } catch (error) {
+      console.error("Error starting new day:", error);
+      alert("新しい日の開始中にエラーが発生しました");
+    } finally {
+      setIsStartingNewDay(false);
+      setShowNewDayConfirm(false);
+    }
+  };
 
   const attendanceActions = [
     {
@@ -176,6 +238,57 @@ function AttendanceContent() {
               </div>
             ) : (
               <div className="space-y-6">
+                {/* Progress Indicator */}
+                {/* <ProgressIndicator /> */}
+
+                {/* If today is already completed, show completion status */}
+                {!loading && isTodayCompleted() && (
+                  <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">✅</span>
+                        <div>
+                          <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
+                          <p className="text-sm text-blue-700">
+                            本日の業務は既に完了しています。データは管理者が確認できるよう保存されています。
+                            <br />
+                            「翌日開始」ボタンで新しい日のタスクを開始できます。
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowNewDayConfirm(true)}
+                        disabled={isStartingNewDay}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isStartingNewDay ? "開始中..." : "翌日開始"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* All Tasks Complete - Show completion button */}
+                {!loading && !isTodayCompleted() && isAllTasksComplete() && (
+                  <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">🎉</span>
+                        <div>
+                          <h3 className="font-semibold text-green-900">本日のタスク完了</h3>
+                          <p className="text-sm text-green-700">お疲れ様でした！本日の全ての報告が完了しています。</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowConfirmDialog(true)}
+                        disabled={isCompleting}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isCompleting ? "処理中..." : "報告終了"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Current Time Display */}
                 <div className="bg-white rounded-lg shadow-sm p-4">
                   <div className="flex items-center justify-between">
@@ -308,6 +421,84 @@ function AttendanceContent() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog for completing day */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">報告終了の確認</h3>
+
+            {isAllTasksComplete() ? (
+              <p className="text-gray-600 mb-6">
+                本日の業務報告を終了しますか？
+                <br />
+                この操作により、本日のタスクがリセットされ、新しい日の準備が整います。
+              </p>
+            ) : (
+              <div className="mb-6">
+                <p className="text-amber-600 mb-3">⚠️ まだ完了していないタスクがあります：</p>
+                <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                  {!attendanceStatus.wakeUpReported && <li>• 起床報告</li>}
+                  {!attendanceStatus.departureReported && <li>• 出発報告</li>}
+                  {!attendanceStatus.arrivalReported && <li>• 到着報告</li>}
+                  {!attendanceStatus.reportSubmitted && <li>• 日報提出</li>}
+                </ul>
+                <p className="text-gray-600">それでも業務を終了しますか？</p>
+              </div>
+            )}
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleCompleteDay}
+                disabled={isCompleting}
+                className={`flex-1 px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 ${
+                  isAllTasksComplete() ? "bg-green-600 hover:bg-green-700" : "bg-amber-600 hover:bg-amber-700"
+                }`}
+              >
+                {isCompleting ? "処理中..." : "終了する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Day Confirmation Dialog */}
+      {showNewDayConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">翌日開始の確認</h3>
+            <p className="text-gray-600 mb-6">
+              新しい日を開始しますか？
+              <br />
+              この操作により、本日の完了状態がリセットされ、新しいタスクが表示されます。
+              <br />
+              <span className="text-sm text-amber-600">※ 完了済みのデータは管理者用に保存されます</span>
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowNewDayConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleStartNewDay}
+                disabled={isStartingNewDay}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {isStartingNewDay ? "開始中..." : "開始する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
