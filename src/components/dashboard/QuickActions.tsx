@@ -21,6 +21,13 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  // Check if today is already completed
+  const isTodayCompleted = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
+    return completedDates.includes(today);
+  };
+
   const handleCompleteDay = async () => {
     try {
       setIsCompleting(true);
@@ -30,16 +37,18 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       if (response.ok) {
         const data = await response.json();
 
-        // Clear any draft data from localStorage
+        // Mark today as completed (data preservation approach)
         const today = new Date().toISOString().split("T")[0];
-        localStorage.removeItem(`daily_report_draft_${today}`);
 
-        // Clear any other attendance-related localStorage data
-        Object.keys(localStorage).forEach((key) => {
-          if (key.includes("attendance_") || key.includes("daily_report_") || key.includes("draft_")) {
-            localStorage.removeItem(key);
-          }
-        });
+        // Store completed date in localStorage for UI state management
+        const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
+        if (!completedDates.includes(today)) {
+          completedDates.push(today);
+          localStorage.setItem("completed_dates", JSON.stringify(completedDates));
+        }
+
+        // Clear any draft data for today
+        localStorage.removeItem(`daily_report_draft_${today}`);
 
         // Show success message
         alert(data.message || "本日の業務を完了しました。お疲れ様でした！");
@@ -162,6 +171,37 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
         return "border-gray-200 bg-gray-50";
     }
   };
+
+  // If today is already completed, show completion status
+  if (isTodayCompleted()) {
+    return (
+      <div className="mb-6">
+        <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">✅</span>
+              <div>
+                <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
+                <p className="text-sm text-blue-700">本日の業務は既に完了しています。データは管理者が確認できるよう保存されています。</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const today = new Date().toISOString().split("T")[0];
+                const completedDates = JSON.parse(localStorage.getItem("completed_dates") || "[]");
+                const updatedDates = completedDates.filter((date: string) => date !== today);
+                localStorage.setItem("completed_dates", JSON.stringify(updatedDates));
+                window.location.reload();
+              }}
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              再開
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6">

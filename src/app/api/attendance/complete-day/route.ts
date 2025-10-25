@@ -58,46 +58,17 @@ export async function POST(request: NextRequest) {
         // Don't return error here as this is not critical
       }
 
-      // Step 2: Reset today's data for immediate reset effect
-      // This approach gives users immediate visual feedback by clearing today's data
+      // Step 2: Mark the day as completed (data preservation approach)
+      // All data is preserved for management review, but UI shows as completed
 
-      // Delete today's attendance record to reset it
-      if (attendanceRecord) {
-        const { error: deleteAttendanceError } = await (supabaseAdmin as any).from("attendance_records").delete().eq("id", attendanceRecord.id);
-
-        if (deleteAttendanceError) {
-          console.error("Error deleting today's attendance record:", deleteAttendanceError);
-        }
-      }
-
-      // Delete today's daily reports to reset them
-      const { error: deleteReportError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).eq("date", today);
-
-      if (deleteReportError) {
-        console.error("Error deleting today's reports:", deleteReportError);
-      }
-
-      // Step 3: Clean up any future records as well
-      const { error: deleteFutureAttendanceError } = await (supabaseAdmin as any)
-        .from("attendance_records")
-        .delete()
-        .eq("staff_id", req.user.id)
-        .gt("date", today);
-
-      if (deleteFutureAttendanceError) {
-        console.error("Error deleting future attendance records:", deleteFutureAttendanceError);
-      }
-
-      const { error: deleteFutureReportsError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).gt("date", today);
-
-      if (deleteFutureReportsError) {
-        console.error("Error deleting future reports:", deleteFutureReportsError);
-      }
+      // No data deletion - everything is preserved for admin management
+      console.log(`Day completed for user ${req.user.id} on ${today}. All data preserved.`);
 
       return NextResponse.json({
         success: true,
-        message: "本日の業務を完了しました。お疲れ様でした！システムがリセットされました。",
+        message: "本日の業務を完了しました。お疲れ様でした！",
         reset: true,
+        completedDate: today,
       });
     } catch (error) {
       console.error("Error completing day:", error);
