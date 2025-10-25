@@ -295,7 +295,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">クイックアクション</h3>
-          {nextAction && (
+          {/* {nextAction && (
             <button
               onClick={() => setShowConfirmDialog(true)}
               disabled={isCompleting}
@@ -303,7 +303,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
             >
               早期終了
             </button>
-          )}
+          )} */}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {quickActionItems.map((item) => (
