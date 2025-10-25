@@ -69,7 +69,7 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               id="status-filter"
               value={filters.status}
               onChange={(e) => handleStatusChange(e.target.value as FilterOptions["status"])}
-              className="block w-full pl-2 sm:pl-3 pr-8 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+              className="block w-full pl-2 sm:pl-3 pr-10 sm:pr-12 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
             >
               <option value="all">すべて</option>
               <option value="active">活動中</option>
@@ -78,18 +78,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
             </select>
           </div>
 
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <div className="flex items-end">
-              <button
-                onClick={clearFilters}
-                className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <span className="sm:hidden">×</span>
-                <span className="hidden sm:inline">クリア</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
