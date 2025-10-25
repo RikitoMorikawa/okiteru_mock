@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api-client";
 import PhotoUpload from "@/components/ui/PhotoUpload";
-import { uploadRoutePhoto, getTodayDateString, validateImageFile } from "@/lib/storage";
+import { uploadRoutePhoto, uploadAppearancePhoto, getTodayDateString, validateImageFile } from "@/lib/storage";
 
 interface DepartureFormProps {
   onSuccess: () => void;

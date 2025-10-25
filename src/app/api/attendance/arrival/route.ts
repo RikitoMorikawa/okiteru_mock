@@ -68,9 +68,10 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         };
 
-        if (location && location.trim()) {
-          updateData.location = location.trim();
-        }
+        // Temporarily disabled until location column is added
+        // if (location && location.trim()) {
+        //   updateData.location = location.trim();
+        // }
 
         if (notes && notes.trim()) {
           updateData.notes = notes.trim();
@@ -117,9 +118,10 @@ export async function POST(request: NextRequest) {
         status: "partial",
       };
 
-      if (location && location.trim()) {
-        insertData.location = location.trim();
-      }
+      // Temporarily disabled until location column is added
+      // if (location && location.trim()) {
+      //   insertData.location = location.trim();
+      // }
 
       if (notes && notes.trim()) {
         insertData.notes = notes.trim();
