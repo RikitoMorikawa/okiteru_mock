@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
@@ -22,7 +23,8 @@ interface FilterOptions {
 }
 
 export default function ManagerDashboard() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const [staffList, setStaffList] = useState<StaffWithStatus[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<StaffWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,7 @@ export default function ManagerDashboard() {
     sortBy: "name",
   });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Update current time every minute
   useEffect(() => {
@@ -41,6 +44,31 @@ export default function ManagerDashboard() {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showProfileMenu && !target.closest(".relative")) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   // Fetch staff data
   const fetchStaffData = async () => {
@@ -226,7 +254,7 @@ export default function ManagerDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-base sm:text-xl font-semibold text-gray-900">マネージャーダッシュボード</h1>
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900">ダッシュボード</h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="hidden sm:block text-xs sm:text-sm text-gray-600">
@@ -237,7 +265,62 @@ export default function ManagerDashboard() {
                   minute: "2-digit",
                 })}
               </div>
-              <div className="hidden sm:block text-xs sm:text-sm font-medium text-gray-900">{user?.name}さん</div>
+
+              {/* Profile Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-md"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                      <div className="font-medium">{user?.name}</div>
+                      <div className="text-xs text-gray-500">{user?.email}</div>
+                    </div>
+
+                    <Link
+                      href="/manager/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        プロフィール
+                      </div>
+                    </Link>
+
+                    <div className="border-t border-gray-100">
+                      <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 transition-colors">
+                        <div className="flex items-center">
+                          <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            />
+                          </svg>
+                          ログアウト
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
