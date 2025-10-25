@@ -21,7 +21,7 @@ export default function StaffHistoryPage() {
   const [historyData, setHistoryData] = useState<StaffHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedReports, setExpandedReports] = useState<Set<string>>(new Set());
+  const [activeTabs, setActiveTabs] = useState<Record<string, "attendance" | "report">>({});
   const dateRange = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30日前
     endDate: new Date().toISOString().split("T")[0], // 今日
@@ -114,16 +114,19 @@ export default function StaffHistoryPage() {
     return { completed, total: tasks.length, percentage: Math.round((completed / tasks.length) * 100) };
   };
 
-  const toggleReportExpansion = (sessionId: string) => {
-    setExpandedReports((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(sessionId)) {
-        newSet.delete(sessionId);
-      } else {
-        newSet.add(sessionId);
-      }
-      return newSet;
-    });
+  const setActiveTab = (sessionId: string, tab: "attendance" | "report") => {
+    setActiveTabs((prev) => ({
+      ...prev,
+      [sessionId]: tab,
+    }));
+  };
+
+  const getActiveTab = (sessionId: string, hasAttendance: boolean, hasReport: boolean) => {
+    if (activeTabs[sessionId]) {
+      return activeTabs[sessionId];
+    }
+    // Default to attendance if available, otherwise report
+    return hasAttendance ? "attendance" : "report";
   };
 
   if (loading) {
@@ -248,11 +251,20 @@ export default function StaffHistoryPage() {
                   }
                 });
 
-                // Sort by date (newest first)
-                const sortedSessions = workSessions.sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
+                // Sort by date and time (newest first)
+                const sortedSessions = workSessions.sort((a, b) => {
+                  // First sort by date
+                  const dateComparison = b.sortDate.getTime() - a.sortDate.getTime();
+                  if (dateComparison !== 0) return dateComparison;
+
+                  // If same date, sort by creation time (using ID as proxy for creation order)
+                  const aId = a.attendanceRecord.id || a.dailyReport?.id || "";
+                  const bId = b.attendanceRecord.id || b.dailyReport?.id || "";
+                  return bId.localeCompare(aId);
+                });
 
                 return sortedSessions.map((session) => {
-                  const hasAttendance = session.attendanceRecord.id;
+                  const hasAttendance = !!session.attendanceRecord.id;
                   const attendanceStatus = hasAttendance ? getAttendanceStatus(session.attendanceRecord) : null;
 
                   return (
@@ -267,121 +279,125 @@ export default function StaffHistoryPage() {
                       </div>
 
                       <div className="ml-7">
-                        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                          {/* Attendance Section */}
-                          {hasAttendance && (
-                            <div className="bg-white rounded-md p-3">
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="text-sm font-medium text-gray-900">勤怠記録</h5>
-                                <span
-                                  className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                                    session.attendanceRecord.status === "complete"
-                                      ? "bg-green-100 text-green-700"
-                                      : session.attendanceRecord.status === "partial"
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : "bg-gray-100 text-gray-700"
+                        <div className="bg-white rounded-lg border border-gray-200">
+                          {/* Tab Navigation */}
+                          {(hasAttendance || session.dailyReport) && (
+                            <div className="flex border-b border-gray-200">
+                              {hasAttendance && (
+                                <button
+                                  onClick={() => setActiveTab(session.id, "attendance")}
+                                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                    getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "attendance"
+                                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                   }`}
                                 >
-                                  {attendanceStatus!.completed}/{attendanceStatus!.total} 完了
-                                </span>
-                              </div>
-
-                              {/* Time Display */}
-                              <div className="grid grid-cols-3 gap-3 mb-3">
-                                <div className="text-center">
-                                  <div className="text-xs text-gray-500 mb-1">起床</div>
-                                  <div className="text-sm font-medium">{formatTime(session.attendanceRecord.wake_up_time)}</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-xs text-gray-500 mb-1">出発</div>
-                                  <div className="text-sm font-medium">{formatTime(session.attendanceRecord.departure_time)}</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-xs text-gray-500 mb-1">到着</div>
-                                  <div className="text-sm font-medium">{formatTime(session.attendanceRecord.arrival_time)}</div>
-                                </div>
-                              </div>
-
-                              {/* Notes */}
-                              {(session.attendanceRecord.wake_up_notes ||
-                                session.attendanceRecord.departure_notes ||
-                                session.attendanceRecord.arrival_notes) && (
-                                <div className="pt-3 border-t border-gray-100">
-                                  <h6 className="text-xs font-medium text-gray-700 mb-2">メモ</h6>
-                                  <div className="space-y-1 text-xs text-gray-600">
-                                    {session.attendanceRecord.wake_up_notes && (
-                                      <div>
-                                        <span className="font-medium">起床:</span> {session.attendanceRecord.wake_up_notes}
-                                      </div>
-                                    )}
-                                    {session.attendanceRecord.departure_notes && (
-                                      <div>
-                                        <span className="font-medium">出発:</span> {session.attendanceRecord.departure_notes}
-                                      </div>
-                                    )}
-                                    {session.attendanceRecord.arrival_notes && (
-                                      <div>
-                                        <span className="font-medium">到着:</span> {session.attendanceRecord.arrival_notes}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Daily Report Section */}
-                          {session.dailyReport && (
-                            <div className="bg-white rounded-md p-3">
-                              <button
-                                onClick={() => toggleReportExpansion(session.id)}
-                                className="w-full flex items-center justify-between mb-3 hover:bg-gray-50 -m-3 p-3 rounded-md transition-colors"
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <h5 className="text-sm font-medium text-gray-900">日報</h5>
+                                  勤怠記録
                                   <span
-                                    className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                                    className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
+                                      session.attendanceRecord.status === "complete"
+                                        ? "bg-green-100 text-green-700"
+                                        : session.attendanceRecord.status === "partial"
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : "bg-gray-100 text-gray-700"
+                                    }`}
+                                  >
+                                  </span>
+                                </button>
+                              )}
+                              {session.dailyReport && (
+                                <button
+                                  onClick={() => setActiveTab(session.id, "report")}
+                                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                    getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report"
+                                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                  }`}
+                                >
+                                  日報
+                                  <span
+                                    className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
                                       session.dailyReport.status === "submitted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                                     }`}
                                   >
                                     {session.dailyReport.status === "submitted" ? "提出済" : "下書き"}
                                   </span>
-                                </div>
-                                <svg
-                                  className={`w-4 h-4 text-gray-500 transition-transform ${expandedReports.has(session.id) ? "rotate-180" : ""}`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
-
-                              {/* Collapsible Content */}
-                              {expandedReports.has(session.id) && (
-                                <div className="space-y-3">
-                                  {/* Content */}
-                                  <div className="text-sm text-gray-600">
-                                    <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
-                                  </div>
-
-                                  {/* Submission Time */}
-                                  {session.dailyReport.submitted_at && (
-                                    <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                                      提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
-                                    </div>
-                                  )}
-                                </div>
+                                </button>
                               )}
                             </div>
                           )}
 
-                          {/* No data message */}
-                          {!hasAttendance && !session.dailyReport && (
-                            <div className="bg-white rounded-md p-3 text-center text-gray-500">
-                              <div className="text-sm">データがありません</div>
-                            </div>
-                          )}
+                          {/* Tab Content */}
+                          <div className="p-4">
+                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "attendance" && hasAttendance && (
+                              <div>
+                                {/* Time Display */}
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-500 mb-1">起床</div>
+                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.wake_up_time)}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-500 mb-1">出発</div>
+                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.departure_time)}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-500 mb-1">到着</div>
+                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.arrival_time)}</div>
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                {(session.attendanceRecord.wake_up_notes ||
+                                  session.attendanceRecord.departure_notes ||
+                                  session.attendanceRecord.arrival_notes) && (
+                                  <div className="pt-4 border-t border-gray-100">
+                                    <h6 className="text-sm font-medium text-gray-700 mb-2">メモ</h6>
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                      {session.attendanceRecord.wake_up_notes && (
+                                        <div>
+                                          <span className="font-medium">起床:</span> {session.attendanceRecord.wake_up_notes}
+                                        </div>
+                                      )}
+                                      {session.attendanceRecord.departure_notes && (
+                                        <div>
+                                          <span className="font-medium">出発:</span> {session.attendanceRecord.departure_notes}
+                                        </div>
+                                      )}
+                                      {session.attendanceRecord.arrival_notes && (
+                                        <div>
+                                          <span className="font-medium">到着:</span> {session.attendanceRecord.arrival_notes}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report" && session.dailyReport && (
+                              <div>
+                                {/* Content */}
+                                <div className="text-sm text-gray-600 mb-4">
+                                  <p className="whitespace-pre-wrap">{session.dailyReport.content}</p>
+                                </div>
+
+                                {/* Submission Time */}
+                                {session.dailyReport.submitted_at && (
+                                  <div className="text-xs text-gray-500 pt-4 border-t border-gray-100">
+                                    提出日時: {new Date(session.dailyReport.submitted_at).toLocaleString("ja-JP")}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* No data message */}
+                            {!hasAttendance && !session.dailyReport && (
+                              <div className="text-center text-gray-500 py-8">
+                                <div className="text-sm">データがありません</div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
