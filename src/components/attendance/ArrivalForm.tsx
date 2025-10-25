@@ -142,7 +142,7 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
               現在時刻を使用
             </button>
           </div>
-          <p className="mt-1 text-sm text-gray-500">到着した時間を選択してください</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">到着した時間を選択してください</p>
         </div>
 
         {/* GPS Location */}
@@ -151,9 +151,9 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
           <div className="flex items-center space-x-3">
             <div className="flex-1">
               {gpsObtained ? (
-                <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">✅ GPS位置情報を取得しました</div>
+                <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-xs sm:text-sm text-green-700">✅ GPS位置情報を取得しました</div>
               ) : (
-                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-500">GPS位置情報が未取得です</div>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs sm:text-sm text-gray-500">GPS位置情報が未取得です</div>
               )}
             </div>
             <button
@@ -165,7 +165,7 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
               {isGettingLocation ? "取得中..." : "📍 GPS取得"}
             </button>
           </div>
-          <p className="mt-1 text-sm text-gray-500">正確な位置情報のためGPS取得を推奨します</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">正確な位置情報のためGPS取得を推奨します</p>
         </div>
 
         {/* Manual Location */}
@@ -183,7 +183,7 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
             required
             maxLength={100}
           />
-          <p className="mt-1 text-sm text-gray-500">到着した場所の名称や住所を入力してください</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">到着した場所の名称や住所を入力してください</p>
         </div>
 
         {/* Notes */}
@@ -200,7 +200,7 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
             placeholder="遅延理由や特記事項があれば記入してください"
             maxLength={500}
           />
-          <p className="mt-1 text-sm text-gray-500">{notes.length}/500文字</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">{notes.length}/500文字</p>
         </div>
 
         {/* Error Message */}
@@ -255,8 +255,8 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">到着報告について</h3>
-            <div className="mt-2 text-sm text-blue-700">
+            <h3 className="text-xs sm:text-sm font-medium text-blue-800">到着報告について</h3>
+            <div className="mt-2 text-xs sm:text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>到着後、速やかに報告してください</li>
                 <li>身だしなみの写真は必須です（顔が確認できるもの）</li>

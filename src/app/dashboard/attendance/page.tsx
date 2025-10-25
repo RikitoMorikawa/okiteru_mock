@@ -293,9 +293,9 @@ function AttendanceContent() {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">報告のポイント</h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <ul className="list-disc list-inside space-y-1">
+                      <h3 className="text-xs sm:text-sm font-medium text-blue-800">報告のポイント</h3>
+                      <div className="mt-2 text-xs sm:text-sm text-blue-700">
+                        <ul className="list-disc pl-4 sm:list-inside sm:pl-0 space-y-1">
                           <li>起床報告は起床後すぐに行ってください</li>
                           <li>出発報告では経路のスクリーンショットが必要です</li>
                           <li>到着報告では身だしなみの写真をアップロードしてください</li>

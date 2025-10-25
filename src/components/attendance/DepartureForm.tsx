@@ -169,7 +169,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
               現在時刻を使用
             </button>
           </div>
-          <p className="mt-1 text-sm text-gray-500">出発した時間を選択してください</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">出発した時間を選択してください</p>
         </div>
 
         {/* Destination */}
@@ -187,7 +187,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             required
             maxLength={100}
           />
-          <p className="mt-1 text-sm text-gray-500">向かう先の場所を入力してください</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">向かう先の場所を入力してください</p>
         </div>
 
         {/* Route Photo */}
@@ -226,7 +226,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             placeholder="交通状況や特記事項があれば記入してください"
             maxLength={500}
           />
-          <p className="mt-1 text-sm text-gray-500">{notes.length}/500文字</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">{notes.length}/500文字</p>
         </div>
 
         {/* Error Message */}
@@ -281,8 +281,8 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">出発報告について</h3>
-            <div className="mt-2 text-sm text-blue-700">
+            <h3 className="text-xs sm:text-sm font-medium text-blue-800">出発報告について</h3>
+            <div className="mt-2 text-xs sm:text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>出発前または出発直後に報告してください</li>
                 <li>経路のスクリーンショットと身だしなみ写真は必須です</li>

@@ -102,7 +102,7 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
               現在時刻を使用
             </button>
           </div>
-          <p className="mt-1 text-sm text-gray-500">起床した時間を選択してください</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">起床した時間を選択してください</p>
         </div>
 
         {/* Notes */}
@@ -119,7 +119,7 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
             placeholder="体調や睡眠の質など、特記事項があれば記入してください"
             maxLength={500}
           />
-          <p className="mt-1 text-sm text-gray-500">{notes.length}/500文字</p>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">{notes.length}/500文字</p>
         </div>
 
         {/* Error Message */}
@@ -174,8 +174,8 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">起床報告について</h3>
-            <div className="mt-2 text-sm text-blue-700">
+            <h3 className="text-xs sm:text-sm font-medium text-blue-800">起床報告について</h3>
+            <div className="mt-2 text-xs sm:text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>起床後、できるだけ早めに報告してください</li>
                 <li>正確な起床時間を入力してください</li>
