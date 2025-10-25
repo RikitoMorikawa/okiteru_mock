@@ -9,6 +9,7 @@ import StatusIndicator from "@/components/dashboard/StatusIndicator";
 import WakeUpForm from "@/components/attendance/WakeUpForm";
 import DepartureForm from "@/components/attendance/DepartureForm";
 import ArrivalForm from "@/components/attendance/ArrivalForm";
+import { api } from "@/lib/api-client";
 
 type AttendanceAction = "wakeup" | "departure" | "arrival" | null;
 
@@ -17,6 +18,12 @@ function AttendanceContent() {
   const [activeAction, setActiveAction] = useState<AttendanceAction>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
+  const [attendanceStatus, setAttendanceStatus] = useState({
+    wakeUpReported: false,
+    departureReported: false,
+    arrivalReported: false,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
@@ -31,10 +38,39 @@ function AttendanceContent() {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch attendance status from API
+  const fetchAttendanceStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/attendance/status");
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceStatus({
+          wakeUpReported: data.status.wakeUpReported,
+          departureReported: data.status.departureReported,
+          arrivalReported: data.status.arrivalReported,
+        });
+      } else {
+        console.error("Failed to fetch attendance status");
+      }
+    } catch (error) {
+      console.error("Error fetching attendance status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchAttendanceStatus();
+  }, []);
+
   // Listen for attendance updates
   useEffect(() => {
     const handleAttendanceUpdate = () => {
       setRefreshKey((prev) => prev + 1);
+      fetchAttendanceStatus(); // Refresh status when attendance is updated
     };
 
     window.addEventListener("attendanceUpdated", handleAttendanceUpdate);
@@ -128,7 +164,6 @@ function AttendanceContent() {
               </div>
             ) : (
               <div className="space-y-6">
-
                 {/* Current Time Display */}
                 <div className="bg-white rounded-lg shadow-sm p-4">
                   <div className="flex items-center justify-between">
@@ -172,23 +207,63 @@ function AttendanceContent() {
                 {/* Today's Status Summary */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">本日の報告状況</h3>
-                  <div className="space-y-3">
-                    {attendanceActions.map((action) => (
-                      <div key={action.id} className="flex items-center justify-between py-2">
-                        <div className="flex items-center">
-                          <span className="text-xl mr-3">{action.icon}</span>
-                          <span className="font-medium text-gray-700">{action.title}</span>
-                        </div>
-                        <div className="flex items-center">
-                          {/* TODO: Replace with actual status from API */}
-                          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">読み込み中...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {attendanceActions.map((action) => {
+                        const getStatus = (actionId: string) => {
+                          switch (actionId) {
+                            case "wakeup":
+                              return attendanceStatus.wakeUpReported;
+                            case "departure":
+                              return attendanceStatus.departureReported;
+                            case "arrival":
+                              return attendanceStatus.arrivalReported;
+                            default:
+                              return false;
+                          }
+                        };
+
+                        const isCompleted = getStatus(action.id);
+
+                        return (
+                          <div key={action.id} className="flex items-center justify-between py-2">
+                            <div className="flex items-center">
+                              <span className="text-xl mr-3">{action.icon}</span>
+                              <span className="font-medium text-gray-700">{action.title}</span>
+                            </div>
+                            <div className="flex items-center">
+                              {isCompleted ? (
+                                <>
+                                  <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  </div>
+                                  <span className="ml-2 text-sm text-green-600 font-medium">完了</span>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                  </div>
+                                  <span className="ml-2 text-sm text-gray-500">未報告</span>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <span className="ml-2 text-sm text-gray-500">未報告</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Instructions */}
