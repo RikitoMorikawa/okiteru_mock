@@ -76,10 +76,9 @@ export async function POST(request: NextRequest) {
           updateData.appearance_photo_url = appearance_photo_url;
         }
 
-        // Temporarily disabled until destination column is added
-        // if (destination && destination.trim()) {
-        //   updateData.destination = destination.trim();
-        // }
+        if (destination && destination.trim()) {
+          updateData.destination = destination.trim();
+        }
 
         if (notes && notes.trim()) {
           updateData.notes = notes.trim();
@@ -127,10 +126,9 @@ export async function POST(request: NextRequest) {
         insertData.appearance_photo_url = appearance_photo_url;
       }
 
-      // Temporarily disabled until destination column is added
-      // if (destination && destination.trim()) {
-      //   insertData.destination = destination.trim();
-      // }
+      if (destination && destination.trim()) {
+        insertData.destination = destination.trim();
+      }
 
       if (notes && notes.trim()) {
         insertData.notes = notes.trim();
