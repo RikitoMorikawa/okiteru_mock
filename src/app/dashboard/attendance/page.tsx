@@ -249,9 +249,6 @@ function AttendanceContent() {
                         <span className="text-2xl mr-3">✅</span>
                         <div>
                           <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
-                          <p className="text-sm text-blue-700">
-                            「翌日開始」ボタンで更新できます。
-                          </p>
                         </div>
                       </div>
                       <button
