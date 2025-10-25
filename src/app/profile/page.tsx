@@ -19,8 +19,6 @@ export default function ProfilePage() {
                 <Link href="/dashboard" className="text-xl font-semibold text-gray-900 hover:text-gray-700">
                   スタッフ管理システム
                 </Link>
-                <span className="text-gray-400">|</span>
-                <span className="text-gray-600">プロフィール</span>
               </div>
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-gray-700">
@@ -36,7 +34,6 @@ export default function ProfilePage() {
           <div className="px-4 py-6 sm:px-0">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">プロフィール設定</h1>
-              <p className="mt-1 text-sm text-gray-600">あなたの個人情報を確認・編集できます</p>
             </div>
 
             <UserProfile editable={true} />
