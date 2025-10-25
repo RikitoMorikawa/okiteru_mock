@@ -34,6 +34,13 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
         const today = new Date().toISOString().split("T")[0];
         localStorage.removeItem(`daily_report_draft_${today}`);
 
+        // Clear any other attendance-related localStorage data
+        Object.keys(localStorage).forEach((key) => {
+          if (key.includes("attendance_") || key.includes("daily_report_") || key.includes("draft_")) {
+            localStorage.removeItem(key);
+          }
+        });
+
         // Show success message
         alert(data.message || "本日の業務を完了しました。お疲れ様でした！");
 
