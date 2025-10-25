@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
+import { User, AttendanceRecord, DailyReport, Alert, FilterOptions } from "@/types/database";
 import Link from "next/link";
 
 interface StaffWithDetails extends User {
@@ -16,7 +16,7 @@ interface StaffWithDetails extends User {
 
 interface StaffListProps {
   searchQuery?: string;
-  statusFilter?: "all" | "active" | "inactive" | "alerts";
+  statusFilter?: FilterOptions["status"];
 }
 
 export default function StaffList({ searchQuery = "", statusFilter = "all" }: StaffListProps) {

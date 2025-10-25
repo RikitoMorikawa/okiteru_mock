@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-interface FilterOptions {
-  search: string;
-  status: "all" | "active" | "inactive" | "scheduled" | "completed";
-  sortBy: "name" | "status" | "lastActivity";
-}
+import { FilterOptions } from "@/types/database";
 
 interface StaffFiltersProps {
   filters: FilterOptions;
@@ -121,6 +116,7 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               <option value="scheduled">活動予定</option>
               <option value="active">活動中</option>
               <option value="completed">完了</option>
+              <option value="alerts">要注意</option>
             </select>
           </div>
         </div>

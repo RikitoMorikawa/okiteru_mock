@@ -5,6 +5,13 @@ export type ShiftStatus = "scheduled" | "confirmed" | "completed";
 export type AlertType = "missing_wakeup" | "missing_departure" | "missing_arrival" | "missing_report";
 export type AlertStatus = "active" | "dismissed";
 
+// Filter types for UI components
+export interface FilterOptions {
+  search: string;
+  status: "all" | "active" | "inactive" | "scheduled" | "completed" | "alerts";
+  sortBy: "name" | "status" | "lastActivity";
+}
+
 export interface User {
   id: string;
   email: string;

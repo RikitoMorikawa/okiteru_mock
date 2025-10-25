@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport } from "@/types/database";
+import { User, AttendanceRecord, DailyReport, FilterOptions } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
 
@@ -14,12 +14,6 @@ interface StaffWithStatus extends User {
   todayReport?: DailyReport;
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
-}
-
-interface FilterOptions {
-  search: string;
-  status: "all" | "active" | "inactive" | "scheduled" | "completed";
-  sortBy: "name" | "status" | "lastActivity";
 }
 
 export default function ManagerDashboard() {

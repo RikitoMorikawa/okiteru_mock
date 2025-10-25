@@ -4,12 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import StaffList from "./StaffList";
 import StaffFilters from "../dashboard/StaffFilters";
-
-interface FilterOptions {
-  search: string;
-  status: "all" | "active" | "inactive" | "alerts";
-  sortBy: "name" | "status" | "lastActivity";
-}
+import { FilterOptions } from "@/types/database";
 
 export default function StaffManagementPage() {
   const [filters, setFilters] = useState<FilterOptions>({
