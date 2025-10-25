@@ -243,7 +243,7 @@ export default function ManagerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
           <StatCard title="総スタッフ数" mobileTitle="スタッフ" value={stats.totalStaff} icon="👥" color="blue" />
           <StatCard title="本日活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="アクティブアラート" mobileTitle="アラート" value={stats.totalAlerts} icon="🚨" color={stats.totalAlerts > 0 ? "red" : "gray"} />
@@ -327,19 +327,27 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCard
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-3 sm:p-6 border-l-4 ${colorClasses[color]}`}>
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <span className="text-lg sm:text-2xl">{icon}</span>
+    <div className={`bg-white rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[color]}`}>
+      <div className="flex items-center justify-between sm:block">
+        {/* Mobile: Single line layout */}
+        <div className="flex items-center sm:hidden">
+          <span className="text-base mr-2">{icon}</span>
+          <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
+          <span className="text-sm font-semibold text-gray-900">{value}</span>
+          {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
         </div>
-        <div className="ml-2 sm:ml-4 flex-1 min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
-            <span className="sm:hidden">{mobileTitle || title}</span>
-            <span className="hidden sm:inline">{title}</span>
-          </p>
-          <div className="flex items-baseline">
-            <p className="text-lg sm:text-2xl font-semibold text-gray-900">{value}</p>
-            {subtitle && <p className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500 truncate">{subtitle}</p>}
+
+        {/* Desktop: Original layout */}
+        <div className="hidden sm:flex sm:items-center">
+          <div className="flex-shrink-0">
+            <span className="text-2xl">{icon}</span>
+          </div>
+          <div className="ml-4 flex-1">
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <div className="flex items-baseline">
+              <p className="text-2xl font-semibold text-gray-900">{value}</p>
+              {subtitle && <p className="ml-2 text-sm text-gray-500">{subtitle}</p>}
+            </div>
           </div>
         </div>
       </div>
