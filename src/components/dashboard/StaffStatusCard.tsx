@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
 
 interface StaffWithStatus extends User {
@@ -234,9 +235,12 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
             {/* Action Buttons */}
             <div className="mt-4 flex space-x-2">
-              <button className="flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100">
+              <Link
+                href={`/manager/staff/${staff.id}/history`}
+                className="flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 text-center transition-colors"
+              >
                 履歴表示
-              </button>
+              </Link>
             </div>
           </div>
         )}
