@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withManagerAuth } from "@/lib/middleware/auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getTodayJST } from "@/utils/dateUtils";
 
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";

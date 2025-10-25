@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api-client";
+import { getTodayJST } from "@/utils/dateUtils";
 
 interface DailyReportData {
   date: string;
