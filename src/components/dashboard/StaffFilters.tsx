@@ -69,7 +69,13 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               id="status-filter"
               value={filters.status}
               onChange={(e) => handleStatusChange(e.target.value as FilterOptions["status"])}
-              className="block w-full pl-2 sm:pl-3 pr-10 sm:pr-12 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+              className="block w-full pl-2 sm:pl-3 pr-8 sm:pr-10 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md appearance-none bg-white"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: "right 0.5rem center",
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "1.5em 1.5em",
+              }}
             >
               <option value="all">すべて</option>
               <option value="active">活動中</option>
@@ -77,7 +83,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               <option value="alerts">アラート</option>
             </select>
           </div>
-
         </div>
       </div>
 
