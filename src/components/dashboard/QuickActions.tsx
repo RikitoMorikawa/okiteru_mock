@@ -91,12 +91,12 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       icon: "🏢",
       completed: attendanceStatus.arrivalReported,
     },
-    // {
-    //   title: "日報作成",
-    //   href: "/dashboard/reports",
-    //   icon: "📝",
-    //   completed: attendanceStatus.dailyReportSubmitted,
-    // },
+    {
+      title: "日報作成",
+      href: "/dashboard/reports",
+      icon: "📝",
+      completed: attendanceStatus.dailyReportSubmitted,
+    },
   ];
 
   const getPriorityColor = (priority: string) => {
