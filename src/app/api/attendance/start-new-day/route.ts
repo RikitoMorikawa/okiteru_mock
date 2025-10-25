@@ -47,14 +47,6 @@ export async function POST(request: NextRequest) {
           })
           .eq("id", completeRecord.id);
 
-        // Also delete any daily reports for today to start fresh
-        const { error: reportResetError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).eq("date", today);
-
-        if (reportResetError) {
-          console.error("Error resetting daily reports:", reportResetError);
-          // Don't return error here as this is not critical
-        }
-
         console.log(`Marked complete record as reset for user ${req.user.id} on ${today}`);
       }
 
