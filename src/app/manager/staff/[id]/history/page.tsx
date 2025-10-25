@@ -167,7 +167,6 @@ export default function StaffHistoryPage() {
               </button>
               <div>
                 <h1 className="text-base sm:text-xl font-semibold text-gray-900">{historyData.user.name}さんの履歴</h1>
-                <p className="text-sm text-gray-600">{historyData.user.email}</p>
               </div>
             </div>
           </div>
