@@ -48,7 +48,7 @@ export default function ShiftsPage() {
                 </div>
                 <div className="flex items-center space-x-4">
                   <StatusIndicator />
-                  <div className="text-sm text-gray-600">
+                  <div className="hidden sm:block text-xs sm:text-sm text-gray-600">
                     {currentTime.toLocaleString("ja-JP", {
                       month: "long",
                       day: "numeric",

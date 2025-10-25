@@ -8,11 +8,20 @@ import DataManagement from "@/components/dashboard/DataManagement";
 import { ManagerOnly, StaffOnly } from "@/components/ui/RoleBasedRender";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [showStaffForm, setShowStaffForm] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
   const [activeTab, setActiveTab] = useState<"overview" | "data">("overview");
 
   return (
@@ -27,6 +36,14 @@ export default function DashboardPage() {
                   <h1 className="text-base sm:text-xl font-semibold text-gray-900">スタッフ管理システム</h1>
                 </div>
                 <div className="flex items-center space-x-4">
+                  <div className="hidden sm:block text-xs sm:text-sm text-gray-600">
+                    {currentTime.toLocaleString("ja-JP", {
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
                   <Link href="/profile" className="hidden sm:block text-xs sm:text-sm text-gray-700 hover:text-gray-900">
                     プロフィール
                   </Link>
