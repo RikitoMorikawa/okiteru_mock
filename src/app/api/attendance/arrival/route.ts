@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      const { arrival_time, appearance_photo_url, notes } = await request.json();
+      const { arrival_time, location, notes } = await request.json();
 
       // Validate required fields
       if (!arrival_time) {
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         };
 
-        if (appearance_photo_url) {
-          updateData.appearance_photo_url = appearance_photo_url;
+        if (location && location.trim()) {
+          updateData.location = location.trim();
         }
 
         if (notes && notes.trim()) {
@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
         status: "partial",
       };
 
-      if (appearance_photo_url) {
-        insertData.appearance_photo_url = appearance_photo_url;
+      if (location && location.trim()) {
+        insertData.location = location.trim();
       }
 
       if (notes && notes.trim()) {

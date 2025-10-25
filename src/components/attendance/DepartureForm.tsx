@@ -18,11 +18,12 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
   });
   const [destination, setDestination] = useState("");
   const [routePhoto, setRoutePhoto] = useState<File | null>(null);
+  const [appearancePhoto, setAppearancePhoto] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const handlePhotoSelect = (file: File) => {
+  const handleRoutePhotoSelect = (file: File) => {
     const validationError = validateImageFile(file, 5);
     if (validationError) {
       setError(validationError);
@@ -33,8 +34,24 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
     setError("");
   };
 
-  const handlePhotoRemove = () => {
+  const handleRoutePhotoRemove = () => {
     setRoutePhoto(null);
+    setError("");
+  };
+
+  const handleAppearancePhotoSelect = (file: File) => {
+    const validationError = validateImageFile(file, 5);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setAppearancePhoto(file);
+    setError("");
+  };
+
+  const handleAppearancePhotoRemove = () => {
+    setAppearancePhoto(null);
     setError("");
   };
 
@@ -57,6 +74,10 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
         throw new Error("経路のスクリーンショットをアップロードしてください");
       }
 
+      if (!appearancePhoto) {
+        throw new Error("身だしなみの写真をアップロードしてください");
+      }
+
       // Create datetime from today's date and selected time
       const today = new Date();
       const [hours, minutes] = departureTime.split(":").map(Number);
@@ -67,16 +88,25 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
         throw new Error("出発時間は現在時刻より前である必要があります");
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("departure_time", departureDateTime.toISOString());
-      formData.append("destination", destination.trim());
-      formData.append("route_photo", routePhoto);
-      formData.append("notes", notes.trim());
+      // Upload photos to storage
+      let routePhotoUrl = null;
+      let appearancePhotoUrl = null;
+
+      if (routePhoto) {
+        const routeUploadResult = await uploadRoutePhoto(routePhoto, user!.id);
+        routePhotoUrl = routeUploadResult.url;
+      }
+
+      if (appearancePhoto) {
+        const appearanceUploadResult = await uploadRoutePhoto(appearancePhoto, user!.id, "appearance");
+        appearancePhotoUrl = appearanceUploadResult.url;
+      }
 
       const response = await api.post("/api/attendance/departure", {
         departure_time: departureDateTime.toISOString(),
-        route_photo_url: routePhoto ? "placeholder_route_photo_url" : null, // TODO: Implement photo upload
+        destination: destination.trim(),
+        route_photo_url: routePhotoUrl,
+        appearance_photo_url: appearancePhotoUrl,
         notes: notes.trim(),
       });
 
@@ -164,8 +194,19 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           label="経路スクリーンショット"
           description="ナビアプリの経路画面のスクリーンショットをアップロードしてください"
           selectedPhoto={routePhoto}
-          onPhotoSelect={handlePhotoSelect}
-          onPhotoRemove={handlePhotoRemove}
+          onPhotoSelect={handleRoutePhotoSelect}
+          onPhotoRemove={handleRoutePhotoRemove}
+          required
+          preview
+        />
+
+        {/* Appearance Photo */}
+        <PhotoUpload
+          label="身だしなみ写真"
+          description="出発前の身だしなみを確認できる写真をアップロードしてください"
+          selectedPhoto={appearancePhoto}
+          onPhotoSelect={handleAppearancePhotoSelect}
+          onPhotoRemove={handleAppearancePhotoRemove}
           required
           preview
         />
@@ -243,8 +284,9 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             <div className="mt-2 text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>出発前または出発直後に報告してください</li>
-                <li>経路のスクリーンショットは必須です</li>
+                <li>経路のスクリーンショットと身だしなみ写真は必須です</li>
                 <li>目的地は正確に入力してください</li>
+                <li>身だしなみ写真は顔と服装が確認できるように撮影してください</li>
                 <li>交通状況に変更があった場合は備考欄に記入してください</li>
               </ul>
             </div>

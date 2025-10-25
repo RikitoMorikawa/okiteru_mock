@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api-client";
-import PhotoUpload from "@/components/ui/PhotoUpload";
-import { uploadAppearancePhoto, getTodayDateString, validateImageFile } from "@/lib/storage";
 
 interface ArrivalFormProps {
   onSuccess: () => void;
@@ -17,26 +15,9 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
     return now.toTimeString().slice(0, 5); // HH:MM format
   });
   const [location, setLocation] = useState("");
-  const [appearancePhoto, setAppearancePhoto] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  const handlePhotoSelect = (file: File) => {
-    const validationError = validateImageFile(file, 5);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setAppearancePhoto(file);
-    setError("");
-  };
-
-  const handlePhotoRemove = () => {
-    setAppearancePhoto(null);
-    setError("");
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +34,6 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
         throw new Error("到着場所を入力してください");
       }
 
-      if (!appearancePhoto) {
-        throw new Error("身だしなみの写真をアップロードしてください");
-      }
-
       // Create datetime from today's date and selected time
       const today = new Date();
       const [hours, minutes] = arrivalTime.split(":").map(Number);
@@ -67,16 +44,9 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
         throw new Error("到着時間は現在時刻より前である必要があります");
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("arrival_time", arrivalDateTime.toISOString());
-      formData.append("location", location.trim());
-      formData.append("appearance_photo", appearancePhoto);
-      formData.append("notes", notes.trim());
-
       const response = await api.post("/api/attendance/arrival", {
         arrival_time: arrivalDateTime.toISOString(),
-        appearance_photo_url: appearancePhoto ? "placeholder_appearance_photo_url" : null, // TODO: Implement photo upload
+        location: location.trim(),
         notes: notes.trim(),
       });
 
@@ -158,17 +128,6 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
           />
           <p className="mt-1 text-sm text-gray-500">到着した場所を入力してください</p>
         </div>
-
-        {/* Appearance Photo */}
-        <PhotoUpload
-          label="身だしなみ写真"
-          description="身だしなみを確認できる写真をアップロードしてください（顔が写っている必要があります）"
-          selectedPhoto={appearancePhoto}
-          onPhotoSelect={handlePhotoSelect}
-          onPhotoRemove={handlePhotoRemove}
-          required
-          preview
-        />
 
         {/* Notes */}
         <div>
