@@ -19,7 +19,7 @@ function AttendanceContent() {
   const searchParams = useSearchParams();
   const [activeAction, setActiveAction] = useState<AttendanceAction>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [refreshKey, setRefreshKey] = useState(0);
+
   const [attendanceStatus, setAttendanceStatus] = useState({
     wakeUpReported: false,
     departureReported: false,
@@ -81,7 +81,6 @@ function AttendanceContent() {
   // Listen for attendance updates
   useEffect(() => {
     const handleAttendanceUpdate = () => {
-      setRefreshKey((prev) => prev + 1);
       fetchAttendanceStatus(); // Refresh status when attendance is updated
     };
 
@@ -146,6 +145,64 @@ function AttendanceContent() {
     } finally {
       setIsStartingNewDay(false);
       setShowNewDayConfirm(false);
+    }
+  };
+
+  // Get next action based on current progress
+  const getNextAction = () => {
+    if (!attendanceStatus.wakeUpReported) {
+      return {
+        title: "起床報告",
+        // description: "起床時間を報告してください",
+        action: "wakeup",
+        icon: "🌅",
+        priority: "high",
+      };
+    }
+
+    if (!attendanceStatus.departureReported) {
+      return {
+        title: "出発報告",
+        // description: "出発時間と経路写真をアップロード",
+        action: "departure",
+        icon: "🚗",
+        priority: "high",
+      };
+    }
+
+    if (!attendanceStatus.arrivalReported) {
+      return {
+        title: "到着報告",
+        // description: "到着時間と身だしなみ写真をアップロード",
+        action: "arrival",
+        icon: "🏢",
+        priority: "high",
+      };
+    }
+
+    if (!(attendanceStatus.reportSubmitted || attendanceStatus.dailyReportSubmitted)) {
+      return {
+        title: "日報作成",
+        // description: "本日の業務内容を報告",
+        action: "report",
+        icon: "📝",
+        priority: "medium",
+      };
+    }
+
+    return null;
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "border-red-200 bg-red-50";
+      case "medium":
+        return "border-yellow-200 bg-yellow-50";
+      case "low":
+        return "border-blue-200 bg-blue-50";
+      default:
+        return "border-gray-200 bg-gray-50";
     }
   };
 
@@ -248,6 +305,32 @@ function AttendanceContent() {
                 {/* Progress Indicator */}
                 {/* <ProgressIndicator /> */}
 
+                {/* Next Action Card */}
+                {!loading &&
+                  !isTodayCompleted() &&
+                  (() => {
+                    const nextAction = getNextAction();
+                    return nextAction ? (
+                      <div className={`rounded-lg border-2 p-4 ${getPriorityColor(nextAction.priority)}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-2xl mr-3">{nextAction.icon}</span>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
+                              {/* <p className="text-sm text-gray-600">{nextAction.description}</p> */}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setActiveAction(nextAction.action as AttendanceAction)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                          >
+                            開始
+                          </button>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                 {/* If today is already completed, show completion status */}
                 {!loading && isTodayCompleted() && (
                   <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
@@ -313,22 +396,78 @@ function AttendanceContent() {
 
                 {/* Attendance Action Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {attendanceActions.map((action) => (
-                    <button
-                      key={action.id}
-                      onClick={() => setActiveAction(action.id)}
-                      className={`
-                            p-6 rounded-lg border-2 transition-all hover:shadow-lg hover:scale-105
-                            ${action.color}
-                          `}
-                    >
-                      <div className="text-center">
-                        <div className="text-4xl mb-4">{action.icon}</div>
-                        <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
-                        <p className="text-sm opacity-80">{action.description}</p>
-                      </div>
-                    </button>
-                  ))}
+                  {attendanceActions.map((action) => {
+                    const getStatus = (actionId: string) => {
+                      switch (actionId) {
+                        case "wakeup":
+                          return attendanceStatus.wakeUpReported;
+                        case "departure":
+                          return attendanceStatus.departureReported;
+                        case "arrival":
+                          return attendanceStatus.arrivalReported;
+                        case "report":
+                          return attendanceStatus.reportSubmitted || attendanceStatus.dailyReportSubmitted;
+                        default:
+                          return false;
+                      }
+                    };
+
+                    const isCompleted = getStatus(action.id);
+                    const nextAction = getNextAction();
+                    const isNextAction = nextAction?.action === action.id;
+
+                    return (
+                      <button
+                        key={action.id}
+                        onClick={() => setActiveAction(action.id)}
+                        className={`
+                          relative p-6 rounded-lg border-2 transition-all hover:shadow-lg hover:scale-105
+                          ${
+                            isCompleted
+                              ? "border-green-200 bg-green-50 text-green-700"
+                              : isNextAction
+                              ? "border-blue-300 bg-blue-50 text-blue-700 ring-2 ring-blue-200"
+                              : action.color
+                          }
+                        `}
+                      >
+                        <div className="text-center">
+                          <div className="text-4xl mb-4">{action.icon}</div>
+                          <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
+                          <p className="text-sm opacity-80">{action.description}</p>
+
+                          {/* Status indicators */}
+                          {isCompleted && (
+                            <div className="absolute top-2 right-2">
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+
+                          {isNextAction && !isCompleted && (
+                            <div className="absolute top-2 right-2">
+                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Today's Status Summary */}
