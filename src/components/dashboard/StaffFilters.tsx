@@ -4,7 +4,7 @@ import { useState } from "react";
 
 interface FilterOptions {
   search: string;
-  status: "all" | "active" | "inactive" | "alerts";
+  status: "all" | "active" | "inactive" | "scheduled" | "completed";
   sortBy: "name" | "status" | "lastActivity";
 }
 
@@ -118,9 +118,9 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               }}
             >
               <option value="all">すべて</option>
+              <option value="scheduled">活動予定</option>
               <option value="active">活動中</option>
-              <option value="inactive">未活動</option>
-              <option value="alerts">アラート</option>
+              <option value="completed">完了</option>
             </select>
           </div>
         </div>

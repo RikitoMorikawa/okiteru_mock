@@ -5,20 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
+import { User, AttendanceRecord, DailyReport } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
   todayReport?: DailyReport;
-  activeAlerts: Alert[];
+  activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
 }
 
 interface FilterOptions {
   search: string;
-  status: "all" | "active" | "inactive" | "alerts";
+  status: "all" | "active" | "inactive" | "scheduled" | "completed";
   sortBy: "name" | "status" | "lastActivity";
 }
 
@@ -91,14 +91,9 @@ export default function ManagerDashboard() {
 
       if (reportsError) throw reportsError;
 
-      // Fetch active alerts
-      const { data: alerts, error: alertsError } = await supabase.from("alerts").select("*").eq("status", "active");
-
-      if (alertsError) throw alertsError;
-
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
-      const { data: accessLogs, error: accessLogsError } = await supabase
+      const { data: accessLogs } = await supabase
         .from("access_logs")
         .select("user_id, login_time")
         .in("user_id", staffIds)
@@ -129,14 +124,13 @@ export default function ManagerDashboard() {
         // Find the first non-reset record (should be the active one)
         const todayAttendance = staffAttendanceRecords.find((record) => record.status !== "reset");
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-        const activeAlerts = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
           ...staffMember,
           todayAttendance,
           todayReport,
-          activeAlerts,
+          activeAlerts: [], // Keep for compatibility but empty
           lastLogin,
         };
       });
@@ -164,12 +158,18 @@ export default function ManagerDashboard() {
     if (filters.status !== "all") {
       filtered = filtered.filter((staff) => {
         switch (filters.status) {
+          case "scheduled":
+            // 活動予定: 起床して到着報告がまだないユーザー
+            return staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time;
           case "active":
-            return staff.todayAttendance || staff.todayReport;
+            // 活動中: 到着報告完了したが日報未提出のユーザー
+            return staff.todayAttendance?.arrival_time && !staff.todayReport;
+          case "completed":
+            // 完了: 当日の日報が上がったユーザー
+            return staff.todayReport;
           case "inactive":
+            // 未活動: 何も活動していないユーザー
             return !staff.todayAttendance && !staff.todayReport;
-          case "alerts":
-            return staff.activeAlerts.length > 0;
           default:
             return true;
         }
@@ -210,15 +210,19 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
+    // 活動予定: 起床して到着報告がまだないユーザー
+    const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
+    // 活動中: 到着報告完了したが日報未提出のユーザー
+    const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
+    // 完了: 当日の日報が上がったユーザー
+    const completedReports = staffList.filter((staff) => staff.todayReport).length;
+
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport);
-    const activeToday = activeStaff.length;
-    const totalAlerts = staffList.reduce((sum, staff) => sum + staff.activeAlerts.length, 0);
-    const completedReports = activeStaff.filter((staff) => staff.todayReport?.status === "submitted").length;
 
     return {
       totalStaff,
+      scheduledStaff,
       activeToday,
-      totalAlerts,
       completedReports,
       activeStaff: activeStaff.length,
       activityRate: totalStaff > 0 ? Math.round((activeToday / totalStaff) * 100) : 0,
@@ -244,17 +248,9 @@ export default function ManagerDashboard() {
       })
       .subscribe();
 
-    const alertsSubscription = supabase
-      .channel("alerts_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "alerts" }, () => {
-        fetchStaffData();
-      })
-      .subscribe();
-
     return () => {
       supabase.removeChannel(attendanceSubscription);
       supabase.removeChannel(reportsSubscription);
-      supabase.removeChannel(alertsSubscription);
     };
   }, []);
 
@@ -367,8 +363,8 @@ export default function ManagerDashboard() {
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
           <StatCard title="総スタッフ数" mobileTitle="スタッフ" value={stats.totalStaff} icon="👥" color="blue" />
-          <StatCard title="本日活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
-          <StatCard title="アクティブアラート" mobileTitle="アラート" value={stats.totalAlerts} icon="🚨" color={stats.totalAlerts > 0 ? "red" : "gray"} />
+          <StatCard title="活動予定" mobileTitle="活動予定" value={stats.scheduledStaff} icon="📅" color="orange" />
+          <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
         </div>
 
@@ -422,7 +418,7 @@ interface StatCardProps {
   value: number;
   subtitle?: string;
   icon: string;
-  color: "blue" | "green" | "red" | "purple" | "gray";
+  color: "blue" | "green" | "red" | "purple" | "gray" | "orange";
 }
 
 function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCardProps) {
@@ -432,6 +428,7 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCard
     red: "bg-red-50 text-red-600 border-red-200",
     purple: "bg-purple-50 text-purple-600 border-purple-200",
     gray: "bg-gray-50 text-gray-600 border-gray-200",
+    orange: "bg-orange-50 text-orange-600 border-orange-200",
   };
 
   return (
