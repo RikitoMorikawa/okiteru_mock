@@ -57,8 +57,8 @@ export default function RegisterPage() {
       }
 
       // Registration successful
-      alert("スタッフアカウントが作成されました。ログインしてください。");
-      router.push("/login");
+      alert("スタッフアカウントが作成されました。");
+      router.push("/manager");
     } catch (error) {
       console.error("Registration error:", error);
       setError(error instanceof Error ? error.message : "登録に失敗しました");
