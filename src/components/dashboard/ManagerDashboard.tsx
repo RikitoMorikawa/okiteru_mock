@@ -80,8 +80,12 @@ export default function ManagerDashboard() {
 
       if (attendanceError) throw attendanceError;
 
-      // Fetch today's daily reports (only submitted ones)
-      const { data: dailyReports, error: reportsError } = await supabase.from("daily_reports").select("*").eq("date", today).eq("status", "submitted");
+      // Fetch today's daily reports (submitted or archived - any report counts as completion)
+      const { data: dailyReports, error: reportsError } = await supabase
+        .from("daily_reports")
+        .select("*")
+        .eq("date", today)
+        .in("status", ["submitted", "archived"]);
 
       if (reportsError) throw reportsError;
 
@@ -159,7 +163,7 @@ export default function ManagerDashboard() {
             // 活動中: 到着報告完了したが日報未提出のユーザー
             return staff.todayAttendance?.arrival_time && !staff.todayReport;
           case "completed":
-            // 完了: 当日の日報が上がったユーザー
+            // 完了: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）
             return staff.todayReport;
           case "inactive":
             // 未活動: 何も活動していないユーザー
@@ -208,7 +212,7 @@ export default function ManagerDashboard() {
     const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
     // 活動中: 到着報告完了したが日報未提出のユーザー
     const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
-    // 完了: 当日の日報が上がったユーザー
+    // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）
     const completedReports = staffList.filter((staff) => staff.todayReport).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport);
