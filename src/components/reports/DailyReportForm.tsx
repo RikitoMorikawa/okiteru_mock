@@ -269,7 +269,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <label htmlFor="reportContent" className="block text-lg font-medium text-gray-700">
+            <label htmlFor="reportContent" className="block text-base sm:text-lg font-medium text-gray-700">
               報告内容 <span className="text-red-500">*</span>
             </label>
             <div className="text-xs sm:text-sm text-gray-500">
@@ -282,7 +282,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             value={reportContent}
             onChange={(e) => setReportContent(e.target.value)}
             rows={15}
-            className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
             placeholder="本日の業務内容、成果、課題、明日の予定などを記入してください..."
             maxLength={5000}
           />
@@ -299,13 +299,13 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             <button
               onClick={() => saveDraft(false)}
               disabled={isSavingDraft || !reportContent.trim()}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSavingDraft ? "保存中..." : "下書き保存"}
             </button>
             <button
               onClick={clearForm}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               クリア
             </button>
@@ -314,7 +314,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
           <button
             onClick={submitReport}
             disabled={isSubmitting || !reportContent.trim() || wordCount < 10}
-            className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 text-xs sm:text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "提出中..." : "日報を提出"}
           </button>
@@ -335,7 +335,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-800">{error}</p>
+              <p className="text-xs sm:text-sm text-red-800">{error}</p>
             </div>
           </div>
         </div>
@@ -354,7 +354,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-green-800">{successMessage}</p>
+              <p className="text-xs sm:text-sm text-green-800">{successMessage}</p>
             </div>
           </div>
         </div>
