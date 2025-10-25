@@ -12,15 +12,142 @@ interface StaffHistoryData {
   dailyReports: DailyReport[];
 }
 
-interface TimelineItem {
+interface DayCardProps {
   date: string;
-  type: "attendance" | "report";
-  data: AttendanceRecord | DailyReport;
-  status?: {
+  attendanceRecord?: AttendanceRecord;
+  dailyReport?: DailyReport;
+  attendanceStatus?: {
     completed: number;
     total: number;
     percentage: number;
   };
+  formatTime: (timeString?: string) => string;
+}
+
+function DayCard({ date, attendanceRecord, dailyReport, attendanceStatus, formatTime }: DayCardProps) {
+  const [activeTab, setActiveTab] = useState<"attendance" | "report">("attendance");
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4">
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 mb-4">
+        <button
+          onClick={() => setActiveTab("attendance")}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            activeTab === "attendance" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          勤怠記録
+          {attendanceRecord && (
+            <span
+              className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
+                attendanceRecord.status === "complete"
+                  ? "bg-green-100 text-green-700"
+                  : attendanceRecord.status === "partial"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {attendanceStatus?.completed || 0}/{attendanceStatus?.total || 3}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab("report")}
+          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            activeTab === "report" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          日報
+          {dailyReport && (
+            <span
+              className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
+                dailyReport.status === "submitted" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+              }`}
+            >
+              {dailyReport.status === "submitted" ? "提出済" : "下書き"}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-white rounded-md p-3">
+        {activeTab === "attendance" ? (
+          <div>
+            {attendanceRecord ? (
+              <>
+                {/* Compact Time Display */}
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">起床</div>
+                    <div className="text-sm font-medium">{formatTime(attendanceRecord.wake_up_time)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">出発</div>
+                    <div className="text-sm font-medium">{formatTime(attendanceRecord.departure_time)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">到着</div>
+                    <div className="text-sm font-medium">{formatTime(attendanceRecord.arrival_time)}</div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {(attendanceRecord.wake_up_notes || attendanceRecord.departure_notes || attendanceRecord.arrival_notes) && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <h6 className="text-xs font-medium text-gray-700 mb-2">メモ</h6>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      {attendanceRecord.wake_up_notes && (
+                        <div>
+                          <span className="font-medium">起床:</span> {attendanceRecord.wake_up_notes}
+                        </div>
+                      )}
+                      {attendanceRecord.departure_notes && (
+                        <div>
+                          <span className="font-medium">出発:</span> {attendanceRecord.departure_notes}
+                        </div>
+                      )}
+                      {attendanceRecord.arrival_notes && (
+                        <div>
+                          <span className="font-medium">到着:</span> {attendanceRecord.arrival_notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <div className="text-sm">勤怠記録がありません</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            {dailyReport ? (
+              <>
+                <div className="text-sm text-gray-600 mb-3">
+                  <p className="line-clamp-4">{dailyReport.content}</p>
+                </div>
+
+                {dailyReport.submitted_at && (
+                  <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
+                    提出日時: {new Date(dailyReport.submitted_at).toLocaleString("ja-JP")}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <div className="text-sm">日報が提出されていません</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function StaffHistoryPage() {
@@ -211,126 +338,37 @@ export default function StaffHistoryPage() {
             <div className="p-6">
               {/* Create combined timeline */}
               {(() => {
-                const timeline: TimelineItem[] = [];
+                // Get all unique dates
+                const allDates = new Set([...historyData.attendanceRecords.map((r) => r.date), ...historyData.dailyReports.map((r) => r.date)]);
 
-                // Add attendance records
-                historyData.attendanceRecords.forEach((record) => {
-                  const status = getAttendanceStatus(record);
-                  timeline.push({
-                    date: record.date,
-                    type: "attendance" as const,
-                    data: record,
-                    status,
-                  });
-                });
+                const sortedDates = Array.from(allDates).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
-                // Add daily reports
-                historyData.dailyReports.forEach((report) => {
-                  timeline.push({
-                    date: report.date,
-                    type: "report" as const,
-                    data: report,
-                  });
-                });
+                return sortedDates.map((date) => {
+                  const attendanceRecord = historyData.attendanceRecords.find((r) => r.date === date);
+                  const dailyReport = historyData.dailyReports.find((r) => r.date === date);
+                  const attendanceStatus = attendanceRecord ? getAttendanceStatus(attendanceRecord) : undefined;
 
-                // Sort by date (newest first)
-                timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                  return (
+                    <div key={date} className="mb-6 last:mb-0">
+                      <div className="flex items-center mb-3">
+                        <div className="flex-shrink-0 w-3 h-3 bg-indigo-600 rounded-full"></div>
+                        <div className="ml-4">
+                          <h4 className="text-base font-semibold text-gray-900">{formatDate(date)}</h4>
+                        </div>
+                      </div>
 
-                // Group by date
-                const groupedTimeline = timeline.reduce((acc, item) => {
-                  if (!acc[item.date]) {
-                    acc[item.date] = [];
-                  }
-                  acc[item.date].push(item);
-                  return acc;
-                }, {} as Record<string, TimelineItem[]>);
-
-                return Object.entries(groupedTimeline).map(([date, items]) => (
-                  <div key={date} className="mb-8 last:mb-0">
-                    <div className="flex items-center mb-4">
-                      <div className="flex-shrink-0 w-3 h-3 bg-indigo-600 rounded-full"></div>
-                      <div className="ml-4">
-                        <h4 className="text-lg font-semibold text-gray-900">{formatDate(date)}</h4>
+                      <div className="ml-7">
+                        <DayCard
+                          date={date}
+                          attendanceRecord={attendanceRecord}
+                          dailyReport={dailyReport}
+                          attendanceStatus={attendanceStatus}
+                          formatTime={formatTime}
+                        />
                       </div>
                     </div>
-
-                    <div className="ml-7 space-y-4">
-                      {items.map((item, index) => (
-                        <div key={index} className="bg-gray-50 rounded-lg p-4">
-                          {item.type === "attendance" ? (
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="font-medium text-gray-900">勤怠記録</h5>
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    (item.data as AttendanceRecord).status === "complete"
-                                      ? "bg-green-100 text-green-800"
-                                      : (item.data as AttendanceRecord).status === "partial"
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}
-                                >
-                                  {item.status?.completed}/{item.status?.total} 完了
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-600">起床:</span>
-                                  <span className="ml-2 font-medium">{formatTime((item.data as AttendanceRecord).wake_up_time)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">出発:</span>
-                                  <span className="ml-2 font-medium">{formatTime((item.data as AttendanceRecord).departure_time)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">到着:</span>
-                                  <span className="ml-2 font-medium">{formatTime((item.data as AttendanceRecord).arrival_time)}</span>
-                                </div>
-                              </div>
-
-                              {((item.data as AttendanceRecord).wake_up_notes ||
-                                (item.data as AttendanceRecord).departure_notes ||
-                                (item.data as AttendanceRecord).arrival_notes) && (
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <h6 className="text-sm font-medium text-gray-700 mb-2">メモ</h6>
-                                  <div className="space-y-1 text-sm text-gray-600">
-                                    {(item.data as AttendanceRecord).wake_up_notes && <div>起床: {(item.data as AttendanceRecord).wake_up_notes}</div>}
-                                    {(item.data as AttendanceRecord).departure_notes && <div>出発: {(item.data as AttendanceRecord).departure_notes}</div>}
-                                    {(item.data as AttendanceRecord).arrival_notes && <div>到着: {(item.data as AttendanceRecord).arrival_notes}</div>}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="flex items-center justify-between mb-3">
-                                <h5 className="font-medium text-gray-900">日報</h5>
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    (item.data as DailyReport).status === "submitted" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                                  }`}
-                                >
-                                  {(item.data as DailyReport).status === "submitted" ? "提出済み" : "下書き"}
-                                </span>
-                              </div>
-
-                              <div className="text-sm text-gray-600">
-                                <p className="line-clamp-3">{(item.data as DailyReport).content}</p>
-                              </div>
-
-                              {(item.data as DailyReport).submitted_at && (
-                                <div className="mt-2 text-xs text-gray-500">
-                                  提出日時: {new Date((item.data as DailyReport).submitted_at).toLocaleString("ja-JP")}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ));
+                  );
+                });
               })()}
             </div>
           )}
