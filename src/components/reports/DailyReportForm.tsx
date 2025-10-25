@@ -28,13 +28,9 @@ export default function DailyReportForm() {
     loadExistingReport();
   }, []);
 
-  // Update word count when content changes
+  // Update character count when content changes
   useEffect(() => {
-    const words = reportContent
-      .trim()
-      .split(/\s+/)
-      .filter((word) => word.length > 0);
-    setWordCount(words.length);
+    setWordCount(reportContent.trim().length);
   }, [reportContent]);
 
   // Auto-save draft every 30 seconds
@@ -50,6 +46,7 @@ export default function DailyReportForm() {
 
   const loadExistingReport = async () => {
     try {
+      // First check if there's a submitted report
       const response = await api.get(`/api/reports/daily?date=${today}`);
 
       if (response.ok) {
@@ -58,10 +55,23 @@ export default function DailyReportForm() {
           setReportContent(data.report.content);
           setIsDraft(false); // If it exists, it's already submitted
           setSuccessMessage("本日の日報は既に提出済みです");
+          return;
         }
       }
+
+      // If no submitted report, check for local draft
+      const draftContent = localStorage.getItem(`daily_report_draft_${today}`);
+      if (draftContent) {
+        setReportContent(draftContent);
+        setIsDraft(true);
+      }
     } catch (error) {
-      // Ignore errors for now - might be first time creating report
+      // Check for local draft even if API fails
+      const draftContent = localStorage.getItem(`daily_report_draft_${today}`);
+      if (draftContent) {
+        setReportContent(draftContent);
+        setIsDraft(true);
+      }
     }
   };
 
@@ -75,15 +85,9 @@ export default function DailyReportForm() {
     setError("");
 
     try {
-      const response = await api.post("/api/reports/daily", {
-        content: reportContent.trim(),
-        // Note: We're not saving drafts separately, just submitting the report
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || "下書き保存に失敗しました");
-      }
+      // For now, just save locally since we don't have a separate draft API
+      // In a real implementation, you'd save to localStorage or a separate draft endpoint
+      localStorage.setItem(`daily_report_draft_${today}`, reportContent.trim());
 
       setIsDraft(true);
       setLastSaved(new Date());
@@ -127,6 +131,9 @@ export default function DailyReportForm() {
       setIsDraft(false);
       setSuccessMessage("日報を提出しました");
 
+      // Clear the draft from localStorage
+      localStorage.removeItem(`daily_report_draft_${today}`);
+
       // Trigger attendance status update
       window.dispatchEvent(new Event("attendanceUpdated"));
     } catch (err) {
@@ -142,6 +149,8 @@ export default function DailyReportForm() {
     setError("");
     setSuccessMessage("");
     setLastSaved(null);
+    // Clear draft from localStorage
+    localStorage.removeItem(`daily_report_draft_${today}`);
   };
 
   const insertTemplate = (template: string) => {
