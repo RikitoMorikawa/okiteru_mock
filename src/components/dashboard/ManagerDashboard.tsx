@@ -227,7 +227,7 @@ export default function ManagerDashboard() {
               <h1 className="text-base sm:text-xl font-semibold text-gray-900">マネージャーダッシュボード</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
+              <div className="hidden sm:block text-xs sm:text-sm text-gray-600">
                 {currentTime.toLocaleString("ja-JP", {
                   month: "long",
                   day: "numeric",
@@ -235,7 +235,7 @@ export default function ManagerDashboard() {
                   minute: "2-digit",
                 })}
               </div>
-              <div className="text-sm font-medium text-gray-900">{user?.name}さん</div>
+              <div className="hidden sm:block text-xs sm:text-sm font-medium text-gray-900">{user?.name}さん</div>
             </div>
           </div>
         </div>

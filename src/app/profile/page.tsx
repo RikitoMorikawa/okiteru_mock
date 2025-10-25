@@ -21,7 +21,7 @@ export default function ProfilePage() {
                 </Link>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
+                <span className="hidden sm:block text-xs sm:text-sm text-gray-700">
                   {user?.name} ({user?.role === "manager" ? "管理者" : "スタッフ"})
                 </span>
                 <LogoutButton />

@@ -27,10 +27,10 @@ export default function DashboardPage() {
                   <h1 className="text-base sm:text-xl font-semibold text-gray-900">スタッフ管理システム</h1>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <Link href="/profile" className="text-sm text-gray-700 hover:text-gray-900">
+                  <Link href="/profile" className="hidden sm:block text-xs sm:text-sm text-gray-700 hover:text-gray-900">
                     プロフィール
                   </Link>
-                  <span className="text-sm text-gray-700">
+                  <span className="hidden sm:block text-xs sm:text-sm text-gray-700">
                     {user?.name} ({user?.role === "manager" ? "管理者" : "スタッフ"})
                   </span>
                   <LogoutButton />
