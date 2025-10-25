@@ -86,8 +86,8 @@ export default function ManagerDashboard() {
 
       if (attendanceError) throw attendanceError;
 
-      // Fetch today's daily reports
-      const { data: dailyReports, error: reportsError } = await supabase.from("daily_reports").select("*").eq("date", today);
+      // Fetch today's daily reports (only submitted ones)
+      const { data: dailyReports, error: reportsError } = await supabase.from("daily_reports").select("*").eq("date", today).eq("status", "submitted");
 
       if (reportsError) throw reportsError;
 
