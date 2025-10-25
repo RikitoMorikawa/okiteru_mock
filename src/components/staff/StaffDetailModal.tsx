@@ -37,14 +37,21 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
       console.log("Fetching images for staff:", staff.id, "date:", today);
 
       // 最新の出発報告レコードから画像URLを取得
-      const { data: attendanceRecords, error: attendanceError } = await supabase
+      const { data: attendanceRecords, error: attendanceError } = (await supabase
         .from("attendance_records")
         .select("route_photo_url, appearance_photo_url, departure_time")
         .eq("staff_id", staff.id)
         .eq("date", today)
         .not("departure_time", "is", null)
         .order("departure_time", { ascending: false })
-        .limit(1);
+        .limit(1)) as {
+        data: Array<{
+          route_photo_url: string | null;
+          appearance_photo_url: string | null;
+          departure_time: string;
+        }> | null;
+        error: any;
+      };
 
       if (attendanceError) {
         console.error("Error fetching attendance records:", attendanceError);
@@ -53,7 +60,13 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
 
       console.log("Attendance records found:", attendanceRecords);
 
-      const latestRecord = attendanceRecords?.[0];
+      const latestRecord = attendanceRecords?.[0] as
+        | {
+            route_photo_url: string | null;
+            appearance_photo_url: string | null;
+            departure_time: string;
+          }
+        | undefined;
 
       if (latestRecord) {
         // 経路写真
@@ -155,7 +168,6 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
             </div>
           ) : (
             <div className="space-y-8">
-
               {/* 身だしなみ写真セクション */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
