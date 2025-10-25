@@ -56,10 +56,7 @@ export default function StaffDashboard() {
     try {
       setLoading(true);
 
-      // First, ensure we have a record for today
-      await api.post("/api/attendance/reset-for-new-day", {});
-
-      // Then fetch the current status
+      // Fetch the current status
       const response = await api.get("/api/attendance/status");
 
       if (response.ok) {

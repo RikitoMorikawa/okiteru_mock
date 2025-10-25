@@ -10,79 +10,69 @@ export async function POST(request: NextRequest) {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      // Check if there's already a record for today
-      const { data: existingRecord, error: fetchError } = await (supabaseAdmin as any)
+      // Check if there's already an active record for today
+      const { data: existingRecords, error: fetchError } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("*")
         .eq("staff_id", req.user.id)
         .eq("date", today)
-        .single();
+        .order("created_at", { ascending: false });
 
-      if (fetchError && fetchError.code !== "PGRST116") {
-        console.error("Error fetching attendance record:", fetchError);
+      if (fetchError) {
+        console.error("Error fetching attendance records:", fetchError);
         return NextResponse.json({ error: "出勤記録の取得に失敗しました" }, { status: 500 });
       }
 
-      // If there's an existing record for today
-      if (existingRecord) {
-        if (existingRecord.status === "complete") {
-          // Mark the existing record as reset (for history tracking)
-          await (supabaseAdmin as any)
-            .from("attendance_records")
-            .update({
-              status: "reset",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingRecord.id);
+      // Find the latest active record and the latest complete record
+      const activeRecord = existingRecords?.find((record) => ["pending", "partial", "active"].includes(record.status));
+      const completeRecord = existingRecords?.find((record) => record.status === "complete");
 
-          // Create a new active record for the new day
-          const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
-            staff_id: req.user.id,
-            date: today,
-            status: "active",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-
-          if (createError) {
-            console.error("Error creating new attendance record:", createError);
-            return NextResponse.json({ error: "新しい出勤記録の作成に失敗しました" }, { status: 500 });
-          }
-
-          // Also delete any daily reports for today to start fresh
-          const { error: reportResetError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).eq("date", today);
-
-          if (reportResetError) {
-            console.error("Error resetting daily reports:", reportResetError);
-            // Don't return error here as this is not critical
-          }
-
-          console.log(`New day started for user ${req.user.id} on ${today} (created new record)`);
-        } else {
-          // Record exists but not completed, no need to reset
-          return NextResponse.json({
-            success: true,
-            message: "本日の記録は既にアクティブです",
-            alreadyActive: true,
-          });
-        }
-      } else {
-        // Create a new record for today
-        const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
-          staff_id: req.user.id,
-          date: today,
-          status: "active",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+      // If there's already an active record, don't create a new one
+      if (activeRecord) {
+        return NextResponse.json({
+          success: true,
+          message: "本日の記録は既にアクティブです",
+          alreadyActive: true,
         });
+      }
 
-        if (createError) {
-          console.error("Error creating new attendance record:", createError);
-          return NextResponse.json({ error: "新しい出勤記録の作成に失敗しました" }, { status: 500 });
+      // If there's a complete record, mark it as reset and create a new active record
+      if (completeRecord) {
+        // Mark the complete record as reset (for history tracking)
+        await (supabaseAdmin as any)
+          .from("attendance_records")
+          .update({
+            status: "reset",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", completeRecord.id);
+
+        // Also delete any daily reports for today to start fresh
+        const { error: reportResetError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).eq("date", today);
+
+        if (reportResetError) {
+          console.error("Error resetting daily reports:", reportResetError);
+          // Don't return error here as this is not critical
         }
 
-        console.log(`New attendance record created for user ${req.user.id} on ${today}`);
+        console.log(`Marked complete record as reset for user ${req.user.id} on ${today}`);
       }
+
+      // Create a new active record for today
+      const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
+        staff_id: req.user.id,
+        date: today,
+        status: "active",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (createError) {
+        console.error("Error creating new attendance record:", createError);
+        return NextResponse.json({ error: "新しい出勤記録の作成に失敗しました" }, { status: 500 });
+      }
+
+      console.log(`New attendance record created for user ${req.user.id} on ${today}`);
 
       return NextResponse.json({
         success: true,

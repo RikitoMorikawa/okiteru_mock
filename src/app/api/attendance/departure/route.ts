@@ -42,12 +42,15 @@ export async function POST(request: NextRequest) {
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
       // Check if attendance record exists for today
-      const { data: existingRecord } = await (supabaseAdmin as any)
+      const { data: existingRecords } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("id, departure_time")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
-        .single();
+        .in("status", ["pending", "partial", "active"])
+        .order("created_at", { ascending: false });
+
+      const existingRecord = existingRecords?.[0] || null;
 
       if (existingRecord) {
         if (existingRecord.departure_time) {

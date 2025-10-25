@@ -10,16 +10,43 @@ export async function POST(request: NextRequest) {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      // Check if there's already a record for today
-      const { data: existingRecord, error: fetchError } = await (supabaseAdmin as any)
+      // Check if there's already an active record for today
+      const { data: existingRecords, error: fetchError } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("*")
         .eq("staff_id", req.user.id)
         .eq("date", today)
-        .single();
+        .order("created_at", { ascending: false });
 
-      // If no record exists for today, create a new one
-      if (fetchError && fetchError.code === "PGRST116") {
+      if (fetchError) {
+        console.error("Error fetching attendance records:", fetchError);
+        return NextResponse.json({ error: "出勤記録の取得に失敗しました" }, { status: 500 });
+      }
+
+      // Find the latest active record and the latest complete record
+      const activeRecord = existingRecords?.find((record) => ["pending", "partial", "active"].includes(record.status));
+      const completeRecord = existingRecords?.find((record) => record.status === "complete");
+
+      // If there's already an active record, don't create a new one
+      if (activeRecord) {
+        return NextResponse.json({
+          success: true,
+          message: "本日の記録は既にアクティブです",
+          alreadyActive: true,
+        });
+      }
+
+      // If there's a complete record, don't reset it automatically
+      if (completeRecord) {
+        return NextResponse.json({
+          success: true,
+          message: "本日の業務は既に完了しています",
+          alreadyCompleted: true,
+        });
+      }
+
+      // If no records exist for today, create a new one
+      if (!existingRecords || existingRecords.length === 0) {
         const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
           staff_id: req.user.id,
           date: today,
@@ -34,13 +61,6 @@ export async function POST(request: NextRequest) {
         }
 
         console.log(`New attendance record created for user ${req.user.id} on ${today}`);
-      } else if (existingRecord && existingRecord.status === "complete") {
-        // If today's record is complete, don't reset it
-        return NextResponse.json({
-          success: true,
-          message: "本日の業務は既に完了しています",
-          alreadyCompleted: true,
-        });
       }
 
       return NextResponse.json({
