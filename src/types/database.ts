@@ -37,6 +37,7 @@ export interface AttendanceRecord {
 export interface DailyReport {
   id: string;
   staff_id: string;
+  attendance_record_id?: string; // 勤怠記録との紐付け用
   date: string;
   content: string;
   submitted_at: string;

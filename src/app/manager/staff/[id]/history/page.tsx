@@ -68,6 +68,10 @@ export default function StaffHistoryPage() {
 
       if (reportsError) throw reportsError;
 
+      // デバッグ用ログ
+      console.log("取得した日報データ:", dailyReports);
+      console.log("取得した勤怠記録:", attendanceRecords);
+
       setHistoryData({
         user: staffUser as User,
         attendanceRecords: (attendanceRecords as AttendanceRecord[]) || [],
@@ -125,8 +129,8 @@ export default function StaffHistoryPage() {
     if (activeTabs[sessionId]) {
       return activeTabs[sessionId];
     }
-    // Default to attendance if available, otherwise report
-    return hasAttendance ? "attendance" : "report";
+    // Default to attendance if available, otherwise report (only if report actually exists)
+    return hasAttendance ? "attendance" : hasReport ? "report" : "attendance";
   };
 
   if (loading) {
@@ -225,7 +229,34 @@ export default function StaffHistoryPage() {
 
                 // For each attendance record, find matching daily report
                 historyData.attendanceRecords.forEach((record) => {
-                  const matchingReport = historyData.dailyReports.find((report) => report.date === record.date && report.staff_id === record.staff_id);
+                  // 勤怠記録IDで直接紐付け、なければ日付とスタッフIDで検索（ただし未使用のもののみ）
+                  const matchingReport = historyData.dailyReports.find((report) => {
+                    // 勤怠記録IDがある場合は直接マッチング
+                    if (report.attendance_record_id) {
+                      return report.attendance_record_id === record.id;
+                    }
+                    // 従来の方法：同じ日付・スタッフIDで、まだ使われていない日報
+                    return (
+                      report.date === record.date &&
+                      report.staff_id === record.staff_id &&
+                      !workSessions.some((session) => session.dailyReport?.id === report.id)
+                    );
+                  });
+
+                  // デバッグ用ログ
+                  console.log(`勤怠記録 ${record.date} (${record.id}):`, {
+                    recordDate: record.date,
+                    recordId: record.id,
+                    staffId: record.staff_id,
+                    matchingReport: matchingReport
+                      ? {
+                          id: matchingReport.id,
+                          date: matchingReport.date,
+                          attendanceRecordId: matchingReport.attendance_record_id,
+                          status: matchingReport.status,
+                        }
+                      : null,
+                  });
 
                   workSessions.push({
                     id: `session-${record.id}`,
@@ -237,17 +268,23 @@ export default function StaffHistoryPage() {
 
                 // Add standalone daily reports (reports without matching attendance)
                 historyData.dailyReports.forEach((report) => {
-                  const hasMatchingAttendance = historyData.attendanceRecords.some(
-                    (record) => record.date === report.date && record.staff_id === report.staff_id
-                  );
+                  // 既にワークセッションに含まれているかチェック
+                  const alreadyIncluded = workSessions.some((session) => session.dailyReport?.id === report.id);
 
-                  if (!hasMatchingAttendance) {
-                    workSessions.push({
-                      id: `report-only-${report.id}`,
-                      attendanceRecord: {} as AttendanceRecord, // Empty attendance record
-                      dailyReport: report,
-                      sortDate: new Date(report.created_at),
-                    });
+                  if (!alreadyIncluded) {
+                    // 勤怠記録IDがあるが対応する勤怠記録が見つからない場合、または勤怠記録IDがない場合
+                    const hasMatchingAttendance = report.attendance_record_id
+                      ? historyData.attendanceRecords.some((record) => record.id === report.attendance_record_id)
+                      : historyData.attendanceRecords.some((record) => record.date === report.date && record.staff_id === report.staff_id);
+
+                    if (!hasMatchingAttendance) {
+                      workSessions.push({
+                        id: `report-only-${report.id}`,
+                        attendanceRecord: {} as AttendanceRecord, // Empty attendance record
+                        dailyReport: report,
+                        sortDate: new Date(report.created_at),
+                      });
+                    }
                   }
                 });
 
@@ -258,6 +295,21 @@ export default function StaffHistoryPage() {
 
                 return sortedSessions.map((session) => {
                   const hasAttendance = !!session.attendanceRecord.id;
+                  const hasReport = !!(session.dailyReport && session.dailyReport.id && session.dailyReport.content);
+
+                  // デバッグ用ログ
+                  console.log(`セッション ${session.id}:`, {
+                    hasAttendance,
+                    hasReport,
+                    reportData: session.dailyReport
+                      ? {
+                          id: session.dailyReport.id,
+                          date: session.dailyReport.date,
+                          content: session.dailyReport.content ? "内容あり" : "内容なし",
+                          status: session.dailyReport.status,
+                        }
+                      : "なし",
+                  });
                   const attendanceStatus = hasAttendance ? getAttendanceStatus(session.attendanceRecord) : null;
 
                   return (
@@ -273,14 +325,14 @@ export default function StaffHistoryPage() {
 
                       <div className="ml-7">
                         <div className="bg-white rounded-lg border border-gray-200">
-                          {/* Tab Navigation */}
-                          {(hasAttendance || session.dailyReport) && (
+                          {/* Tab Navigation - 勤怠記録または日報が存在する場合のみ表示 */}
+                          {(hasAttendance || hasReport) && (
                             <div className="flex border-b border-gray-200">
                               {hasAttendance && (
                                 <button
                                   onClick={() => setActiveTab(session.id, "attendance")}
                                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "attendance"
+                                    getActiveTab(session.id, hasAttendance, hasReport) === "attendance"
                                       ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                   }`}
@@ -288,11 +340,12 @@ export default function StaffHistoryPage() {
                                   勤怠記録
                                 </button>
                               )}
-                              {session.dailyReport && (
+                              {/* 日報が実際に存在し、かつIDが有効な場合のみタブを表示 */}
+                              {hasReport && (
                                 <button
                                   onClick={() => setActiveTab(session.id, "report")}
                                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report"
+                                    getActiveTab(session.id, hasAttendance, hasReport) === "report"
                                       ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                   }`}
@@ -300,12 +353,12 @@ export default function StaffHistoryPage() {
                                   日報
                                   <span
                                     className={`ml-2 px-1.5 py-0.5 text-xs rounded-full ${
-                                      session.dailyReport.status === "submitted" || session.dailyReport.submitted_at || (session.dailyReport as any).archived
+                                      session.dailyReport!.status === "submitted" || session.dailyReport!.submitted_at || (session.dailyReport as any).archived
                                         ? "bg-green-100 text-green-700"
                                         : "bg-yellow-100 text-yellow-700"
                                     }`}
                                   >
-                                    {session.dailyReport.status === "submitted" || session.dailyReport.submitted_at || (session.dailyReport as any).archived
+                                    {session.dailyReport!.status === "submitted" || session.dailyReport!.submitted_at || (session.dailyReport as any).archived
                                       ? "提出済"
                                       : "下書き"}
                                   </span>
@@ -316,7 +369,7 @@ export default function StaffHistoryPage() {
 
                           {/* Tab Content */}
                           <div className="p-4">
-                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "attendance" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "attendance" && hasAttendance && (
                               <div>
                                 {/* Time Display */}
                                 <div className="grid grid-cols-3 gap-4 mb-4">
@@ -362,7 +415,7 @@ export default function StaffHistoryPage() {
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, !!session.dailyReport) === "report" && (
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "report" && (
                               <div>
                                 {session.dailyReport ? (
                                   <>
@@ -387,7 +440,7 @@ export default function StaffHistoryPage() {
                             )}
 
                             {/* No data message */}
-                            {!hasAttendance && !session.dailyReport && (
+                            {!hasAttendance && !hasReport && (
                               <div className="text-center text-gray-500 py-8">
                                 <div className="text-sm">データがありません</div>
                               </div>
