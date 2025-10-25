@@ -228,10 +228,10 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             </p>
           </div>
           <div className="text-right">
-            {lastSaved && <p className="text-sm text-gray-500">最終保存: {lastSaved.toLocaleTimeString("ja-JP")}</p>}
+            {lastSaved && <p className="text-xs sm:text-sm text-gray-500">最終保存: {lastSaved.toLocaleTimeString("ja-JP")}</p>}
             <div className="flex items-center mt-1">
               <div className={`w-2 h-2 rounded-full mr-2 ${isDraft ? "bg-yellow-400" : "bg-gray-300"}`}></div>
-              <span className="text-sm text-gray-600">{isDraft ? "下書き保存済み" : "未保存"}</span>
+              <span className="text-xs sm:text-sm text-gray-600">{isDraft ? "下書き保存済み" : "未保存"}</span>
             </div>
           </div>
         </div>
@@ -260,7 +260,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
             <div className="font-medium text-gray-900">テンプレート</div>
-            <div className="text-sm text-gray-600">簡潔な振り返り形式</div>
+            <div className="text-xs sm:text-sm text-gray-600">簡潔な振り返り形式</div>
           </button>
         </div>
       </div>
@@ -272,7 +272,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             <label htmlFor="reportContent" className="block text-lg font-medium text-gray-700">
               報告内容 <span className="text-red-500">*</span>
             </label>
-            <div className="text-sm text-gray-500">
+            <div className="text-xs sm:text-sm text-gray-500">
               {wordCount} 文字 {wordCount < 10 && "(最低10文字)"}
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             maxLength={5000}
           />
 
-          <div className="flex justify-between text-sm text-gray-500">
+          <div className="flex justify-between text-xs sm:text-sm text-gray-500">
             <span>Markdown記法が使用できます</span>
             <span>{reportContent.length}/5000文字</span>
           </div>
@@ -373,8 +373,8 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">日報作成のコツ</h3>
-            <div className="mt-2 text-sm text-blue-700">
+            <h3 className="text-xs sm:text-sm font-medium text-blue-800">日報作成のコツ</h3>
+            <div className="mt-2 text-xs sm:text-sm text-blue-700">
               <ul className="list-disc list-inside space-y-1">
                 <li>具体的な数値や成果を含めて記載しましょう</li>
                 <li>課題や問題点は改善案も一緒に書きましょう</li>
