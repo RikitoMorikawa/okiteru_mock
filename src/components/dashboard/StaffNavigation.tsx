@@ -7,24 +7,24 @@ import LogoutButton from "@/components/auth/LogoutButton";
 import { useState } from "react";
 
 const navigationItems = [
-  {
-    name: "ダッシュボード",
-    href: "/dashboard",
-    icon: "🏠",
-    description: "概要とステータス",
-  },
+  // {
+  //   name: "ダッシュボード",
+  //   href: "/dashboard",
+  //   icon: "🏠",
+  //   description: "概要とステータス",
+  // },
   {
     name: "勤怠報告",
     href: "/dashboard/attendance",
     icon: "⏰",
     description: "起床・出発・到着報告",
   },
-  {
-    name: "日報提出",
-    href: "/dashboard/reports",
-    icon: "📝",
-    description: "業務報告書作成",
-  },
+  // {
+  //   name: "日報提出",
+  //   href: "/dashboard/reports",
+  //   icon: "📝",
+  //   description: "業務報告書作成",
+  // },
   // {
   //   name: "シフト管理",
   //   href: "/dashboard/shifts",
