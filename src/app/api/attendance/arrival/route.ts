@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
       // Check if attendance record exists for today
-      const { data: existingRecord } = await supabaseAdmin
+      const { data: existingRecord } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("id, arrival_time, wake_up_time, departure_time")
         .eq("staff_id", req.user.id)
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
           updateData.status = "complete";
         }
 
-        const { data: updatedRecord, error: updateError } = await supabaseAdmin
+        const { data: updatedRecord, error: updateError } = await (supabaseAdmin as any)
           .from("attendance_records")
           .update(updateData)
           .eq("id", existingRecord.id)
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         insertData.notes = notes.trim();
       }
 
-      const { data: newRecord, error: insertError } = await supabaseAdmin.from("attendance_records").insert(insertData).select().single();
+      const { data: newRecord, error: insertError } = await (supabaseAdmin as any).from("attendance_records").insert(insertData).select().single();
 
       if (insertError) {
         console.error("Arrival time insert error:", insertError);

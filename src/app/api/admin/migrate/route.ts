@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     // Add notes column to attendance_records table
-    const { error } = await supabaseAdmin.rpc("exec_sql", {
+    const { error } = await (supabaseAdmin as any).rpc("exec_sql", {
       sql: "ALTER TABLE public.attendance_records ADD COLUMN IF NOT EXISTS notes TEXT;",
     });
 

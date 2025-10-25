@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
       }
 
       // Update user profile using admin client to bypass RLS
-      const { data: updatedUser, error: updateError } = await supabaseAdmin
+      const { data: updatedUser, error: updateError } = await (supabaseAdmin as any)
         .from("users")
         .update({
           name: name.trim(),

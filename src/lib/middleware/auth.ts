@@ -31,7 +31,7 @@ export async function withAuth(request: NextRequest, handler: (req: Authenticate
 
     // Get user profile using admin client to bypass RLS
     console.log("[withAuth] Looking for profile with user ID:", user.id);
-    const { data: profile, error: profileError } = await supabaseAdmin.from("users").select("*").eq("id", user.id).single();
+    const { data: profile, error: profileError } = await (supabaseAdmin as any).from("users").select("*").eq("id", user.id).single();
 
     console.log("[withAuth] Profile query result:", { profile, profileError });
 

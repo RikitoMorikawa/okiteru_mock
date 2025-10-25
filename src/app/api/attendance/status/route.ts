@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
       // Get attendance record for today
-      const { data: attendanceRecord } = await supabaseAdmin
+      const { data: attendanceRecord } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("wake_up_time, departure_time, arrival_time")
         .eq("staff_id", req.user.id)
@@ -21,10 +21,15 @@ export async function GET(request: NextRequest) {
         .single();
 
       // Get daily report for today
-      const { data: dailyReport } = await supabaseAdmin.from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
+      const { data: dailyReport } = await (supabaseAdmin as any).from("daily_reports").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
 
       // Get shift schedule for today (optional - might not exist)
-      const { data: shiftSchedule } = await supabaseAdmin.from("shift_schedules").select("id").eq("staff_id", req.user.id).eq("date", dateStr).single();
+      const { data: shiftSchedule } = await (supabaseAdmin as any)
+        .from("shift_schedules")
+        .select("id")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .single();
 
       // Build status object
       const status = {

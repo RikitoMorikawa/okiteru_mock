@@ -7,17 +7,13 @@ export async function createStaffMember(email: string, password: string, name: s
   console.log("Creating staff member:", { email, name, phone });
 
   // Check if user already exists in auth
-  const { data: existingAuthUsers } = await supabaseAdmin.auth.admin.listUsers();
+  const { data: existingAuthUsers } = await (supabaseAdmin as any).auth.admin.listUsers();
   const existingAuthUser = existingAuthUsers.users.find((u) => u.email === email);
 
   if (existingAuthUser) {
     console.log("User already exists in auth:", existingAuthUser.id);
     // Check if profile exists
-    const { data: existingProfile } = await (supabaseAdmin as any)
-      .from("users")
-      .select("id")
-      .eq("id", existingAuthUser.id)
-      .single();
+    const { data: existingProfile } = await (supabaseAdmin as any).from("users").select("id").eq("id", existingAuthUser.id).single();
 
     if (existingProfile) {
       throw new Error("このメールアドレスは既に使用されています");
@@ -42,7 +38,7 @@ export async function createStaffMember(email: string, password: string, name: s
   }
 
   // This should be called from an API route with admin privileges
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+  const { data, error } = await (supabaseAdmin as any).auth.admin.createUser({
     email,
     password,
     email_confirm: true, // Auto-confirm email for internal staff
@@ -56,11 +52,7 @@ export async function createStaffMember(email: string, password: string, name: s
   console.log("Auth user created successfully:", data.user.id);
 
   // Check if a profile with this ID already exists (orphaned record)
-  const { data: orphanedProfile } = await (supabaseAdmin as any)
-    .from("users")
-    .select("id, email")
-    .eq("id", data.user.id)
-    .maybeSingle();
+  const { data: orphanedProfile } = await (supabaseAdmin as any).from("users").select("id, email").eq("id", data.user.id).maybeSingle();
 
   if (orphanedProfile) {
     console.log("Found orphaned profile, updating it instead:", orphanedProfile);
@@ -79,7 +71,7 @@ export async function createStaffMember(email: string, password: string, name: s
       console.error("Profile update error:", updateError);
       // Clean up auth user if profile update fails
       try {
-        await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+        await (supabaseAdmin as any).auth.admin.deleteUser(data.user.id);
         console.log("Cleaned up auth user after profile update failure");
       } catch (cleanupError) {
         console.error("Failed to clean up auth user:", cleanupError);
@@ -104,7 +96,7 @@ export async function createStaffMember(email: string, password: string, name: s
     console.error("Profile creation error:", profileError);
     // Clean up auth user if profile creation fails
     try {
-      await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+      await (supabaseAdmin as any).auth.admin.deleteUser(data.user.id);
       console.log("Cleaned up auth user after profile creation failure");
     } catch (cleanupError) {
       console.error("Failed to clean up auth user:", cleanupError);
@@ -118,7 +110,7 @@ export async function createStaffMember(email: string, password: string, name: s
 
 // Delete user (admin only) - Server-side only
 export async function deleteUser(userId: string) {
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  const { error } = await (supabaseAdmin as any).auth.admin.deleteUser(userId);
 
   if (error) {
     throw new Error(error.message);

@@ -19,3 +19,6 @@ export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseService
     persistSession: false,
   },
 });
+
+// Type-safe admin client for TypeScript
+export const supabaseAdminTyped = supabaseAdmin as any;
