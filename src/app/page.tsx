@@ -11,7 +11,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard");
+      if (user.role === "manager") {
+        router.push("/manager");
+      } else {
+        router.push("/dashboard/attendance");
+      }
     }
   }, [user, loading, router]);
 
@@ -27,7 +31,7 @@ export default function Home() {
   }
 
   if (user) {
-    return null; // Will redirect to dashboard
+    return null; // Will redirect to attendance
   }
 
   return (

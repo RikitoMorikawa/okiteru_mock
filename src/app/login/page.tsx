@@ -53,8 +53,10 @@ export default function LoginPage() {
     try {
       console.log("[Login] Calling signIn...");
       await signIn(email, password);
-      console.log("[Login] signIn completed, redirecting...");
-      router.push("/dashboard");
+      console.log("[Login] signIn completed, redirecting to home page...");
+
+      // ホームページにリダイレクトして、そこで役割に応じた分岐を行う
+      router.push("/");
     } catch (err) {
       console.error("[Login] Error:", err);
       setError(err instanceof Error ? err.message : "ログインに失敗しました");
