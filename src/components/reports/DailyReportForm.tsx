@@ -10,7 +10,11 @@ interface DailyReportData {
   status: "draft" | "submitted";
 }
 
-export default function DailyReportForm() {
+interface DailyReportFormProps {
+  onSuccess?: () => void;
+}
+
+export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
   const { user } = useAuth();
   const [reportContent, setReportContent] = useState("");
   const [isDraft, setIsDraft] = useState(false);
@@ -136,6 +140,13 @@ export default function DailyReportForm() {
 
       // Trigger attendance status update
       window.dispatchEvent(new Event("attendanceUpdated"));
+
+      // Call success callback if provided
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1500); // Wait a bit to show success message
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "日報の提出に失敗しました");
     } finally {

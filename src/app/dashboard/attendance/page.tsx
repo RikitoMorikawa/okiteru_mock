@@ -9,9 +9,10 @@ import StatusIndicator from "@/components/dashboard/StatusIndicator";
 import WakeUpForm from "@/components/attendance/WakeUpForm";
 import DepartureForm from "@/components/attendance/DepartureForm";
 import ArrivalForm from "@/components/attendance/ArrivalForm";
+import DailyReportForm from "@/components/reports/DailyReportForm";
 import { api } from "@/lib/api-client";
 
-type AttendanceAction = "wakeup" | "departure" | "arrival" | null;
+type AttendanceAction = "wakeup" | "departure" | "arrival" | "report" | null;
 
 function AttendanceContent() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ function AttendanceContent() {
     wakeUpReported: false,
     departureReported: false,
     arrivalReported: false,
+    reportSubmitted: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -50,6 +52,7 @@ function AttendanceContent() {
           wakeUpReported: data.status.wakeUpReported,
           departureReported: data.status.departureReported,
           arrivalReported: data.status.arrivalReported,
+          reportSubmitted: data.status.reportSubmitted || false,
         });
       } else {
         console.error("Failed to fetch attendance status");
@@ -99,6 +102,13 @@ function AttendanceContent() {
       icon: "🏢",
       color: "bg-green-50 border-green-200 text-green-700",
     },
+    {
+      id: "report" as const,
+      title: "日報提出",
+      description: "業務報告書を作成・提出",
+      icon: "📝",
+      color: "bg-purple-50 border-purple-200 text-purple-700",
+    },
   ];
 
   const renderActiveForm = () => {
@@ -109,6 +119,8 @@ function AttendanceContent() {
         return <DepartureForm onSuccess={() => setActiveAction(null)} />;
       case "arrival":
         return <ArrivalForm onSuccess={() => setActiveAction(null)} />;
+      case "report":
+        return <DailyReportForm onSuccess={() => setActiveAction(null)} />;
       default:
         return null;
     }
@@ -185,7 +197,7 @@ function AttendanceContent() {
                 </div>
 
                 {/* Attendance Action Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {attendanceActions.map((action) => (
                     <button
                       key={action.id}
@@ -223,6 +235,8 @@ function AttendanceContent() {
                               return attendanceStatus.departureReported;
                             case "arrival":
                               return attendanceStatus.arrivalReported;
+                            case "report":
+                              return attendanceStatus.reportSubmitted;
                             default:
                               return false;
                           }
@@ -285,6 +299,7 @@ function AttendanceContent() {
                           <li>起床報告は起床後すぐに行ってください</li>
                           <li>出発報告では経路のスクリーンショットが必要です</li>
                           <li>到着報告では身だしなみの写真をアップロードしてください</li>
+                          <li>日報提出では業務内容を詳しく記録してください</li>
                           <li>各報告は正確な時間で記録されます</li>
                         </ul>
                       </div>
