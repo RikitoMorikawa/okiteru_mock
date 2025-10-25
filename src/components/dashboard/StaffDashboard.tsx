@@ -12,7 +12,7 @@ interface AttendanceStatus {
   departureReported: boolean;
   arrivalReported: boolean;
   dailyReportSubmitted: boolean;
-  shiftScheduleSubmitted: boolean;
+  // shiftScheduleSubmitted: boolean;
 }
 
 export default function StaffDashboard() {
@@ -22,7 +22,7 @@ export default function StaffDashboard() {
     departureReported: false,
     arrivalReported: false,
     dailyReportSubmitted: false,
-    shiftScheduleSubmitted: false,
+    // shiftScheduleSubmitted: false,
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -85,8 +85,14 @@ export default function StaffDashboard() {
   };
 
   const getTodayProgress = () => {
-    const completed = Object.values(attendanceStatus).filter(Boolean).length;
-    const total = Object.keys(attendanceStatus).length;
+    const tasks = [
+      attendanceStatus.wakeUpReported,
+      attendanceStatus.departureReported,
+      attendanceStatus.arrivalReported,
+      attendanceStatus.dailyReportSubmitted,
+    ];
+    const completed = tasks.filter(Boolean).length;
+    const total = tasks.length; // 明示的に4つ
     return { completed, total, percentage: Math.round((completed / total) * 100) };
   };
 

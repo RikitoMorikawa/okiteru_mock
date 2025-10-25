@@ -7,7 +7,7 @@ interface AttendanceStatus {
   departureReported: boolean;
   arrivalReported: boolean;
   dailyReportSubmitted: boolean;
-  shiftScheduleSubmitted: boolean;
+  // shiftScheduleSubmitted: boolean;
 }
 
 interface QuickActionsProps {
@@ -91,12 +91,12 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       icon: "🏢",
       completed: attendanceStatus.arrivalReported,
     },
-    {
-      title: "日報作成",
-      href: "/dashboard/reports",
-      icon: "📝",
-      completed: attendanceStatus.dailyReportSubmitted,
-    },
+    // {
+    //   title: "日報作成",
+    //   href: "/dashboard/reports",
+    //   icon: "📝",
+    //   completed: attendanceStatus.dailyReportSubmitted,
+    // },
   ];
 
   const getPriorityColor = (priority: string) => {
