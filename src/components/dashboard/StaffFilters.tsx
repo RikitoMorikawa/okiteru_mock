@@ -85,43 +85,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
           </div>
         </div>
       </div>
-
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="mt-2 sm:mt-4 flex flex-wrap items-center gap-1 sm:gap-2">
-          <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">アクティブフィルター:</span>
-
-          {filters.search && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              <span className="sm:hidden">検索</span>
-              <span className="hidden sm:inline">検索: &quot;{filters.search}&quot;</span>
-              <button
-                onClick={() => handleSearchChange("")}
-                className="ml-1 inline-flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-600"
-              >
-                <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          )}
-
-          {filters.status !== "all" && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <span className="sm:hidden">{getStatusLabel(filters.status)}</span>
-              <span className="hidden sm:inline">ステータス: {getStatusLabel(filters.status)}</span>
-              <button
-                onClick={() => handleStatusChange("all")}
-                className="ml-1 inline-flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full text-green-400 hover:bg-green-200 hover:text-green-600"
-              >
-                <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }
