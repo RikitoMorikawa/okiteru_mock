@@ -611,9 +611,7 @@ function AttendanceContent() {
             <p className="text-sm sm:text-base text-gray-600 mb-6">
               新しい日を開始しますか？
               <br />
-              この操作により、本日の完了状態がリセットされ、新しいタスクが表示されます。
-              <br />
-              <span className="text-xs sm:text-sm text-amber-600">※ 完了済みのデータは管理者用に保存されます</span>
+              <span className="text-xs sm:text-sm text-amber-600">※ 本日の完了状態がリセットされます。</span>
             </p>
 
             <div className="flex space-x-3">
