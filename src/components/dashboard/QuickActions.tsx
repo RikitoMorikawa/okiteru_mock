@@ -204,7 +204,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
               </div>
             </div>
             <div className="flex space-x-2">
-              <button
+              {/* <button
                 onClick={async () => {
                   try {
                     const response = await api.post("/api/attendance/reopen-day", {});
@@ -224,7 +224,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 再開
-              </button>
+              </button> */}
               <button
                 onClick={() => setShowNewDayConfirm(true)}
                 disabled={isStartingNewDay}

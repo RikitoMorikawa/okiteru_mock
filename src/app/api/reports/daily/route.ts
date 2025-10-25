@@ -58,6 +58,28 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Check if attendance record exists and update status if all tasks are complete
+        const { data: attendanceRecord } = await (supabaseAdmin as any)
+          .from("attendance_records")
+          .select("id, wake_up_time, departure_time, arrival_time, status")
+          .eq("staff_id", req.user.id)
+          .eq("date", dateStr)
+          .in("status", ["pending", "partial", "active"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        // If attendance record exists and all tasks are complete, mark as complete
+        if (attendanceRecord && attendanceRecord.wake_up_time && attendanceRecord.departure_time && attendanceRecord.arrival_time) {
+          await (supabaseAdmin as any)
+            .from("attendance_records")
+            .update({
+              status: "complete",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", attendanceRecord.id);
+        }
+
         return NextResponse.json({
           message: "日報を更新しました",
           reportId: existingReport.id,
@@ -91,6 +113,28 @@ export async function POST(request: NextRequest) {
             },
             { status: 500 }
           );
+        }
+
+        // Check if attendance record exists and update status if all tasks are complete
+        const { data: attendanceRecord } = await (supabaseAdmin as any)
+          .from("attendance_records")
+          .select("id, wake_up_time, departure_time, arrival_time, status")
+          .eq("staff_id", req.user.id)
+          .eq("date", dateStr)
+          .in("status", ["pending", "partial", "active"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        // If attendance record exists and all tasks are complete, mark as complete
+        if (attendanceRecord && attendanceRecord.wake_up_time && attendanceRecord.departure_time && attendanceRecord.arrival_time) {
+          await (supabaseAdmin as any)
+            .from("attendance_records")
+            .update({
+              status: "complete",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", attendanceRecord.id);
         }
 
         return NextResponse.json({

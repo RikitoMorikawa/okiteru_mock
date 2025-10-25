@@ -12,12 +12,15 @@ export async function GET(request: NextRequest) {
       const today = new Date();
       const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Get attendance record for today
+      // Get the latest active attendance record for today
       const { data: attendanceRecord } = await (supabaseAdmin as any)
         .from("attendance_records")
         .select("wake_up_time, departure_time, arrival_time, status")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
+        .in("status", ["pending", "partial", "active", "complete"])
+        .order("created_at", { ascending: false })
+        .limit(1)
         .single();
 
       // Get daily report for today
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
         arrivalReported: !!attendanceRecord?.arrival_time,
         dailyReportSubmitted: !!dailyReport,
         shiftScheduleSubmitted: !!shiftSchedule,
-        dayCompleted: attendanceRecord?.status === "complete",
+        dayCompleted: attendanceRecord?.status === "complete" && attendanceRecord !== null,
       };
 
       // Debug logging

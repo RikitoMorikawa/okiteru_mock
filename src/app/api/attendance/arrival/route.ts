@@ -92,11 +92,11 @@ export async function POST(request: NextRequest) {
           updateData.arrival_notes = notes.trim();
         }
 
-        // Check if all attendance items are complete
-        const isComplete = existingRecord.wake_up_time && existingRecord.departure_time && arrivalDate;
+        // Check if all attendance items are complete (but don't mark as complete yet - need daily report too)
+        const hasAllAttendance = existingRecord.wake_up_time && existingRecord.departure_time && arrivalDate;
 
-        if (isComplete) {
-          updateData.status = "complete";
+        if (hasAllAttendance) {
+          updateData.status = "partial"; // Attendance complete but still need daily report
         }
 
         const { data: updatedRecord, error: updateError } = await (supabaseAdmin as any)

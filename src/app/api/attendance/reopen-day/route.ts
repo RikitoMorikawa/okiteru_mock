@@ -23,19 +23,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "出勤記録の取得に失敗しました" }, { status: 500 });
       }
 
-      // If attendance record exists and is complete, reopen it
+      // If attendance record exists and is complete, create a new reopened record
       if (attendanceRecord && attendanceRecord.status === "complete") {
-        const { error: updateError } = await (supabaseAdmin as any)
+        // Mark the existing record as reopened (for history tracking)
+        await (supabaseAdmin as any)
           .from("attendance_records")
           .update({
-            status: "active",
+            status: "reopened",
             updated_at: new Date().toISOString(),
           })
           .eq("id", attendanceRecord.id);
 
-        if (updateError) {
-          console.error("Error updating attendance record:", updateError);
-          return NextResponse.json({ error: "出勤記録の更新に失敗しました" }, { status: 500 });
+        // Create a new active record with the same data
+        const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
+          staff_id: req.user.id,
+          date: today,
+          status: "active",
+          wake_up_time: attendanceRecord.wake_up_time,
+          departure_time: attendanceRecord.departure_time,
+          arrival_time: attendanceRecord.arrival_time,
+          route_photo_url: attendanceRecord.route_photo_url,
+          appearance_photo_url: attendanceRecord.appearance_photo_url,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (createError) {
+          console.error("Error creating reopened attendance record:", createError);
+          return NextResponse.json({ error: "再開記録の作成に失敗しました" }, { status: 500 });
         }
       }
 

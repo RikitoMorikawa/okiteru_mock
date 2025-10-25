@@ -26,26 +26,30 @@ export async function POST(request: NextRequest) {
       // If there's an existing record for today
       if (existingRecord) {
         if (existingRecord.status === "complete") {
-          // Reset the completed record to start a new day
-          const { error: updateError } = await (supabaseAdmin as any)
+          // Mark the existing record as reset (for history tracking)
+          await (supabaseAdmin as any)
             .from("attendance_records")
             .update({
-              status: "active",
-              wake_up_time: null,
-              departure_time: null,
-              arrival_time: null,
-              route_photo_url: null,
-              appearance_photo_url: null,
+              status: "reset",
               updated_at: new Date().toISOString(),
             })
             .eq("id", existingRecord.id);
 
-          if (updateError) {
-            console.error("Error resetting attendance record:", updateError);
-            return NextResponse.json({ error: "出勤記録のリセットに失敗しました" }, { status: 500 });
+          // Create a new active record for the new day
+          const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
+            staff_id: req.user.id,
+            date: today,
+            status: "active",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+          if (createError) {
+            console.error("Error creating new attendance record:", createError);
+            return NextResponse.json({ error: "新しい出勤記録の作成に失敗しました" }, { status: 500 });
           }
 
-          // Also reset any daily reports for today
+          // Also delete any daily reports for today to start fresh
           const { error: reportResetError } = await (supabaseAdmin as any).from("daily_reports").delete().eq("staff_id", req.user.id).eq("date", today);
 
           if (reportResetError) {
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
             // Don't return error here as this is not critical
           }
 
-          console.log(`New day started for user ${req.user.id} on ${today} (reset existing record)`);
+          console.log(`New day started for user ${req.user.id} on ${today} (created new record)`);
         } else {
           // Record exists but not completed, no need to reset
           return NextResponse.json({
