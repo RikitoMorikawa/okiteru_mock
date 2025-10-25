@@ -139,12 +139,11 @@ function AttendanceContent() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Navigation Component */}
-        <StaffNavigation />
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6 lg:mt-0">
-          {/* Navigation Sidebar - Desktop Only (handled by StaffNavigation) */}
-          <div className="lg:col-span-1">{/* Desktop navigation space */}</div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Navigation Sidebar */}
+          <div className="lg:col-span-1">
+            <StaffNavigation />
+          </div>
 
           {/* Main Content */}
           <div className="lg:col-span-3">
