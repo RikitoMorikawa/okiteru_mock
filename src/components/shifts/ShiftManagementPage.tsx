@@ -174,7 +174,7 @@ export default function ShiftManagementPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>
-              <h1 className="text-xl font-semibold text-gray-900">シフト管理</h1>
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900">シフト管理</h1>
             </div>
             <div className="flex items-center space-x-4">
               <button
