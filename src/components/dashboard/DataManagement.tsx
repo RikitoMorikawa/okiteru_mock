@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api-client";
 import { AttendanceRecord, DailyReport, User } from "@/types/database";
+import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffDataRecord {
   user: User;
@@ -13,12 +14,25 @@ interface StaffDataRecord {
 export default function DataManagement() {
   const [staffData, setStaffData] = useState<StaffDataRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = getTodayJST();
+    console.log("[DataManagement] Initial date:", today);
+    return today;
+  });
   const [selectedStaff, setSelectedStaff] = useState<string>("all");
 
   useEffect(() => {
     fetchStaffData();
   }, [selectedDate, selectedStaff]);
+
+  // Force reset to today's date on component mount
+  useEffect(() => {
+    const today = getTodayJST();
+    if (selectedDate !== today) {
+      console.log("[DataManagement] Resetting date from", selectedDate, "to", today);
+      setSelectedDate(today);
+    }
+  }, []);
 
   const fetchStaffData = async () => {
     try {
@@ -27,6 +41,12 @@ export default function DataManagement() {
       const params = new URLSearchParams({
         date: selectedDate,
         staffId: selectedStaff,
+      });
+
+      console.log("[DataManagement] Fetching staff data:", {
+        selectedDate,
+        todayJST: getTodayJST(),
+        params: params.toString(),
       });
 
       const response = await api.get(`/api/admin/staff-data?${params}`);
@@ -90,12 +110,25 @@ export default function DataManagement() {
         <div className="flex space-x-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">日付</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-            />
+            <div className="flex space-x-2">
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
+              <button
+                onClick={() => {
+                  const today = getTodayJST();
+                  console.log("[DataManagement] Reset to today:", today);
+                  setSelectedDate(today);
+                }}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                title="今日にリセット"
+              >
+                今日
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">スタッフ</label>
@@ -113,7 +146,18 @@ export default function DataManagement() {
 
       {staffData.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>選択した条件でのデータが見つかりません</p>
+          <div className="mb-4">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">スタッフが登録されていません</h3>
+          <p className="text-sm text-gray-500">スタッフを登録してから、勤怠データを確認できます</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -128,7 +172,15 @@ export default function DataManagement() {
               <div className="mb-4">
                 <h5 className="text-sm font-medium text-gray-700 mb-2">出勤記録</h5>
                 {record.attendanceRecords.length === 0 ? (
-                  <p className="text-sm text-gray-500">出勤記録なし</p>
+                  <div className="bg-gray-50 rounded-md p-4 text-center">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-1">まだ勤怠報告がありません</p>
+                    <p className="text-xs text-gray-400">{selectedDate}の記録待ち</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {record.attendanceRecords.map((attendance) => (
@@ -182,7 +234,20 @@ export default function DataManagement() {
               <div>
                 <h5 className="text-sm font-medium text-gray-700 mb-2">日報</h5>
                 {record.dailyReports.length === 0 ? (
-                  <p className="text-sm text-gray-500">日報なし</p>
+                  <div className="bg-gray-50 rounded-md p-4 text-center">
+                    <div className="text-gray-400 mb-2">
+                      <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-1">まだ日報が提出されていません</p>
+                    <p className="text-xs text-gray-400">{selectedDate}の日報待ち</p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {record.dailyReports.map((report) => (

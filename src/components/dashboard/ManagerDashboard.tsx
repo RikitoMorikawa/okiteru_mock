@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, FilterOptions } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
+import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
@@ -70,7 +71,8 @@ export default function ManagerDashboard() {
   const fetchStaffData = async () => {
     try {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodayJST();
+      console.log("[ManagerDashboard] Using date:", today);
 
       // Fetch all staff members
       const { data: staff, error: staffError } = await supabase.from("users").select("*").eq("role", "staff").order("name");
