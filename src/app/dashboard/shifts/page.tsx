@@ -21,12 +21,12 @@ export default function ShiftsPage() {
   }, []);
 
   const tabs = [
-    {
-      id: "schedule" as const,
-      name: "シフト提出",
-      icon: "📅",
-      description: "来週のシフト予定を提出",
-    },
+    // {
+    //   id: "schedule" as const,
+    //   name: "シフト提出",
+    //   icon: "📅",
+    //   description: "来週のシフト予定を提出",
+    // },
     {
       id: "calendar" as const,
       name: "カレンダー",

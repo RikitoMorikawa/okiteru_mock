@@ -36,27 +36,7 @@ export default function ReportHistory() {
         const data: DailyReport[] = await response.json();
         setReports(data);
       } else {
-        // Mock data for now
-        const mockReports: DailyReport[] = [
-          {
-            id: "1",
-            date: "2024-01-20",
-            content: "本日は新規顧客への営業活動を中心に行いました。午前中は資料作成、午後は3件の訪問を実施。うち1件で好感触を得られました。",
-            status: "submitted",
-            submitted_at: "2024-01-20T18:30:00Z",
-            created_at: "2024-01-20T09:00:00Z",
-            updated_at: "2024-01-20T18:30:00Z",
-          },
-          {
-            id: "2",
-            date: "2024-01-19",
-            content: "システム研修に参加。新機能の使い方を学習しました。",
-            status: "draft",
-            created_at: "2024-01-19T16:00:00Z",
-            updated_at: "2024-01-19T16:30:00Z",
-          },
-        ];
-        setReports(mockReports);
+        
       }
     } catch (error) {
       console.error("Failed to load reports:", error);

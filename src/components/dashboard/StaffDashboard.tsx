@@ -128,7 +128,7 @@ export default function StaffDashboard() {
               <StatusCard title="出発報告" status={attendanceStatus.departureReported} icon="🚗" description="出発時間と経路写真" />
               <StatusCard title="到着報告" status={attendanceStatus.arrivalReported} icon="🏢" description="到着時間と身だしなみ写真" />
               <StatusCard title="日報提出" status={attendanceStatus.dailyReportSubmitted} icon="📝" description="本日の業務報告" />
-              <StatusCard title="シフト提出" status={attendanceStatus.shiftScheduleSubmitted} icon="📅" description="来週のシフト予定" />
+              {/* <StatusCard title="シフト提出" status={attendanceStatus.shiftScheduleSubmitted} icon="📅" description="来週のシフト予定" /> */}
             </div>
 
             {/* Recent Activity */}

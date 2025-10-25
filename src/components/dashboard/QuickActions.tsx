@@ -56,15 +56,15 @@ export default function QuickActions({ attendanceStatus }: QuickActionsProps) {
       };
     }
 
-    if (!attendanceStatus.shiftScheduleSubmitted) {
-      return {
-        title: "シフト提出",
-        description: "来週のシフト予定を提出",
-        href: "/dashboard/shifts",
-        icon: "📅",
-        priority: "low",
-      };
-    }
+    // if (!attendanceStatus.shiftScheduleSubmitted) {
+    //   return {
+    //     title: "シフト提出",
+    //     description: "来週のシフト予定を提出",
+    //     href: "/dashboard/shifts",
+    //     icon: "📅",
+    //     priority: "low",
+    //   };
+    // }
 
     return null;
   };

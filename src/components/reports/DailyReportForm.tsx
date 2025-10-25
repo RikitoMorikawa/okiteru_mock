@@ -237,25 +237,25 @@ export default function DailyReportForm() {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">テンプレート</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <button
+          {/* <button
             onClick={() => insertTemplate("basic")}
             className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
             <div className="font-medium text-gray-900">基本テンプレート</div>
             <div className="text-sm text-gray-600">業務内容・成果・課題・予定</div>
-          </button>
-          <button
+          </button> */}
+          {/* <button
             onClick={() => insertTemplate("meeting")}
             className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
             <div className="font-medium text-gray-900">営業テンプレート</div>
             <div className="text-sm text-gray-600">会議・営業・事務・学習</div>
-          </button>
+          </button> */}
           <button
             onClick={() => insertTemplate("simple")}
             className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
           >
-            <div className="font-medium text-gray-900">シンプル</div>
+            <div className="font-medium text-gray-900">テンプレート</div>
             <div className="text-sm text-gray-600">簡潔な振り返り形式</div>
           </button>
         </div>

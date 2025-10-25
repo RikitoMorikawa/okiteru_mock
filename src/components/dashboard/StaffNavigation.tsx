@@ -24,12 +24,12 @@ const navigationItems = [
     icon: "📝",
     description: "業務報告書作成",
   },
-  {
-    name: "シフト管理",
-    href: "/dashboard/shifts",
-    icon: "📅",
-    description: "シフト予定提出",
-  },
+  // {
+  //   name: "シフト管理",
+  //   href: "/dashboard/shifts",
+  //   icon: "📅",
+  //   description: "シフト予定提出",
+  // },
   {
     name: "プロフィール",
     href: "/profile",
@@ -82,7 +82,7 @@ export default function StaffNavigation() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
+      {/* <div className="mt-6 pt-4 border-t border-gray-200">
         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">クイックアクション</h4>
         <div className="space-y-2">
           <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors">
@@ -98,7 +98,7 @@ export default function StaffNavigation() {
             日報作成
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Logout */}
       <div className="mt-6 pt-4 border-t border-gray-200">
