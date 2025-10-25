@@ -25,6 +25,7 @@ function AttendanceContent() {
     departureReported: false,
     arrivalReported: false,
     reportSubmitted: false,
+    dailyReportSubmitted: false,
     dayCompleted: false,
   });
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,8 @@ function AttendanceContent() {
           wakeUpReported: data.status.wakeUpReported,
           departureReported: data.status.departureReported,
           arrivalReported: data.status.arrivalReported,
-          reportSubmitted: data.status.reportSubmitted || false,
+          reportSubmitted: data.status.reportSubmitted || data.status.dailyReportSubmitted || false,
+          dailyReportSubmitted: data.status.dailyReportSubmitted || data.status.reportSubmitted || false,
           dayCompleted: data.status.dayCompleted || false,
         });
       } else {
@@ -93,7 +95,12 @@ function AttendanceContent() {
   };
 
   const isAllTasksComplete = () => {
-    return attendanceStatus.wakeUpReported && attendanceStatus.departureReported && attendanceStatus.arrivalReported && attendanceStatus.reportSubmitted;
+    return (
+      attendanceStatus.wakeUpReported &&
+      attendanceStatus.departureReported &&
+      attendanceStatus.arrivalReported &&
+      (attendanceStatus.reportSubmitted || attendanceStatus.dailyReportSubmitted)
+    );
   };
 
   const handleCompleteDay = async () => {
@@ -344,7 +351,7 @@ function AttendanceContent() {
                             case "arrival":
                               return attendanceStatus.arrivalReported;
                             case "report":
-                              return attendanceStatus.reportSubmitted;
+                              return attendanceStatus.reportSubmitted || attendanceStatus.dailyReportSubmitted;
                             default:
                               return false;
                           }
