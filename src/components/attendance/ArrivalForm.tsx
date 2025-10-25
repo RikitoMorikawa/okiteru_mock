@@ -112,10 +112,10 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center mb-6">
-        <span className="text-3xl mr-4">🏢</span>
+        <span className="text-2xl sm:text-3xl mr-3 sm:mr-4">🏢</span>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">到着報告</h2>
-          <p className="text-gray-600">到着時間と身だしなみを報告してください</p>
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">到着報告</h2>
+          <p className="text-sm sm:text-base text-gray-600">到着時間と身だしなみを報告してください</p>
         </div>
       </div>
 

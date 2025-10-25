@@ -217,8 +217,8 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">日報作成</h2>
-            <p className="text-gray-600 mt-1">
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">日報作成</h2>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
               {new Date().toLocaleDateString("ja-JP", {
                 year: "numeric",
                 month: "long",
