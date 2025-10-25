@@ -46,7 +46,7 @@ export default function RegisterPage() {
           password: formData.password,
           name: formData.name,
           phone: formData.phone,
-          role: "manager", // First user is always manager
+          role: "staff", // Register as staff
         }),
       });
 
@@ -57,7 +57,7 @@ export default function RegisterPage() {
       }
 
       // Registration successful
-      alert("管理者アカウントが作成されました。ログインしてください。");
+      alert("スタッフアカウントが作成されました。ログインしてください。");
       router.push("/login");
     } catch (error) {
       console.error("Registration error:", error);
@@ -78,8 +78,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">管理者アカウント登録</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">初回セットアップ用の管理者アカウントを作成します</p>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">スタッフアカウント登録</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">新しいスタッフアカウントを作成します</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -95,7 +95,7 @@ export default function RegisterPage() {
                 value={formData.name}
                 onChange={handleChange}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="管理者名"
+                placeholder="スタッフ名"
               />
             </div>
             <div>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="admin@company.com"
+                placeholder="staff@company.com"
               />
             </div>
             <div>
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "登録中..." : "管理者アカウントを作成"}
+              {loading ? "登録中..." : "スタッフアカウントを作成"}
             </button>
           </div>
 
