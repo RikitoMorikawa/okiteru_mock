@@ -87,12 +87,7 @@ export default function StatusIndicator() {
     return "オンライン";
   };
 
-  const getStatusIcon = () => {
-    if (!connectionStatus.isOnline) return "📡";
-    if (connectionStatus.syncStatus === "syncing") return "🔄";
-    if (connectionStatus.syncStatus === "error") return "⚠️";
-    return "✅";
-  };
+
 
   return (
     <div className="relative">
@@ -102,7 +97,6 @@ export default function StatusIndicator() {
       >
         <div className={`w-2 h-2 rounded-full ${getStatusColor()}`}></div>
         <span className="text-sm font-medium text-gray-700">{getStatusText()}</span>
-        <span className="text-sm">{getStatusIcon()}</span>
       </button>
 
       {showDetails && (
