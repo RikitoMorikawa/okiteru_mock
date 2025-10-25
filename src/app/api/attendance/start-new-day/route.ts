@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Find the latest active record and the latest complete record
-      const activeRecord = existingRecords?.find((record) => ["pending", "partial", "active"].includes(record.status));
-      const completeRecord = existingRecords?.find((record) => record.status === "complete");
+      const activeRecord = existingRecords?.find((record: any) => ["pending", "partial", "active"].includes(record.status));
+      const completeRecord = existingRecords?.find((record: any) => record.status === "complete");
 
       // If there's already an active record, don't create a new one
       if (activeRecord) {
