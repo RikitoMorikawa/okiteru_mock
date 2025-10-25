@@ -251,16 +251,9 @@ export default function StaffHistoryPage() {
                   }
                 });
 
-                // Sort by date and time (newest first)
+                // Sort by creation time (newest first)
                 const sortedSessions = workSessions.sort((a, b) => {
-                  // First sort by date
-                  const dateComparison = b.sortDate.getTime() - a.sortDate.getTime();
-                  if (dateComparison !== 0) return dateComparison;
-
-                  // If same date, sort by creation time (using ID as proxy for creation order)
-                  const aId = a.attendanceRecord.id || a.dailyReport?.id || "";
-                  const bId = b.attendanceRecord.id || b.dailyReport?.id || "";
-                  return bId.localeCompare(aId);
+                  return b.sortDate.getTime() - a.sortDate.getTime();
                 });
 
                 return sortedSessions.map((session) => {
