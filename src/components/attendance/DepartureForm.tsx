@@ -158,7 +158,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
               id="departureTime"
               value={departureTime}
               onChange={(e) => setDepartureTime(e.target.value)}
-              className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               required
             />
             <button
@@ -169,7 +169,6 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
               現在時刻を使用
             </button>
           </div>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">出発した時間を選択してください</p>
         </div>
 
         {/* Destination */}
@@ -182,18 +181,17 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             id="destination"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
             placeholder="例：東京駅、渋谷オフィス、顧客先など"
             required
             maxLength={100}
           />
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">向かう先の場所を入力してください</p>
         </div>
 
         {/* Route Photo */}
         <PhotoUpload
           label="経路スクリーンショット"
-          description="ナビアプリの経路画面のスクリーンショットをアップロードしてください"
+          // description="ナビアプリの経路画面のスクリーンショットをアップロードしてください"
           selectedPhoto={routePhoto}
           onPhotoSelect={handleRoutePhotoSelect}
           onPhotoRemove={handleRoutePhotoRemove}
@@ -204,7 +202,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
         {/* Appearance Photo */}
         <PhotoUpload
           label="身だしなみ写真"
-          description="出発前の身だしなみを確認できる写真をアップロードしてください"
+          // description="出発前の身だしなみを確認できる写真をアップロードしてください"
           selectedPhoto={appearancePhoto}
           onPhotoSelect={handleAppearancePhotoSelect}
           onPhotoRemove={handleAppearancePhotoRemove}
@@ -222,11 +220,10 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
             placeholder="交通状況や特記事項があれば記入してください"
             maxLength={500}
           />
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">{notes.length}/500文字</p>
         </div>
 
         {/* Error Message */}
@@ -284,7 +281,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           <div className="text-xs sm:text-sm text-blue-700">
             <ul className="list-disc pl-4 space-y-1">
               <li>出発前または出発直後に報告してください</li>
-              <li>経路のスクリーンショットと身だしなみ写真は必須です</li>
+              <li>経路と身だしなみ写真は必須です</li>
               <li>目的地は正確に入力してください</li>
               <li>交通状況に変更があった場合は備考欄に記入してください</li>
             </ul>

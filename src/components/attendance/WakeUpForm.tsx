@@ -91,7 +91,7 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
               id="wakeUpTime"
               value={wakeUpTime}
               onChange={(e) => setWakeUpTime(e.target.value)}
-              className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="block w-40 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               required
             />
             <button
@@ -102,7 +102,6 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
               現在時刻を使用
             </button>
           </div>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">起床した時間を選択してください</p>
         </div>
 
         {/* Notes */}
@@ -115,11 +114,10 @@ export default function WakeUpForm({ onSuccess }: WakeUpFormProps) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
             placeholder="体調や睡眠の質など、特記事項があれば記入してください"
             maxLength={500}
           />
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">{notes.length}/500文字</p>
         </div>
 
         {/* Error Message */}

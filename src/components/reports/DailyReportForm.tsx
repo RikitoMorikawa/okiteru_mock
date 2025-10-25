@@ -286,11 +286,6 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
             placeholder="本日の業務内容、成果、課題、明日の予定などを記入してください..."
             maxLength={5000}
           />
-
-          <div className="flex justify-between text-xs sm:text-sm text-gray-500">
-            <span>Markdown記法が使用できます</span>
-            <span>{reportContent.length}/5000文字</span>
-          </div>
         </div>
 
         {/* Action Buttons */}
