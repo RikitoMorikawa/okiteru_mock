@@ -297,8 +297,7 @@ function AttendanceContent() {
                       <div className="mt-2 text-xs sm:text-sm text-blue-700">
                         <ul className="list-disc pl-4 sm:list-inside sm:pl-0 space-y-1">
                           <li>起床報告は起床後すぐに行ってください</li>
-                          <li>出発報告では経路のスクリーンショットが必要です</li>
-                          <li>到着報告では身だしなみの写真をアップロードしてください</li>
+                          <li>出発報告では経路と身だしなみの写真が必要です</li>
                           <li>日報提出では業務内容を詳しく記録してください</li>
                           <li>各報告は正確な時間で記録されます</li>
                         </ul>
