@@ -360,7 +360,7 @@ function AttendanceContent() {
                         <span className="text-2xl mr-3">🎉</span>
                         <div>
                           <h3 className="font-semibold text-green-900">本日のタスク完了</h3>
-                          <p className="text-sm text-green-700">お疲れ様でした！本日の全ての報告が完了しています。</p>
+                          <p className="text-sm text-green-700">お疲れ様でした！</p>
                         </div>
                       </div>
                       <button
