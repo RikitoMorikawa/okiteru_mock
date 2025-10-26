@@ -10,90 +10,59 @@ export async function GET(request: NextRequest) {
     try {
       // Get today's date
       const today = new Date();
-      const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+      const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Get yesterday's date
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-      // First, check if there's any data for today
-      const { data: todayRecords } = await (supabaseAdmin as any)
+      // Get the latest active attendance record for today
+      const { data: attendanceRecords } = await (supabaseAdmin as any)
         .from("attendance_records")
-        .select("wake_up_time, departure_time, arrival_time, status, date")
+        .select("wake_up_time, departure_time, arrival_time, status")
         .eq("staff_id", req.user.id)
-        .eq("date", todayStr)
+        .eq("date", dateStr)
         .order("created_at", { ascending: false });
 
-      const todayRecord = todayRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
+      // Find the latest active record or complete record
+      const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
 
-      // If no today's record, check for incomplete yesterday's record
-      let displayRecord = todayRecord;
-      let displayDate = todayStr;
-      let isShowingPreviousDay = false;
-
-      if (!todayRecord) {
-        const { data: yesterdayRecords } = await (supabaseAdmin as any)
-          .from("attendance_records")
-          .select("wake_up_time, departure_time, arrival_time, status, date")
-          .eq("staff_id", req.user.id)
-          .eq("date", yesterdayStr)
-          .order("created_at", { ascending: false });
-
-        const incompleteYesterdayRecord =
-          yesterdayRecords?.find((record: any) => ["pending", "partial", "active"].includes(record.status) && record.status !== "complete") || null;
-
-        if (incompleteYesterdayRecord) {
-          displayRecord = incompleteYesterdayRecord;
-          displayDate = yesterdayStr;
-          isShowingPreviousDay = true;
-        }
-      }
-
-      // Get daily report for the display date
+      // Get the latest active daily report for today (exclude archived and superseded reports)
       const { data: dailyReports } = await (supabaseAdmin as any)
         .from("daily_reports")
         .select("id, status")
         .eq("staff_id", req.user.id)
-        .eq("date", displayDate)
+        .eq("date", dateStr)
         .in("status", ["draft", "submitted"])
         .order("created_at", { ascending: false });
 
       const dailyReport = dailyReports?.[0] || null;
 
-      // Get shift schedule for the display date
+      // Get shift schedule for today (optional - might not exist)
       const { data: shiftSchedule } = await (supabaseAdmin as any)
         .from("shift_schedules")
         .select("id")
         .eq("staff_id", req.user.id)
-        .eq("date", displayDate)
+        .eq("date", dateStr)
         .single();
 
       // Build status object
       const status = {
-        wakeUpReported: !!displayRecord?.wake_up_time,
-        departureReported: !!displayRecord?.departure_time,
-        arrivalReported: !!displayRecord?.arrival_time,
+        wakeUpReported: !!attendanceRecord?.wake_up_time,
+        departureReported: !!attendanceRecord?.departure_time,
+        arrivalReported: !!attendanceRecord?.arrival_time,
         dailyReportSubmitted: !!dailyReport,
         shiftScheduleSubmitted: !!shiftSchedule,
-        dayCompleted: displayRecord?.status === "complete" && displayRecord !== null,
+        dayCompleted: attendanceRecord?.status === "complete" && attendanceRecord !== null,
       };
 
       // Debug logging
-      console.log(`Attendance status for user ${req.user.id} on ${displayDate}:`, {
-        displayRecord: displayRecord ? { ...displayRecord } : null,
+      console.log(`Attendance status for user ${req.user.id} on ${dateStr}:`, {
+        attendanceRecord: attendanceRecord ? { ...attendanceRecord } : null,
         status,
-        isShowingPreviousDay,
       });
 
       return NextResponse.json({
         status,
-        attendanceRecord: displayRecord,
+        attendanceRecord,
         dailyReport,
         shiftSchedule,
-        date: displayDate,
-        isToday: displayDate === todayStr,
-        isShowingPreviousDay,
       });
     } catch (error) {
       console.error("Get attendance status error:", error);

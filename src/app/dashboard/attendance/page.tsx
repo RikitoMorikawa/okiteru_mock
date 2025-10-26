@@ -33,8 +33,6 @@ function AttendanceContent() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStartingNewDay, setIsStartingNewDay] = useState(false);
   const [showNewDayConfirm, setShowNewDayConfirm] = useState(false);
-  const [displayDate, setDisplayDate] = useState<string>("");
-  const [isShowingPreviousDay, setIsShowingPreviousDay] = useState(false);
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
@@ -65,34 +63,11 @@ function AttendanceContent() {
           dailyReportSubmitted: data.status.dailyReportSubmitted || data.status.reportSubmitted || false,
           dayCompleted: data.status.dayCompleted || false,
         });
-        setDisplayDate(data.date);
-        setIsShowingPreviousDay(data.isShowingPreviousDay || false);
       } else {
         console.error("Failed to fetch attendance status");
       }
     } catch (error) {
       console.error("Error fetching attendance status:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reset to today's data
-  const resetToToday = async () => {
-    try {
-      setLoading(true);
-
-      // Call the reset API to ensure today's record exists
-      const resetResponse = await api.post("/api/attendance/reset-for-new-day");
-
-      if (resetResponse.ok) {
-        // Refresh the status after reset
-        await fetchAttendanceStatus();
-      } else {
-        console.error("Failed to reset to today");
-      }
-    } catch (error) {
-      console.error("Error resetting to today:", error);
     } finally {
       setLoading(false);
     }
@@ -327,42 +302,12 @@ function AttendanceContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Previous Day Alert */}
-                {isShowingPreviousDay && (
-                  <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                              fillRule="evenodd"
-                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <div className="ml-2">
-                          <h3 className="text-xs font-medium text-yellow-800">前日のデータが表示されています。</h3>
-                        </div>
-                      </div>
-                      <button
-                        onClick={resetToToday}
-                        disabled={loading}
-                        className="ml-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                      >
-                        {loading ? "更新中..." : "更新"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
                 {/* Progress Indicator */}
                 {/* <ProgressIndicator /> */}
 
-                {/* Next Action Card - Hide when showing previous day */}
+                {/* Next Action Card */}
                 {!loading &&
                   !isTodayCompleted() &&
-                  !isShowingPreviousDay &&
                   (() => {
                     const nextAction = getNextAction();
                     return nextAction ? (
@@ -386,8 +331,8 @@ function AttendanceContent() {
                     ) : null;
                   })()}
 
-                {/* If today is already completed, show completion status - Hide when showing previous day */}
-                {!loading && isTodayCompleted() && !isShowingPreviousDay && (
+                {/* If today is already completed, show completion status */}
+                {!loading && isTodayCompleted() && (
                   <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -407,8 +352,8 @@ function AttendanceContent() {
                   </div>
                 )}
 
-                {/* All Tasks Complete - Show completion button - Hide when showing previous day */}
-                {!loading && !isTodayCompleted() && isAllTasksComplete() && !isShowingPreviousDay && (
+                {/* All Tasks Complete - Show completion button */}
+                {!loading && !isTodayCompleted() && isAllTasksComplete() && (
                   <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -430,29 +375,21 @@ function AttendanceContent() {
                 )}
 
                 {/* Current Time Display */}
-                <div className={`rounded-lg shadow-sm p-4 ${isShowingPreviousDay ? "bg-yellow-50 border border-yellow-200" : "bg-white"}`}>
+                <div className="bg-white rounded-lg shadow-sm p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-3 animate-pulse ${isShowingPreviousDay ? "bg-yellow-400" : "bg-green-400"}`}></div>
-                      <span className={`text-sm font-medium ${isShowingPreviousDay ? "text-yellow-800" : "text-gray-700"}`}>
-                        {isShowingPreviousDay ? "表示中の日付" : "現在時刻"}
-                      </span>
+                      <div className="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
+                      <span className="text-sm font-medium text-gray-700">現在時刻</span>
                     </div>
-                    <div className={`text-lg font-semibold ${isShowingPreviousDay ? "text-yellow-900" : "text-gray-900"}`}>
-                      {isShowingPreviousDay
-                        ? new Date(displayDate).toLocaleDateString("ja-JP", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })
-                        : currentTime.toLocaleString("ja-JP", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                          })}
+                    <div className="text-lg font-semibold text-gray-900">
+                      {currentTime.toLocaleString("ja-JP", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
                     </div>
                   </div>
                 </div>
@@ -482,17 +419,10 @@ function AttendanceContent() {
                     return (
                       <button
                         key={action.id}
-                        onClick={() => !isShowingPreviousDay && setActiveAction(action.id)}
-                        disabled={isShowingPreviousDay}
+                        onClick={() => setActiveAction(action.id)}
                         className={`
-                          relative p-6 rounded-lg border-2 transition-all
-                          ${
-                            isShowingPreviousDay
-                              ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60"
-                              : isCompleted
-                              ? "border-gray-200 bg-gray-50 text-gray-600"
-                              : `${action.color} hover:shadow-lg hover:scale-105`
-                          }
+                          relative p-6 rounded-lg border-2 transition-all hover:shadow-lg hover:scale-105
+                          ${isCompleted ? "border-gray-200 bg-gray-50 text-gray-600" : action.color}
                         `}
                       >
                         <div className="text-center">
@@ -535,10 +465,8 @@ function AttendanceContent() {
                 </div>
 
                 {/* Today's Status Summary */}
-                <div className={`rounded-lg shadow-sm p-6 ${isShowingPreviousDay ? "bg-yellow-50 border border-yellow-200" : "bg-white"}`}>
-                  <h3 className={`text-lg font-semibold mb-4 ${isShowingPreviousDay ? "text-yellow-900" : "text-gray-900"}`}>
-                    {isShowingPreviousDay ? "前日の報告状況" : "本日の報告状況"}
-                  </h3>
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">本日の報告状況</h3>
                   {loading ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
