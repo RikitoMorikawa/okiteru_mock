@@ -187,39 +187,6 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
           </div>
         )}
 
-        {/* Quick Status */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {staff.hasResetToday && !staff.hasActiveRecord ? (
-            // リセット済みの場合の表示
-            <div className="col-span-2 text-center">
-              <div className="text-xs text-gray-500 mb-1">ステータス</div>
-              <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
-            </div>
-          ) : (
-            // 通常の表示
-            <>
-              <div className="text-center">
-                <div className="text-xs text-gray-500 mb-1">起床</div>
-                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-500 mb-1">出発</div>
-                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-500 mb-1">到着</div>
-                <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time)}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-500 mb-1">日報</div>
-                <div className="text-sm font-medium">
-                  {staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" ? "提出済" : "未提出"}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
         {/* Expand/Collapse Button */}
         <button
           onClick={() => setExpanded(!expanded)}
@@ -234,8 +201,42 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
         {/* Expanded Details */}
         {expanded && (
           <div className="mt-4 pt-4 border-t border-gray-200">
+            {/* Quick Status */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {staff.hasResetToday && !staff.hasActiveRecord ? (
+                // リセット済みの場合の表示
+                <div className="col-span-2 text-center">
+                  <div className="text-xs text-gray-500 mb-1">ステータス</div>
+                  <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
+                </div>
+              ) : (
+                // 通常の表示
+                <>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">起床</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">出発</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">到着</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">日報</div>
+                    <div className="text-sm font-medium">
+                      {staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" ? "提出済" : "未提出"}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Task Details */}
             <div className="space-y-2 mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">タスク詳細</h4>
               {tasks.map((task, index) => (
                 <div key={index} className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">{task.name}</span>
@@ -261,14 +262,14 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             </div>
 
             {/* Additional Info */}
-            <div className="text-xs text-gray-500 space-y-1">
+            <div className="text-xs text-gray-500 space-y-1 mb-4">
               <div>最終ログイン: {formatLastLogin(staff.lastLogin)}</div>
               {staff.phone && <div>電話: {staff.phone}</div>}
             </div>
 
             {/* Active Alerts Details */}
             {staff.activeAlerts.length > 0 && (
-              <div className="mt-3">
+              <div className="mb-4">
                 <div className="text-xs font-medium text-gray-700 mb-2">アクティブアラート:</div>
                 <div className="space-y-1">
                   {staff.activeAlerts.map((alert) => (
@@ -281,7 +282,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-4 flex space-x-2">
+            <div className="flex space-x-2">
               <Link
                 href={`/manager/staff/${staff.id}/history`}
                 className="flex-1 px-3 py-2 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 text-center transition-colors"
