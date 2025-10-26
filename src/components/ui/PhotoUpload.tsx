@@ -94,7 +94,7 @@ export default function PhotoUpload({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-xs sm:text-sm font-medium text-gray-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
 
@@ -147,7 +147,7 @@ export default function PhotoUpload({
                     />
                   </svg>
                 </div>
-                <div className="text-xs sm:text-sm text-gray-600">
+                <div className="text-xs text-gray-600">
                   <p className="font-medium truncate">{selectedPhoto.name}</p>
                   <p>{(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
@@ -157,7 +157,7 @@ export default function PhotoUpload({
                     e.stopPropagation();
                     handleRemove();
                   }}
-                  className="text-xs sm:text-sm text-red-600 hover:text-red-500"
+                  className="text-xs text-red-600 hover:text-red-500"
                 >
                   削除
                 </button>
@@ -174,7 +174,7 @@ export default function PhotoUpload({
                   />
                 </svg>
                 <div className="mt-2 sm:mt-4">
-                  <p className="text-xs sm:text-sm text-gray-600">
+                  <p className="text-xs text-gray-600">
                     <span className="font-medium text-blue-600 hover:text-blue-500">ファイルをアップロード</span>
                     <span className="hidden sm:inline"> またはドラッグ&ドロップ</span>
                   </p>
