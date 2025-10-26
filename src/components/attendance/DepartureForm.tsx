@@ -196,7 +196,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           onPhotoSelect={handleRoutePhotoSelect}
           onPhotoRemove={handleRoutePhotoRemove}
           required
-          preview
+          preview={false}
         />
 
         {/* Appearance Photo */}
@@ -207,7 +207,7 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           onPhotoSelect={handleAppearancePhotoSelect}
           onPhotoRemove={handleAppearancePhotoRemove}
           required
-          preview
+          preview={false}
         />
 
         {/* Notes */}
