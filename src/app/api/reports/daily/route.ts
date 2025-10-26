@@ -48,6 +48,17 @@ export async function POST(request: NextRequest) {
           .in("status", ["draft", "submitted"]);
       }
 
+      // Get current attendance record to link with the report
+      const { data: currentAttendanceRecord } = await (supabaseAdmin as any)
+        .from("attendance_records")
+        .select("id")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .in("status", ["pending", "partial", "active", "complete"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
       // Always create a new report
       const { data: newReport, error: insertError } = await (supabaseAdmin as any)
         .from("daily_reports")
@@ -60,6 +71,7 @@ export async function POST(request: NextRequest) {
           challenges,
           tomorrow_plan: tomorrow,
           status: "submitted",
+          attendance_record_id: currentAttendanceRecord?.id || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -79,26 +91,24 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Check if attendance record exists and update status if all tasks are complete
-      const { data: attendanceRecord } = await (supabaseAdmin as any)
-        .from("attendance_records")
-        .select("id, wake_up_time, departure_time, arrival_time, status")
-        .eq("staff_id", req.user.id)
-        .eq("date", dateStr)
-        .in("status", ["pending", "partial", "active"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      // If attendance record exists and all tasks are complete, mark as complete
-      if (attendanceRecord && attendanceRecord.wake_up_time && attendanceRecord.departure_time && attendanceRecord.arrival_time) {
-        await (supabaseAdmin as any)
+      // If attendance record exists, get full details and update status if all tasks are complete
+      if (currentAttendanceRecord) {
+        const { data: attendanceRecord } = await (supabaseAdmin as any)
           .from("attendance_records")
-          .update({
-            status: "complete",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", attendanceRecord.id);
+          .select("id, wake_up_time, departure_time, arrival_time, status")
+          .eq("id", currentAttendanceRecord.id)
+          .single();
+
+        // If all attendance tasks are complete, mark as complete
+        if (attendanceRecord && attendanceRecord.wake_up_time && attendanceRecord.departure_time && attendanceRecord.arrival_time) {
+          await (supabaseAdmin as any)
+            .from("attendance_records")
+            .update({
+              status: "complete",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", attendanceRecord.id);
+        }
       }
 
       return NextResponse.json({
