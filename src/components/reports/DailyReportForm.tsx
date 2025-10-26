@@ -214,48 +214,12 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">日報作成</h2>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">
-              {new Date().toLocaleDateString("ja-JP", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                weekday: "long",
-              })}
-            </p>
-          </div>
-          <div className="text-right">
-            {lastSaved && <p className="text-xs sm:text-sm text-gray-500">最終保存: {lastSaved.toLocaleTimeString("ja-JP")}</p>}
-            <div className="flex items-center mt-1">
-              <div className={`w-2 h-2 rounded-full mr-2 ${isDraft ? "bg-yellow-400" : "bg-gray-300"}`}></div>
-              <span className="text-xs sm:text-sm text-gray-600">{isDraft ? "下書き保存済み" : "未保存"}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Templates */}
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">テンプレート</h3>
+        <div className="flex items-center justify-between">
+            <h2 className="text-lg mb-2 ml-1 sm:text-2xl font-bold text-gray-900">日報作成</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* <button
-            onClick={() => insertTemplate("basic")}
-            className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
-          >
-            <div className="font-medium text-gray-900">基本テンプレート</div>
-            <div className="text-sm text-gray-600">業務内容・成果・課題・予定</div>
-          </button> */}
-          {/* <button
-            onClick={() => insertTemplate("meeting")}
-            className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
-          >
-            <div className="font-medium text-gray-900">営業テンプレート</div>
-            <div className="text-sm text-gray-600">会議・営業・事務・学習</div>
-          </button> */}
           <button
             onClick={() => insertTemplate("simple")}
             className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
@@ -292,13 +256,6 @@ export default function DailyReportForm({ onSuccess }: DailyReportFormProps) {
         {/* Action Buttons */}
         <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
           <div className="flex space-x-3">
-            <button
-              onClick={() => saveDraft(false)}
-              disabled={isSavingDraft || !reportContent.trim()}
-              className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSavingDraft ? "保存中..." : "下書き保存"}
-            </button>
             <button
               onClick={clearForm}
               className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
