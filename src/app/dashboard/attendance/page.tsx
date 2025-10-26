@@ -330,12 +330,14 @@ function AttendanceContent() {
 
                 {/* If today is already completed, show completion status */}
                 {!loading && isTodayCompleted() && (
-                  <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+                  <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <span className="text-2xl mr-3">▶️</span>
+                        <span className="text-2xl mr-3">🎉</span>
                         <div>
-                          <h3 className="font-semibold text-blue-900">本日の業務を開始する</h3>
+                          <div>
+                            <h3 className="font-semibold text-green-900">本日のタスク完了</h3>
+                          </div>
                         </div>
                       </div>
                       <button
@@ -343,13 +345,24 @@ function AttendanceContent() {
                         disabled={isStartingNewDay}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isStartingNewDay ? "開始中..." : "開始"}
+                        {isStartingNewDay ? "開始中..." : "新規開始"}
                       </button>
                     </div>
                   </div>
                 )}
 
                 {/* All Tasks Complete - Show completion button */}
+                {(() => {
+                  const debugInfo = {
+                    loading,
+                    isTodayCompleted: isTodayCompleted(),
+                    isAllTasksComplete: isAllTasksComplete(),
+                    attendanceStatus,
+                    showButton: !loading && !isTodayCompleted() && isAllTasksComplete(),
+                  };
+                  console.log("完了ボタン表示デバッグ:", debugInfo);
+                  return null;
+                })()}
                 {!loading && !isTodayCompleted() && isAllTasksComplete() && (
                   <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
                     <div className="flex items-center justify-between">
@@ -626,17 +639,17 @@ function AttendanceContent() {
       {showNewDayConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">翌日開始の確認</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">更新確認</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-6">
               新しい日を開始しますか？
               <br />
-              <span className="text-xs sm:text-sm text-amber-600">※ 本日の完了状態がリセットされます。</span>
+              <span className="text-xs sm:text-sm text-amber-600">※ 完了状態がリセットされます。</span>
             </p>
 
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowNewDayConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm sm:text-base rounded-md hover:bg-gray-50 transition-colors"
+                className="text-sm　flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm sm:text-base rounded-md hover:bg-gray-50 transition-colors"
               >
                 キャンセル
               </button>
