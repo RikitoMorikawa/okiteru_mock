@@ -99,33 +99,33 @@ export default function PhotoUpload({
       </label>
 
       {selectedPhoto && preview && previewUrl ? (
-        // Preview Mode
+        // Preview Mode - Mobile Optimized
         <div className="relative">
-          <div className="relative w-full max-w-md mx-auto">
-            <Image src={previewUrl} alt="Preview" width={400} height={192} className="w-full h-48 object-cover rounded-lg border-2 border-gray-300" />
+          <div className="relative w-full max-w-xs sm:max-w-md mx-auto">
+            <Image src={previewUrl} alt="Preview" width={300} height={120} className="w-full h-24 sm:h-32 object-cover rounded-lg border-2 border-gray-300" />
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="mt-2 text-center">
-            <p className="text-sm text-gray-600 font-medium">{selectedPhoto.name}</p>
+          <div className="mt-1 text-center">
+            <p className="text-xs text-gray-600 font-medium truncate">{selectedPhoto.name}</p>
             <p className="text-xs text-gray-500">{(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</p>
-            <button type="button" onClick={openFileDialog} className="mt-2 text-sm text-blue-600 hover:text-blue-500">
+            <button type="button" onClick={openFileDialog} className="mt-1 text-xs text-blue-600 hover:text-blue-500">
               別の写真を選択
             </button>
           </div>
         </div>
       ) : (
-        // Upload Mode
+        // Upload Mode - Mobile Optimized
         <div
           className={`
-            relative border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer
+            relative border-2 border-dashed rounded-lg p-3 sm:p-6 transition-colors cursor-pointer
             ${dragActive ? "border-blue-400 bg-blue-50" : error ? "border-red-300 bg-red-50" : "border-gray-300 hover:border-gray-400"}
           `}
           onDragEnter={handleDrag}
@@ -136,9 +136,9 @@ export default function PhotoUpload({
         >
           <div className="text-center">
             {selectedPhoto && !preview ? (
-              // File selected but no preview
-              <div className="space-y-2">
-                <div className="mx-auto h-12 w-12 text-green-400">
+              // File selected but no preview - Mobile Optimized
+              <div className="space-y-1 sm:space-y-2">
+                <div className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-green-400">
                   <svg fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
@@ -147,8 +147,8 @@ export default function PhotoUpload({
                     />
                   </svg>
                 </div>
-                <div className="text-sm text-gray-600">
-                  <p className="font-medium">{selectedPhoto.name}</p>
+                <div className="text-xs sm:text-sm text-gray-600">
+                  <p className="font-medium truncate">{selectedPhoto.name}</p>
                   <p>{(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
                 <button
@@ -157,15 +157,15 @@ export default function PhotoUpload({
                     e.stopPropagation();
                     handleRemove();
                   }}
-                  className="text-sm text-red-600 hover:text-red-500"
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-500"
                 >
                   削除
                 </button>
               </div>
             ) : (
-              // No file selected
+              // No file selected - Mobile Optimized
               <>
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path
                     d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                     strokeWidth={2}
@@ -173,9 +173,10 @@ export default function PhotoUpload({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium text-blue-600 hover:text-blue-500">ファイルをアップロード</span> またはドラッグ&ドロップ
+                <div className="mt-2 sm:mt-4">
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    <span className="font-medium text-blue-600 hover:text-blue-500">ファイルをアップロード</span>
+                    <span className="hidden sm:inline"> またはドラッグ&ドロップ</span>
                   </p>
                   <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF 最大{maxSize}MB</p>
                 </div>
