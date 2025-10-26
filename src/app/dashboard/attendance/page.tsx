@@ -10,7 +10,7 @@ import WakeUpForm from "@/components/attendance/WakeUpForm";
 import DepartureForm from "@/components/attendance/DepartureForm";
 import ArrivalForm from "@/components/attendance/ArrivalForm";
 import DailyReportForm from "@/components/reports/DailyReportForm";
-import ProgressIndicator from "@/components/attendance/ProgressIndicator";
+
 import { api } from "@/lib/api-client";
 
 type AttendanceAction = "wakeup" | "departure" | "arrival" | "report" | null;
@@ -302,9 +302,6 @@ function AttendanceContent() {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Progress Indicator */}
-                {/* <ProgressIndicator /> */}
-
                 {/* Next Action Card */}
                 {!loading &&
                   !isTodayCompleted() &&
@@ -415,14 +412,22 @@ function AttendanceContent() {
                     const isCompleted = getStatus(action.id);
                     const nextAction = getNextAction();
                     const isNextAction = nextAction?.action === action.id;
+                    const isDayCompleted = isTodayCompleted();
 
                     return (
                       <button
                         key={action.id}
-                        onClick={() => setActiveAction(action.id)}
+                        onClick={() => !isDayCompleted && setActiveAction(action.id)}
+                        disabled={isDayCompleted}
                         className={`
-                          relative p-6 rounded-lg border-2 transition-all hover:shadow-lg hover:scale-105
-                          ${isCompleted ? "border-gray-200 bg-gray-50 text-gray-600" : action.color}
+                          relative p-6 rounded-lg border-2 transition-all 
+                          ${
+                            isDayCompleted
+                              ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60"
+                              : isCompleted
+                              ? "border-gray-200 bg-gray-50 text-gray-600 hover:shadow-lg hover:scale-105"
+                              : `${action.color} hover:shadow-lg hover:scale-105`
+                          }
                         `}
                       >
                         <div className="text-center">
@@ -431,7 +436,21 @@ function AttendanceContent() {
                           <p className="text-sm opacity-80">{action.description}</p>
 
                           {/* Status indicators */}
-                          {isCompleted && (
+                          {isDayCompleted && (
+                            <div className="absolute top-2 right-2">
+                              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+
+                          {!isDayCompleted && isCompleted && (
                             <div className="absolute top-2 right-2">
                               <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -445,7 +464,7 @@ function AttendanceContent() {
                             </div>
                           )}
 
-                          {isNextAction && !isCompleted && (
+                          {!isDayCompleted && isNextAction && !isCompleted && (
                             <div className="absolute top-2 right-2">
                               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
