@@ -561,38 +561,38 @@ function AttendanceContent() {
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">報告終了の確認</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">報告終了の確認</h3>
 
             {isAllTasksComplete() ? (
-              <p className="text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
                 本日の業務報告を終了しますか？
                 <br />
                 この操作により、本日のタスクがリセットされ、新しい日の準備が整います。
               </p>
             ) : (
               <div className="mb-6">
-                <p className="text-amber-600 mb-3">⚠️ まだ完了していないタスクがあります：</p>
-                <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                <p className="text-sm sm:text-base text-amber-600 mb-3">⚠️ まだ完了していないタスクがあります：</p>
+                <ul className="text-xs sm:text-sm text-gray-600 space-y-1 mb-4">
                   {!attendanceStatus.wakeUpReported && <li>• 起床報告</li>}
                   {!attendanceStatus.departureReported && <li>• 出発報告</li>}
                   {!attendanceStatus.arrivalReported && <li>• 到着報告</li>}
                   {!attendanceStatus.reportSubmitted && <li>• 日報提出</li>}
                 </ul>
-                <p className="text-gray-600">それでも業務を終了しますか？</p>
+                <p className="text-sm sm:text-base text-gray-600">それでも業務を終了しますか？</p>
               </div>
             )}
 
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm sm:text-base"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleCompleteDay}
                 disabled={isCompleting}
-                className={`flex-1 px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 ${
+                className={`flex-1 px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 text-sm sm:text-base ${
                   isAllTasksComplete() ? "bg-green-600 hover:bg-green-700" : "bg-amber-600 hover:bg-amber-700"
                 }`}
               >
