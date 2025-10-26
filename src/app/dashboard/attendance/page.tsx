@@ -336,9 +336,9 @@ function AttendanceContent() {
                   <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <span className="text-2xl mr-3">✅</span>
+                        <span className="text-2xl mr-3">▶️</span>
                         <div>
-                          <h3 className="font-semibold text-blue-900">本日の業務完了済み</h3>
+                          <h3 className="font-semibold text-blue-900">本日の業務を開始する</h3>
                         </div>
                       </div>
                       <button
@@ -346,7 +346,7 @@ function AttendanceContent() {
                         disabled={isStartingNewDay}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isStartingNewDay ? "開始中..." : "翌日開始"}
+                        {isStartingNewDay ? "開始中..." : "開始"}
                       </button>
                     </div>
                   </div>
