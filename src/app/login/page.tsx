@@ -145,12 +145,6 @@ export default function LoginPage() {
               )}
             </button>
           </div>
-
-          <div className="text-center">
-            <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-              初回セットアップ（管理者登録）
-            </Link>
-          </div>
         </form>
       </div>
     </div>

@@ -170,12 +170,6 @@ export default function RegisterPage() {
               {loading ? "登録中..." : "スタッフアカウントを作成"}
             </button>
           </div>
-
-          <div className="text-center">
-            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-              既にアカウントをお持ちの方はこちら
-            </Link>
-          </div>
         </form>
       </div>
     </div>
