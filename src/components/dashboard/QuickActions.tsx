@@ -148,6 +148,12 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
 
   const quickActionItems = [
     {
+      title: "前日報告",
+      href: "/dashboard/attendance?action=previous-day",
+      icon: "🌙",
+      completed: attendanceStatus.previousDayReported || false,
+    },
+    {
       title: "起床報告",
       href: "/dashboard/attendance?action=wakeup",
       icon: "🌅",
@@ -399,7 +405,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
             </button>
           )} */}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {quickActionItems.map((item) => (
             <Link
               key={item.title}

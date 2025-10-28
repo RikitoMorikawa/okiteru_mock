@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      const { departure_time, destination, route_photo_url, appearance_photo_url, notes } = await request.json();
+      const { departure_time, destination, notes } = await request.json();
 
       // Validate required fields
       if (!departure_time) {
@@ -71,14 +71,6 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         };
 
-        if (route_photo_url) {
-          updateData.route_photo_url = route_photo_url;
-        }
-
-        if (appearance_photo_url) {
-          updateData.appearance_photo_url = appearance_photo_url;
-        }
-
         if (destination && destination.trim()) {
           updateData.destination = destination.trim();
         }
@@ -120,14 +112,6 @@ export async function POST(request: NextRequest) {
         departure_time: departureDate.toISOString(),
         status: "partial",
       };
-
-      if (route_photo_url) {
-        insertData.route_photo_url = route_photo_url;
-      }
-
-      if (appearance_photo_url) {
-        insertData.appearance_photo_url = appearance_photo_url;
-      }
 
       if (destination && destination.trim()) {
         insertData.destination = destination.trim();

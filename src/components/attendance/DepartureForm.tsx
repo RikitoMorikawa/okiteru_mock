@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api-client";
-import PhotoUpload from "@/components/ui/PhotoUpload";
-import { uploadRoutePhoto, uploadAppearancePhoto, getTodayDateString, validateImageFile } from "@/lib/storage";
 
 interface DepartureFormProps {
   onSuccess: () => void;
@@ -17,43 +15,9 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
     return now.toTimeString().slice(0, 5); // HH:MM format
   });
   const [destination, setDestination] = useState("");
-  const [routePhoto, setRoutePhoto] = useState<File | null>(null);
-  const [appearancePhoto, setAppearancePhoto] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  const handleRoutePhotoSelect = (file: File) => {
-    const validationError = validateImageFile(file, 5);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setRoutePhoto(file);
-    setError("");
-  };
-
-  const handleRoutePhotoRemove = () => {
-    setRoutePhoto(null);
-    setError("");
-  };
-
-  const handleAppearancePhotoSelect = (file: File) => {
-    const validationError = validateImageFile(file, 5);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setAppearancePhoto(file);
-    setError("");
-  };
-
-  const handleAppearancePhotoRemove = () => {
-    setAppearancePhoto(null);
-    setError("");
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,14 +34,6 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
         throw new Error("目的地を入力してください");
       }
 
-      if (!routePhoto) {
-        throw new Error("経路のスクリーンショットをアップロードしてください");
-      }
-
-      if (!appearancePhoto) {
-        throw new Error("身だしなみの写真をアップロードしてください");
-      }
-
       // Create datetime from today's date and selected time
       const today = new Date();
       const [hours, minutes] = departureTime.split(":").map(Number);
@@ -88,26 +44,9 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
         throw new Error("出発時間は現在時刻より前である必要があります");
       }
 
-      // Upload photos to storage
-      let routePhotoUrl = null;
-      let appearancePhotoUrl = null;
-      const todayDate = getTodayDateString();
-
-      if (routePhoto) {
-        const routeUploadResult = await uploadRoutePhoto(routePhoto, user!.id, todayDate);
-        routePhotoUrl = routeUploadResult.url;
-      }
-
-      if (appearancePhoto) {
-        const appearanceUploadResult = await uploadAppearancePhoto(appearancePhoto, user!.id, todayDate);
-        appearancePhotoUrl = appearanceUploadResult.url;
-      }
-
       const response = await api.post("/api/attendance/departure", {
         departure_time: departureDateTime.toISOString(),
         destination: destination.trim(),
-        route_photo_url: routePhotoUrl,
-        appearance_photo_url: appearancePhotoUrl,
         notes: notes.trim(),
       });
 
@@ -188,28 +127,6 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           />
         </div>
 
-        {/* Route Photo */}
-        <PhotoUpload
-          label="経路スクリーンショット"
-          // description="ナビアプリの経路画面のスクリーンショットをアップロードしてください"
-          selectedPhoto={routePhoto}
-          onPhotoSelect={handleRoutePhotoSelect}
-          onPhotoRemove={handleRoutePhotoRemove}
-          required
-          preview={false}
-        />
-
-        {/* Appearance Photo */}
-        <PhotoUpload
-          label="身だしなみ写真"
-          // description="出発前の身だしなみを確認できる写真をアップロードしてください"
-          selectedPhoto={appearancePhoto}
-          onPhotoSelect={handleAppearancePhotoSelect}
-          onPhotoRemove={handleAppearancePhotoRemove}
-          required
-          preview={false}
-        />
-
         {/* Notes */}
         <div>
           <label htmlFor="notes" className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
@@ -281,9 +198,9 @@ export default function DepartureForm({ onSuccess }: DepartureFormProps) {
           <div className="text-xs sm:text-sm text-blue-700">
             <ul className="list-disc pl-4 space-y-1">
               <li>出発前または出発直後に報告してください</li>
-              <li>経路と身だしなみ写真は必須です</li>
               <li>目的地は正確に入力してください</li>
               <li>交通状況に変更があった場合は備考欄に記入してください</li>
+              <li>身だしなみ写真と経路確認は前日報告で事前に提出してください</li>
             </ul>
           </div>
         </div>

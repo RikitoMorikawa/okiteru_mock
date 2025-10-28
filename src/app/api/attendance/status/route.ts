@@ -20,6 +20,14 @@ export async function GET(request: NextRequest) {
         .eq("date", dateStr)
         .order("created_at", { ascending: false });
 
+      // Get previous day report for today
+      const { data: previousDayReport } = await (supabaseAdmin as any)
+        .from("previous_day_reports")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .eq("report_date", dateStr)
+        .single();
+
       // Find the latest active record or complete record
       const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
 
@@ -44,6 +52,7 @@ export async function GET(request: NextRequest) {
 
       // Build status object
       const status = {
+        previousDayReported: !!previousDayReport,
         wakeUpReported: !!attendanceRecord?.wake_up_time,
         departureReported: !!attendanceRecord?.departure_time,
         arrivalReported: !!attendanceRecord?.arrival_time,
@@ -63,6 +72,7 @@ export async function GET(request: NextRequest) {
         attendanceRecord,
         dailyReport,
         shiftSchedule,
+        previousDayReport,
       });
     } catch (error) {
       console.error("Get attendance status error:", error);

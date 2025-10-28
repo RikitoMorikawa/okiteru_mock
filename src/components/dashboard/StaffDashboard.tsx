@@ -8,6 +8,7 @@ import StatusIndicator from "./StatusIndicator";
 import QuickActions from "./QuickActions";
 
 interface AttendanceStatus {
+  previousDayReported?: boolean;
   wakeUpReported: boolean;
   departureReported: boolean;
   arrivalReported: boolean;
@@ -19,6 +20,7 @@ interface AttendanceStatus {
 export default function StaffDashboard() {
   const { user } = useAuth();
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>({
+    previousDayReported: false,
     wakeUpReported: false,
     departureReported: false,
     arrivalReported: false,
@@ -101,13 +103,14 @@ export default function StaffDashboard() {
 
   const getTodayProgress = () => {
     const tasks = [
+      attendanceStatus.previousDayReported,
       attendanceStatus.wakeUpReported,
       attendanceStatus.departureReported,
       attendanceStatus.arrivalReported,
       attendanceStatus.dailyReportSubmitted,
     ];
     const completed = tasks.filter(Boolean).length;
-    const total = tasks.length; // 明示的に4つ
+    const total = tasks.length; // 明示的に5つ
     return { completed, total, percentage: Math.round((completed / total) * 100) };
   };
 
@@ -166,10 +169,11 @@ export default function StaffDashboard() {
             <QuickActions attendanceStatus={attendanceStatus} onStatusUpdate={fetchAttendanceStatus} />
 
             {/* Today's Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+              <StatusCard title="前日報告" status={attendanceStatus.previousDayReported || false} icon="🌙" description="翌日の予定と準備" />
               <StatusCard title="起床報告" status={attendanceStatus.wakeUpReported} icon="🌅" description="起床時間を報告" />
-              <StatusCard title="出発報告" status={attendanceStatus.departureReported} icon="🚗" description="出発時間と経路写真" />
-              <StatusCard title="到着報告" status={attendanceStatus.arrivalReported} icon="🏢" description="到着時間と身だしなみ写真" />
+              <StatusCard title="出発報告" status={attendanceStatus.departureReported} icon="🚗" description="出発時間と目的地" />
+              <StatusCard title="到着報告" status={attendanceStatus.arrivalReported} icon="🏢" description="到着時間と場所" />
               <StatusCard title="日報提出" status={attendanceStatus.dailyReportSubmitted} icon="📝" description="本日の業務報告" />
               {/* <StatusCard title="シフト提出" status={attendanceStatus.shiftScheduleSubmitted} icon="📅" description="来週のシフト予定" /> */}
             </div>

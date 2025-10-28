@@ -9,11 +9,12 @@ import StatusIndicator from "@/components/dashboard/StatusIndicator";
 import WakeUpForm from "@/components/attendance/WakeUpForm";
 import DepartureForm from "@/components/attendance/DepartureForm";
 import ArrivalForm from "@/components/attendance/ArrivalForm";
+import PreviousDayForm from "@/components/attendance/PreviousDayForm";
 import DailyReportForm from "@/components/reports/DailyReportForm";
 
 import { api } from "@/lib/api-client";
 
-type AttendanceAction = "wakeup" | "departure" | "arrival" | "report" | null;
+type AttendanceAction = "previous-day" | "wakeup" | "departure" | "arrival" | "report" | null;
 
 function AttendanceContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ function AttendanceContent() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [attendanceStatus, setAttendanceStatus] = useState({
+    previousDayReported: false,
     wakeUpReported: false,
     departureReported: false,
     arrivalReported: false,
@@ -56,6 +58,7 @@ function AttendanceContent() {
       if (response.ok) {
         const data = await response.json();
         setAttendanceStatus({
+          previousDayReported: data.status.previousDayReported || false,
           wakeUpReported: data.status.wakeUpReported,
           departureReported: data.status.departureReported,
           arrivalReported: data.status.arrivalReported,
@@ -208,6 +211,13 @@ function AttendanceContent() {
 
   const attendanceActions = [
     {
+      id: "previous-day" as const,
+      title: "前日報告",
+      description: "翌日の予定と準備状況を報告",
+      icon: "🌙",
+      color: "bg-indigo-50 border-indigo-200 text-indigo-700",
+    },
+    {
       id: "wakeup" as const,
       title: "起床報告",
       description: "起床時間を記録します",
@@ -217,14 +227,14 @@ function AttendanceContent() {
     {
       id: "departure" as const,
       title: "出発報告",
-      description: "出発時間と経路写真をアップロード",
+      description: "出発時間と目的地を報告",
       icon: "🚗",
       color: "bg-blue-50 border-blue-200 text-blue-700",
     },
     {
       id: "arrival" as const,
       title: "到着報告",
-      description: "到着時間と身だしなみ写真をアップロード",
+      description: "到着時間と場所を報告",
       icon: "🏢",
       color: "bg-green-50 border-green-200 text-green-700",
     },
@@ -239,6 +249,8 @@ function AttendanceContent() {
 
   const renderActiveForm = () => {
     switch (activeAction) {
+      case "previous-day":
+        return <PreviousDayForm onSuccess={() => setActiveAction(null)} />;
       case "wakeup":
         return <WakeUpForm onSuccess={() => setActiveAction(null)} />;
       case "departure":
@@ -405,10 +417,12 @@ function AttendanceContent() {
                 </div>
 
                 {/* Attendance Action Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   {attendanceActions.map((action) => {
                     const getStatus = (actionId: string) => {
                       switch (actionId) {
+                        case "previous-day":
+                          return attendanceStatus.previousDayReported || false;
                         case "wakeup":
                           return attendanceStatus.wakeUpReported;
                         case "departure":
@@ -509,6 +523,8 @@ function AttendanceContent() {
                       {attendanceActions.map((action) => {
                         const getStatus = (actionId: string) => {
                           switch (actionId) {
+                            case "previous-day":
+                              return attendanceStatus.previousDayReported || false;
                             case "wakeup":
                               return attendanceStatus.wakeUpReported;
                             case "departure":
@@ -575,8 +591,9 @@ function AttendanceContent() {
                     </div>
                     <div className="text-xs sm:text-sm text-blue-700">
                       <ul className="list-disc pl-4 space-y-1">
+                        <li>前日報告で翌日の準備状況を事前に確認してください</li>
                         <li>起床報告は起床後すぐに行ってください</li>
-                        <li>出発報告では経路と身だしなみの写真が必要です</li>
+                        <li>出発報告では目的地を正確に入力してください</li>
                         <li>日報提出では業務内容を詳しく記録してください</li>
                         <li>各報告は正確な時間で記録して下さい</li>
                       </ul>
