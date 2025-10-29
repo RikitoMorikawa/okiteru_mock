@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, FilterOptions } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
+import StatsDetailModal from "./StatsDetailModal";
 import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffWithStatus extends User {
@@ -34,6 +35,10 @@ export default function ManagerDashboard() {
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [statsModal, setStatsModal] = useState<{
+    isOpen: boolean;
+    type: "previous" | "preparing" | "active" | "completed" | null;
+  }>({ isOpen: false, type: null });
 
   // Update current time every minute
   useEffect(() => {
@@ -291,6 +296,65 @@ export default function ManagerDashboard() {
     };
   };
 
+  // Get detailed stats for modal
+  const getStatsDetail = (type: "previous" | "preparing" | "active" | "completed") => {
+    const activeStaff = staffList.filter((staff) => staff.active);
+
+    switch (type) {
+      case "previous":
+        return {
+          // 前日報告: 実際に前日報告をしているか、または後の段階（到着報告、日報完了）まで進んでいる人
+          completed: activeStaff.filter(
+            (staff) => staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: activeStaff.filter(
+            (staff) =>
+              !staff.previousDayReport && !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+        };
+      case "preparing":
+        return {
+          // 準備中: 起床報告したが到着報告していない人、または後の段階（到着報告、日報完了）まで進んでいる人
+          completed: activeStaff.filter(
+            (staff) =>
+              (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+              staff.todayAttendance?.arrival_time ||
+              staff.todayReport ||
+              (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: activeStaff.filter(
+            (staff) =>
+              !staff.todayAttendance?.wake_up_time &&
+              !staff.todayAttendance?.arrival_time &&
+              !staff.todayReport &&
+              !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+        };
+      case "active":
+        return {
+          // 活動中: 到着報告したが日報未提出の人、または日報完了済みの人
+          completed: activeStaff.filter(
+            (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: activeStaff.filter(
+            (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+        };
+      case "completed":
+        return {
+          completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
+          pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
+        };
+      default:
+        return { completed: [], pending: [] };
+    }
+  };
+
+  // Handle stats card click
+  const handleStatsCardClick = (type: "previous" | "preparing" | "active" | "completed") => {
+    setStatsModal({ isOpen: true, type });
+  };
+
   // Set up real-time subscriptions
   useEffect(() => {
     fetchStaffData();
@@ -447,10 +511,35 @@ export default function ManagerDashboard() {
             subtitle={`/ ${stats.activeStaffCount}`}
             icon="📅"
             color="orange"
+            onClick={() => handleStatsCardClick("previous")}
           />
-          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} subtitle={`/ ${stats.activeStaffCount}`} icon="⏳" color="gray" />
-          <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} subtitle={`/ ${stats.activeStaffCount}`} icon="✅" color="green" />
-          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaffCount}`} icon="📝" color="purple" />
+          <StatCard
+            title="準備中"
+            mobileTitle="準備中"
+            value={stats.preparingStaff}
+            subtitle={`/ ${stats.activeStaffCount}`}
+            icon="⏳"
+            color="gray"
+            onClick={() => handleStatsCardClick("preparing")}
+          />
+          <StatCard
+            title="活動中"
+            mobileTitle="活動中"
+            value={stats.activeToday}
+            subtitle={`/ ${stats.activeStaffCount}`}
+            icon="✅"
+            color="green"
+            onClick={() => handleStatsCardClick("active")}
+          />
+          <StatCard
+            title="完了報告"
+            mobileTitle="完了"
+            value={stats.completedReports}
+            subtitle={`/ ${stats.activeStaffCount}`}
+            icon="📝"
+            color="purple"
+            onClick={() => handleStatsCardClick("completed")}
+          />
         </div>
 
         {/* Filters */}
@@ -493,6 +582,21 @@ export default function ManagerDashboard() {
           )}
         </div>
       </div>
+
+      {/* Stats Detail Modal */}
+      {statsModal.type && (
+        <StatsDetailModal
+          isOpen={statsModal.isOpen}
+          onClose={() => setStatsModal({ isOpen: false, type: null })}
+          title={
+            statsModal.type === "previous" ? "前日報告" : statsModal.type === "preparing" ? "準備中" : statsModal.type === "active" ? "活動中" : "完了報告"
+          }
+          icon={statsModal.type === "previous" ? "📅" : statsModal.type === "preparing" ? "⏳" : statsModal.type === "active" ? "✅" : "📝"}
+          completedStaff={getStatsDetail(statsModal.type).completed}
+          pendingStaff={getStatsDetail(statsModal.type).pending}
+          totalActiveStaff={staffList.filter((staff) => staff.active).length}
+        />
+      )}
     </div>
   );
 }
@@ -504,9 +608,10 @@ interface StatCardProps {
   subtitle?: string;
   icon: string;
   color: "blue" | "green" | "red" | "purple" | "gray" | "orange";
+  onClick?: () => void;
 }
 
-function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCardProps) {
+function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick }: StatCardProps) {
   const colorClasses = {
     blue: "bg-blue-50 text-blue-600 border-blue-200",
     green: "bg-green-50 text-green-600 border-green-200",
@@ -517,7 +622,12 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color }: StatCard
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[color]}`}>
+    <div
+      className={`bg-white rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[color]} ${
+        onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between sm:block">
         {/* Mobile: Single line layout */}
         <div className="flex items-center sm:hidden">
