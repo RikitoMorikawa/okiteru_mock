@@ -56,17 +56,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Mark any draft reports as submitted (if they exist)
+      // Mark any reports as archived (completed day)
       const { error: reportUpdateError } = await (supabaseAdmin as any)
         .from("daily_reports")
         .update({
-          status: "submitted",
+          status: "archived",
           submitted_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("staff_id", req.user.id)
         .eq("date", today)
-        .eq("status", "draft");
+        .in("status", ["draft", "submitted"]);
 
       if (reportUpdateError) {
         console.error("Error updating daily reports:", reportUpdateError);

@@ -31,16 +31,16 @@ export async function GET(request: NextRequest) {
         .limit(1)
         .single();
 
-      // Find the latest active record or complete record
+      // Find the latest active record (exclude archived records)
       const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
 
-      // Get the latest active daily report for today (exclude archived and superseded reports)
+      // Get the latest active daily report for today (exclude archived reports)
       const { data: dailyReports } = await (supabaseAdmin as any)
         .from("daily_reports")
         .select("id, status")
         .eq("staff_id", req.user.id)
         .eq("date", dateStr)
-        .in("status", ["draft", "submitted"])
+        .in("status", ["draft", "submitted"]) // archivedは除外
         .order("created_at", { ascending: false });
 
       const dailyReport = dailyReports?.[0] || null;
