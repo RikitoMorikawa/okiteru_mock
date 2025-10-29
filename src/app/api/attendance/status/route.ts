@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
         .eq("date", dateStr)
         .order("created_at", { ascending: false });
 
-      // Find the latest active record (exclude archived records)
-      const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
+      // Find the latest active record (exclude archived and complete records)
+      const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active"].includes(record.status)) || null;
 
       // Get previous day report for today's progress
       // 今日の進捗として、今日のattendance_recordに紐づいた前日報告があるかチェック

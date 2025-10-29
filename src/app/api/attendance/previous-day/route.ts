@@ -22,6 +22,40 @@ export async function POST(request: NextRequest) {
       const today = new Date();
       const todayDateString = today.toISOString().split("T")[0];
 
+      // 新しいサイクルを開始するため、既存のattendance_recordをarchivedにする
+
+      // 今日の既存のattendance_recordsをarchivedにする
+      const { error: archiveError } = await (supabaseAdmin as any)
+        .from("attendance_records")
+        .update({
+          status: "archived",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("staff_id", req.user.id)
+        .eq("date", todayDateString)
+        .in("status", ["pending", "partial", "active", "complete"]);
+
+      if (archiveError) {
+        console.error("既存レコードのアーカイブエラー:", archiveError);
+        // エラーでも続行（新しいサイクルを開始）
+      }
+
+      // 今日の既存の日報もarchivedにする
+      const { error: reportArchiveError } = await (supabaseAdmin as any)
+        .from("daily_reports")
+        .update({
+          status: "archived",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("staff_id", req.user.id)
+        .eq("date", todayDateString)
+        .in("status", ["draft", "submitted"]);
+
+      if (reportArchiveError) {
+        console.error("既存日報のアーカイブエラー:", reportArchiveError);
+        // エラーでも続行（新しいサイクルを開始）
+      }
+
       // 常に新しい前日報告を作成
       const reportData = {
         user_id: req.user.id,

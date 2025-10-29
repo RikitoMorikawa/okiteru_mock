@@ -137,11 +137,12 @@ export default function ManagerDashboard() {
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         // Find the most recent attendance record (including reset records)
-        const todayAttendance = staffAttendanceRecords[0]; // Most recent record
+        // Get the most recent active attendance record (exclude archived, complete, and reset)
+        const todayAttendance = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status)) || undefined;
 
         // Check if user has been reset today (has reset record but no active record)
         const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
-        const hasActiveRecord = staffAttendanceRecords.some((record) => record.status !== "reset");
+        const hasActiveRecord = staffAttendanceRecords.some((record) => ["pending", "partial", "active"].includes(record.status));
 
         // Get reset record details if exists
         const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");

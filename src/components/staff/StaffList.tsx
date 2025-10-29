@@ -84,7 +84,12 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
 
       // Combine data
       const staffWithDetails: StaffWithDetails[] = ((staff as User[]) || []).map((staffMember) => {
-        const todayAttendanceRecord = ((todayAttendance as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
+        // Get the most recent active attendance record for this staff member
+        const staffAttendanceRecords = ((todayAttendance as AttendanceRecord[]) || [])
+          .filter((record) => record.staff_id === staffMember.id)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        const todayAttendanceRecord = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status)) || undefined;
         const todayReportRecord = ((todayReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
 
         // 前日報告の検索: 今日のattendance_recordに紐づいたものまたは未使用のもの
