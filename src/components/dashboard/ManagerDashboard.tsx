@@ -256,15 +256,29 @@ export default function ManagerDashboard() {
     const totalStaff = staffList.length;
     const activeStaffCount = staffList.filter((staff) => staff.active).length;
 
-    // 活動予定スタッフの中で前日報告をしている人数
-    const activeStaffWithPreviousDayReport = staffList.filter((staff) => staff.active && staff.previousDayReport).length;
+    // 前日報告: 実際に前日報告をしているか、または後の段階まで進んでいる人数
+    const activeStaffWithPreviousDayReport = staffList.filter(
+      (staff) =>
+        staff.active && (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+    ).length;
 
-    // 準備中: 活動ステータスがtrueで、起床報告したが到着報告していない人数
-    const preparingStaff = staffList.filter((staff) => staff.active && staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
-    // 活動中: 活動ステータスがtrueで、到着報告完了したが日報未提出のユーザー
-    const activeToday = staffList.filter((staff) => staff.active && staff.todayAttendance?.arrival_time && !staff.todayReport).length;
-    // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
-    const completedReports = staffList.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)).length;
+    // 準備中: 起床報告したが到着報告していない人、または後の段階まで進んでいる人数
+    const preparingStaff = staffList.filter(
+      (staff) =>
+        staff.active &&
+        ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+          staff.todayAttendance?.arrival_time ||
+          staff.todayReport ||
+          (staff.hasResetToday && !staff.hasActiveRecord))
+    ).length;
+
+    // 活動中: 到着報告したが日報未提出の人、または日報完了済みの人数
+    const activeToday = staffList.filter(
+      (staff) =>
+        staff.active && ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+    ).length;
+    // 完了報告: 活動中スタッフで日報提出済みまたはリセット済みの人数
+    const completedReports = staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
 
