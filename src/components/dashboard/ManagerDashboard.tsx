@@ -219,35 +219,54 @@ export default function ManagerDashboard() {
       });
     }
 
-    // Apply sorting
+    // Apply sorting - 活動中ユーザーを最初に、その中で進捗が遅い順
     filtered.sort((a, b) => {
+      // まず活動ステータスで分ける（active: true を最初に）
+      if (a.active !== b.active) {
+        return b.active ? 1 : -1; // active: true が先に来る
+      }
+
+      // 同じ活動ステータス内では、選択されたソート方法に従う
       switch (filters.sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
         case "status":
           const aScore = getActivityScore(a);
           const bScore = getActivityScore(b);
-          return bScore - aScore;
+          // 進捗が遅い順（スコアが低い順）
+          return aScore - bScore;
         case "lastActivity":
           const aTime = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
           const bTime = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
           return bTime - aTime;
         default:
-          return 0;
+          // デフォルトは進捗が遅い順
+          const defaultAScore = getActivityScore(a);
+          const defaultBScore = getActivityScore(b);
+          return defaultAScore - defaultBScore;
       }
     });
 
     setFilteredStaff(filtered);
   }, [staffList, filters]);
 
-  // Calculate activity score for sorting
+  // Calculate activity score for sorting (低いスコア = 進捗が遅い)
   const getActivityScore = (staff: StaffWithStatus) => {
     let score = 0;
     if (staff.previousDayReport) score += 1;
     if (staff.todayAttendance?.wake_up_time) score += 1;
     if (staff.todayAttendance?.departure_time) score += 1;
     if (staff.todayAttendance?.arrival_time) score += 1;
-    if (staff.todayReport) score += 1;
+    if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) score += 1;
+
+    // デバッグ用ログ
+    console.log(
+      `[DEBUG] ${staff.name}: score=${score}, previous=${!!staff.previousDayReport}, wake=${!!staff.todayAttendance?.wake_up_time}, departure=${!!staff
+        .todayAttendance?.departure_time}, arrival=${!!staff.todayAttendance?.arrival_time}, report=${!!staff.todayReport}, reset=${
+        staff.hasResetToday && !staff.hasActiveRecord
+      }`
+    );
+
     return score;
   };
 
