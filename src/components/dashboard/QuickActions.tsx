@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api } from "@/lib/api-client";
 
 interface AttendanceStatus {
+  previousDayReported?: boolean;
   wakeUpReported: boolean;
   departureReported: boolean;
   arrivalReported: boolean;
