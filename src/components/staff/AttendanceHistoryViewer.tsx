@@ -79,6 +79,7 @@ export default function AttendanceHistoryViewer({ attendanceData, staffId, dateR
       pending: "bg-gray-100 text-gray-800",
       active: "bg-blue-100 text-blue-800",
       reset: "bg-red-100 text-red-800",
+      archived: "bg-purple-100 text-purple-800",
     };
 
     const labels = {
@@ -87,6 +88,7 @@ export default function AttendanceHistoryViewer({ attendanceData, staffId, dateR
       pending: "未完了",
       active: "進行中",
       reset: "リセット",
+      archived: "アーカイブ",
     };
 
     return <span className={`px-2 py-1 text-xs font-medium rounded-full ${badges[status]}`}>{labels[status]}</span>;
