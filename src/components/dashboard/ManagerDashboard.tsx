@@ -648,8 +648,8 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, i
     orange: "bg-orange-50 text-orange-600 border-orange-200",
   };
 
-  // 数字の色は常に通常の黒
-  const valueTextColor = "text-gray-900";
+  // 完了済みは黒字、未完了がある場合はオレンジ
+  const valueTextColor = isCompleted ? "text-gray-900" : "text-orange-600";
 
   // 全員完了時は背景をより濃いグレーに
   const backgroundClass = isCompleted ? "bg-gray-200" : "bg-white";
