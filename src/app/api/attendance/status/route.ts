@@ -20,12 +20,16 @@ export async function GET(request: NextRequest) {
         .eq("date", dateStr)
         .order("created_at", { ascending: false });
 
-      // Get previous day report for today
+      // Get previous day report for yesterday (前日の日付で前日報告を取得)
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayDateStr = yesterday.toISOString().split("T")[0];
+
       const { data: previousDayReport } = await (supabaseAdmin as any)
         .from("previous_day_reports")
         .select("id")
         .eq("user_id", req.user.id)
-        .eq("report_date", dateStr)
+        .eq("report_date", yesterdayDateStr)
         .single();
 
       // Find the latest active record or complete record
