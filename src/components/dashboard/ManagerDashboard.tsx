@@ -318,23 +318,37 @@ export default function ManagerDashboard() {
             (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 準備中: 起床報告したが到着報告していない人、または後の段階まで進んでいる人数
-    const preparingStaff = staffList.filter(
-      (staff) =>
-        staff.active &&
-        ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
-          staff.todayAttendance?.arrival_time ||
-          staff.todayReport ||
-          (staff.hasResetToday && !staff.hasActiveRecord))
-    ).length;
+    // 準備中: 表示モードに応じて計算
+    const preparingStaff = showTodayReports
+      ? // 本日モード: 0（基本的に前日報告以外は0）
+        0
+      : // 昨日モード: 従来の計算
+        staffList.filter(
+          (staff) =>
+            staff.active &&
+            ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+              staff.todayAttendance?.arrival_time ||
+              staff.todayReport ||
+              (staff.hasResetToday && !staff.hasActiveRecord))
+        ).length;
 
-    // 活動中: 到着報告したが日報未提出の人、または日報完了済みの人数
-    const activeToday = staffList.filter(
-      (staff) =>
-        staff.active && ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
-    ).length;
-    // 完了報告: 活動中スタッフで日報提出済みまたはリセット済みの人数
-    const completedReports = staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
+    // 活動中: 表示モードに応じて計算
+    const activeToday = showTodayReports
+      ? // 本日モード: 0（基本的に前日報告以外は0）
+        0
+      : // 昨日モード: 従来の計算
+        staffList.filter(
+          (staff) =>
+            staff.active &&
+            ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+        ).length;
+
+    // 完了報告: 表示モードに応じて計算
+    const completedReports = showTodayReports
+      ? // 本日モード: 0（基本的に前日報告以外は0）
+        0
+      : // 昨日モード: 従来の計算
+        staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
 
@@ -505,6 +519,15 @@ export default function ManagerDashboard() {
                 })}
               </div>
 
+              {/* 前日/当日切り替えボタン */}
+              <button
+                onClick={() => setShowTodayReports(!showTodayReports)}
+                className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
+                title={showTodayReports ? "本日の統計を表示中" : "昨日の統計を表示中"}
+              >
+                {showTodayReports ? "本日" : "前日"}
+              </button>
+
               {/* Profile Menu */}
               <div className="relative">
                 <button
@@ -591,10 +614,6 @@ export default function ManagerDashboard() {
             onClick={() => handleStatsCardClick("previous")}
             isCompleted={stats.activeStaffWithPreviousDayReport === stats.activeStaffCount}
             pendingCount={stats.activeStaffCount - stats.activeStaffWithPreviousDayReport}
-            showToggle={true}
-            toggleState={showTodayReports}
-            onToggle={() => setShowTodayReports(!showTodayReports)}
-            toggleLabels={{ false: "昨日の前日報告", true: "本日の前日報告" }}
           />
           <StatCard
             title="準備中"
@@ -708,27 +727,9 @@ interface StatCardProps {
   onClick?: () => void;
   isCompleted?: boolean; // 全員完了かどうか
   pendingCount?: number; // 未完了の人数
-  showToggle?: boolean; // 切り替えボタンを表示するか
-  toggleState?: boolean; // 切り替え状態
-  onToggle?: () => void; // 切り替えハンドラー
-  toggleLabels?: { false: string; true: string }; // 切り替えラベル
 }
 
-function StatCard({
-  title,
-  mobileTitle,
-  value,
-  subtitle,
-  icon,
-  color,
-  onClick,
-  isCompleted,
-  pendingCount,
-  showToggle,
-  toggleState,
-  onToggle,
-  toggleLabels,
-}: StatCardProps) {
+function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, isCompleted, pendingCount }: StatCardProps) {
   // 全員完了の場合はグレー、未完了がいる場合は元の色
   const actualColor = isCompleted ? "gray" : color;
 
@@ -751,48 +752,20 @@ function StatCard({
     <div className={`${backgroundClass} rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[actualColor]}`}>
       <div className="flex items-center justify-between sm:block">
         {/* Mobile: Single line layout */}
-        <div className="flex items-center justify-between w-full sm:hidden">
-          <div className="flex items-center">
-            <span className="text-base mr-2">{icon}</span>
-            <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
-            <span className={`text-sm font-semibold ${valueTextColor}`} onClick={onClick}>
-              {value}
-            </span>
-            {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
-          </div>
-          {showToggle && onToggle && toggleLabels && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggle();
-              }}
-              className="text-xs px-1 py-0.5 bg-gray-100 hover:bg-gray-200 rounded transition-colors ml-2 text-[10px]"
-              title={toggleState ? toggleLabels.true : toggleLabels.false}
-            >
-              {toggleState ? "本日" : "前日"}
-            </button>
-          )}
+        <div className="flex items-center sm:hidden">
+          <span className="text-base mr-2">{icon}</span>
+          <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
+          <span className={`text-sm font-semibold ${valueTextColor}`} onClick={onClick}>
+            {value}
+          </span>
+          {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
         </div>
 
         {/* Desktop: Original layout */}
         <div className="hidden sm:block">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <span className="text-2xl mr-3">{icon}</span>
-              <p className="text-sm font-medium text-gray-600">{title}</p>
-            </div>
-            {showToggle && onToggle && toggleLabels && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle();
-                }}
-                className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                title={toggleState ? toggleLabels.true : toggleLabels.false}
-              >
-                {toggleState ? "本日" : "前日"}
-              </button>
-            )}
+          <div className="flex items-center mb-2">
+            <span className="text-2xl mr-3">{icon}</span>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
           </div>
           <div className={`flex items-baseline ${onClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`} onClick={onClick}>
             <p className={`text-2xl font-semibold ${valueTextColor}`}>{value}</p>
