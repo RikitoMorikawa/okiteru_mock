@@ -22,19 +22,7 @@ export async function POST(request: NextRequest) {
       const today = new Date();
       const todayDateString = today.toISOString().split("T")[0];
 
-      // 既存の前日報告があるかチェック
-      const { data: existingReport, error: checkError } = await (supabaseAdmin as any)
-        .from("previous_day_reports")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .eq("report_date", todayDateString)
-        .single();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("前日報告チェックエラー:", checkError);
-        return NextResponse.json({ error: { message: "データベースエラーが発生しました" } }, { status: 500 });
-      }
-
+      // 常に新しい前日報告を作成
       const reportData = {
         user_id: req.user.id,
         report_date: todayDateString,
@@ -48,38 +36,11 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       };
 
-      let result;
-      if (existingReport) {
-        // 既存の報告を更新
-        const { data, error } = await (supabaseAdmin as any)
-          .from("previous_day_reports")
-          .update({
-            next_wake_up_time,
-            next_departure_time,
-            next_arrival_time,
-            appearance_photo_url,
-            route_photo_url,
-            notes: notes || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingReport.id)
-          .select()
-          .single();
+      const { data: result, error } = await (supabaseAdmin as any).from("previous_day_reports").insert(reportData).select().single();
 
-        if (error) {
-          console.error("前日報告更新エラー:", error);
-          return NextResponse.json({ error: { message: "前日報告の更新に失敗しました" } }, { status: 500 });
-        }
-        result = data;
-      } else {
-        // 新しい報告を作成
-        const { data, error } = await (supabaseAdmin as any).from("previous_day_reports").insert(reportData).select().single();
-
-        if (error) {
-          console.error("前日報告作成エラー:", error);
-          return NextResponse.json({ error: { message: "前日報告の作成に失敗しました" } }, { status: 500 });
-        }
-        result = data;
+      if (error) {
+        console.error("前日報告作成エラー:", error);
+        return NextResponse.json({ error: { message: "前日報告の作成に失敗しました" } }, { status: 500 });
       }
 
       console.log(`Previous day report created/updated for user ${req.user.id}:`, {
