@@ -187,6 +187,12 @@ export default function ManagerDashboard() {
     if (filters.status !== "all") {
       filtered = filtered.filter((staff) => {
         switch (filters.status) {
+          case "active_staff":
+            // 活動予定のスタッフ: activeがtrueのスタッフ
+            return staff.active;
+          case "inactive_staff":
+            // 非活動のスタッフ: activeがfalseのスタッフ
+            return !staff.active;
           case "scheduled":
             // 活動予定: 起床して到着報告がまだないユーザー
             return staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time;
@@ -243,6 +249,7 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
+    const activeStaffCount = staffList.filter((staff) => staff.active).length;
     // 活動予定: 起床して到着報告がまだないユーザー
     const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
     // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
@@ -257,6 +264,7 @@ export default function ManagerDashboard() {
     // Debug log
     console.log("[DEBUG] Stats calculation:", {
       totalStaff,
+      activeStaffCount,
       scheduledStaff,
       preparingStaff,
       activeToday,
@@ -267,6 +275,7 @@ export default function ManagerDashboard() {
 
     return {
       totalStaff,
+      activeStaffCount,
       scheduledStaff,
       preparingStaff,
       activeToday,
@@ -416,9 +425,10 @@ export default function ManagerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-8">
+          <StatCard title="活動予定スタッフ" mobileTitle="活動予定" value={stats.activeStaffCount} subtitle={`/ ${stats.totalStaff}`} icon="👥" color="blue" />
           <StatCard title="活動予定" mobileTitle="活動予定" value={stats.scheduledStaff} icon="📅" color="orange" />
-          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="blue" />
+          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="gray" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
         </div>

@@ -8,7 +8,7 @@ export type AlertStatus = "active" | "dismissed";
 // Filter types for UI components
 export interface FilterOptions {
   search: string;
-  status: "all" | "active" | "inactive" | "scheduled" | "preparing" | "completed" | "alerts";
+  status: "all" | "active" | "inactive" | "scheduled" | "preparing" | "completed" | "alerts" | "active_staff" | "inactive_staff";
   sortBy: "name" | "status" | "lastActivity";
 }
 
@@ -18,6 +18,7 @@ export interface User {
   role: UserRole;
   name: string;
   phone?: string;
+  active: boolean;
   created_at: string;
   updated_at: string;
 }

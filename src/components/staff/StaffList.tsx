@@ -23,8 +23,9 @@ interface StaffListProps {
 export default function StaffList({ searchQuery = "", statusFilter = "all" }: StaffListProps) {
   const [staffList, setStaffList] = useState<StaffWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<"name" | "status" | "reports" | "attendance">("name");
+  const [sortBy, setSortBy] = useState<"name" | "status" | "reports" | "attendance" | "active">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [updatingActive, setUpdatingActive] = useState<string | null>(null);
 
   const fetchStaffDetails = async () => {
     try {
@@ -130,6 +131,10 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
             return !staff.todayAttendance && !staff.todayReport;
           case "alerts":
             return staff.activeAlerts.length > 0;
+          case "active_staff":
+            return staff.active;
+          case "inactive_staff":
+            return !staff.active;
           default:
             return true;
         }
@@ -156,6 +161,10 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
         case "attendance":
           aValue = a.attendanceRate;
           bValue = b.attendanceRate;
+          break;
+        case "active":
+          aValue = a.active ? 1 : 0;
+          bValue = b.active ? 1 : 0;
           break;
         default:
           return 0;
@@ -198,6 +207,33 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
     if (diffHours < 1) return "1時間以内";
     if (diffHours < 24) return `${diffHours}時間前`;
     return date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
+  };
+
+  const toggleActiveStatus = async (staffId: string, currentActive: boolean) => {
+    try {
+      setUpdatingActive(staffId);
+
+      const response = await fetch(`/api/staff/${staffId}/active`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ active: !currentActive }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "activeステータスの更新に失敗しました");
+      }
+
+      // Refresh the staff list
+      await fetchStaffDetails();
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      alert("activeステータスの更新に失敗しました");
+    } finally {
+      setUpdatingActive(null);
+    }
   };
 
   const getStatusBadge = (staff: StaffWithDetails) => {
@@ -340,6 +376,19 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                   )}
                 </div>
               </th>
+              <th
+                onClick={() => handleSort("active")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center">
+                  活動ステータス
+                  {sortBy === "active" && (
+                    <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最終ログイン</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
             </tr>
@@ -379,6 +428,29 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                       ></div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button
+                    onClick={() => toggleActiveStatus(staff.id, staff.active)}
+                    disabled={updatingActive === staff.id}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      staff.active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    } ${updatingActive === staff.id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  >
+                    {updatingActive === staff.id ? (
+                      <svg className="animate-spin -ml-1 mr-2 h-3 w-3" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    ) : (
+                      <div className={`w-2 h-2 rounded-full mr-2 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}></div>
+                    )}
+                    {staff.active ? "活動中" : "非活動"}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatLastLogin(staff.lastLogin)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

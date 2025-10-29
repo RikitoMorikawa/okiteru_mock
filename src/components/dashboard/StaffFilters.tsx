@@ -113,6 +113,8 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               }}
             >
               <option value="all">すべて</option>
+              <option value="active_staff">活動予定のスタッフ</option>
+              <option value="inactive_staff">非活動のスタッフ</option>
               <option value="scheduled">活動予定</option>
               <option value="preparing">準備中</option>
               <option value="active">活動中</option>
