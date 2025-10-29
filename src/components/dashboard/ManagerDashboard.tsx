@@ -450,7 +450,7 @@ export default function ManagerDashboard() {
           />
           <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} subtitle={`/ ${stats.activeStaffCount}`} icon="⏳" color="gray" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} subtitle={`/ ${stats.activeStaffCount}`} icon="✅" color="green" />
-          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
+          <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaffCount}`} icon="📝" color="purple" />
         </div>
 
         {/* Filters */}
