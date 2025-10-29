@@ -306,12 +306,14 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
-    const activeStaffCount = staffList.filter((staff) => staff.active).length;
+    const activeStaffCount = showTodayReports
+      ? staffList.filter((staff) => staff.next_day_active).length // 翌日モード: 翌日activeなスタッフ数
+      : staffList.filter((staff) => staff.active).length; // 当日モード: 当日activeなスタッフ数
 
     // 前日報告: 表示モードに応じて計算
     const activeStaffWithPreviousDayReport = showTodayReports
       ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
-        staffList.filter((staff) => staff.active && staff.todayPreviousDayReport).length
+        staffList.filter((staff) => staff.next_day_active && staff.todayPreviousDayReport).length
       : // 当日モード: 昨日前日報告した人数（当日の予定として報告された）
         staffList.filter(
           (staff) =>
@@ -383,7 +385,10 @@ export default function ManagerDashboard() {
 
   // Get detailed stats for modal
   const getStatsDetail = (type: "previous" | "preparing" | "active" | "completed") => {
-    const activeStaff = staffList.filter((staff) => staff.active);
+    // 表示モードに応じて対象スタッフを決定
+    const activeStaff = showTodayReports
+      ? staffList.filter((staff) => staff.next_day_active) // 翌日モード: 翌日activeなスタッフ
+      : staffList.filter((staff) => staff.active); // 当日モード: 当日activeなスタッフ
 
     switch (type) {
       case "previous":
@@ -405,38 +410,57 @@ export default function ManagerDashboard() {
               ),
             };
       case "preparing":
-        return {
-          // 準備中: 起床報告したが到着報告していない人、または後の段階（到着報告、日報完了）まで進んでいる人
-          completed: activeStaff.filter(
-            (staff) =>
-              (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
-              staff.todayAttendance?.arrival_time ||
-              staff.todayReport ||
-              (staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-          pending: activeStaff.filter(
-            (staff) =>
-              !staff.todayAttendance?.wake_up_time &&
-              !staff.todayAttendance?.arrival_time &&
-              !staff.todayReport &&
-              !(staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-        };
+        return showTodayReports
+          ? {
+              // 翌日モード: 準備中は基本的に0
+              completed: [],
+              pending: activeStaff,
+            }
+          : {
+              // 当日モード: 準備中の計算
+              completed: activeStaff.filter(
+                (staff) =>
+                  (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+                  staff.todayAttendance?.arrival_time ||
+                  staff.todayReport ||
+                  (staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+              pending: activeStaff.filter(
+                (staff) =>
+                  !staff.todayAttendance?.wake_up_time &&
+                  !staff.todayAttendance?.arrival_time &&
+                  !staff.todayReport &&
+                  !(staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+            };
       case "active":
-        return {
-          // 活動中: 到着報告したが日報未提出の人、または日報完了済みの人
-          completed: activeStaff.filter(
-            (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-          pending: activeStaff.filter(
-            (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-        };
+        return showTodayReports
+          ? {
+              // 翌日モード: 活動中は基本的に0
+              completed: [],
+              pending: activeStaff,
+            }
+          : {
+              // 当日モード: 活動中の計算
+              completed: activeStaff.filter(
+                (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+              pending: activeStaff.filter(
+                (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+            };
       case "completed":
-        return {
-          completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
-          pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
-        };
+        return showTodayReports
+          ? {
+              // 翌日モード: 完了報告は基本的に0
+              completed: [],
+              pending: activeStaff,
+            }
+          : {
+              // 当日モード: 完了報告の計算
+              completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
+              pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
+            };
       default:
         return { completed: [], pending: [] };
     }
