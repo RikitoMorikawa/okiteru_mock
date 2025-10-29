@@ -24,6 +24,7 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
       search: "",
       status: "all",
       sortBy: "name", // Keep for compatibility
+      dayView: filters.dayView, // Preserve current dayView
     });
     setShowFilters(false); // Close filters when clearing
   };
