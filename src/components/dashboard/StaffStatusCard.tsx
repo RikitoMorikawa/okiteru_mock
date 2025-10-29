@@ -48,7 +48,7 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
     return { tasks, completed, total, percentage };
   };
 
-  // Get overall status
+  // Get overall status - 常に当日のステータスを表示
   const getOverallStatus = () => {
     const { percentage } = getCompletionStatus();
     const hasAlerts = staff.activeAlerts.length > 0;
@@ -248,7 +248,7 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
                       className={`w-1.5 h-1.5 rounded-full mr-1 ${(showTodayReports ? staff.next_day_active : staff.active) ? "bg-green-500" : "bg-gray-400"}`}
                     ></div>
                   )}
-                  {showTodayReports ? (staff.next_day_active ? "翌日活動予定" : "翌日非活動") : staff.active ? "活動中" : "非活動"}
+                  {showTodayReports ? (staff.next_day_active ? "活動予定" : "非活動") : staff.active ? "活動中" : "非活動"}
                 </button>
               </div>
             </div>
