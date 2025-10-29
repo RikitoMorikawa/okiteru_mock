@@ -309,9 +309,9 @@ export default function ManagerDashboard() {
 
     // 前日報告: 表示モードに応じて計算
     const activeStaffWithPreviousDayReport = showTodayReports
-      ? // 本日前日報告した人数
+      ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
         staffList.filter((staff) => staff.active && staff.todayPreviousDayReport).length
-      : // 昨日前日報告した人数（従来の計算）
+      : // 当日モード: 昨日前日報告した人数（当日の予定として報告された）
         staffList.filter(
           (staff) =>
             staff.active &&
@@ -320,9 +320,9 @@ export default function ManagerDashboard() {
 
     // 準備中: 表示モードに応じて計算
     const preparingStaff = showTodayReports
-      ? // 本日モード: 0（基本的に前日報告以外は0）
+      ? // 翌日モード: 0（基本的に前日報告以外は0）
         0
-      : // 昨日モード: 従来の計算
+      : // 当日モード: 従来の計算
         staffList.filter(
           (staff) =>
             staff.active &&
@@ -334,9 +334,9 @@ export default function ManagerDashboard() {
 
     // 活動中: 表示モードに応じて計算
     const activeToday = showTodayReports
-      ? // 本日モード: 0（基本的に前日報告以外は0）
+      ? // 翌日モード: 0（基本的に前日報告以外は0）
         0
-      : // 昨日モード: 従来の計算
+      : // 当日モード: 従来の計算
         staffList.filter(
           (staff) =>
             staff.active &&
@@ -345,9 +345,9 @@ export default function ManagerDashboard() {
 
     // 完了報告: 表示モードに応じて計算
     const completedReports = showTodayReports
-      ? // 本日モード: 0（基本的に前日報告以外は0）
+      ? // 翌日モード: 0（基本的に前日報告以外は0）
         0
-      : // 昨日モード: 従来の計算
+      : // 当日モード: 従来の計算
         staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
@@ -388,12 +388,12 @@ export default function ManagerDashboard() {
       case "previous":
         return showTodayReports
           ? {
-              // 本日前日報告した人
+              // 翌日モード: 当日前日報告した人（翌日の予定として報告）
               completed: activeStaff.filter((staff) => staff.todayPreviousDayReport),
               pending: activeStaff.filter((staff) => !staff.todayPreviousDayReport),
             }
           : {
-              // 昨日前日報告した人（従来の計算）
+              // 当日モード: 昨日前日報告した人（当日の予定として報告された）
               completed: activeStaff.filter(
                 (staff) =>
                   staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
@@ -519,13 +519,13 @@ export default function ManagerDashboard() {
                 })}
               </div>
 
-              {/* 前日/当日切り替えボタン */}
+              {/* 当日/翌日切り替えボタン */}
               <button
                 onClick={() => setShowTodayReports(!showTodayReports)}
                 className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
-                title={showTodayReports ? "本日の統計を表示中" : "昨日の統計を表示中"}
+                title={showTodayReports ? "翌日の統計を表示中" : "当日の統計を表示中"}
               >
-                {showTodayReports ? "本日" : "前日"}
+                {showTodayReports ? "翌日" : "当日"}
               </button>
 
               {/* Profile Menu */}
@@ -699,8 +699,8 @@ export default function ManagerDashboard() {
           title={
             statsModal.type === "previous"
               ? showTodayReports
-                ? "本日の前日報告"
-                : "昨日の前日報告"
+                ? "翌日の前日報告"
+                : "当日の前日報告"
               : statsModal.type === "preparing"
               ? "準備中"
               : statsModal.type === "active"
