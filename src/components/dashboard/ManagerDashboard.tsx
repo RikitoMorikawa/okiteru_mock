@@ -426,7 +426,6 @@ export default function ManagerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-8">
-          <StatCard title="活動予定スタッフ" mobileTitle="活動予定" value={stats.activeStaffCount} subtitle={`/ ${stats.totalStaff}`} icon="👥" color="blue" />
           <StatCard title="活動予定" mobileTitle="活動予定" value={stats.scheduledStaff} icon="📅" color="orange" />
           <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="gray" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
