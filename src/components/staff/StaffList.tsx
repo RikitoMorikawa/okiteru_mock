@@ -9,6 +9,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 interface StaffWithDetails extends User {
   todayAttendance?: AttendanceRecord;
   todayReport?: DailyReport;
+  previousDayReport?: any; // 前日報告
   activeAlerts: Alert[];
   lastLogin?: string;
   totalReports: number;
@@ -48,6 +49,14 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
 
       if (reportsError) throw reportsError;
 
+      // Fetch unused previous day reports (actual_attendance_record_idが未設定の前日報告を取得)
+      const { data: previousDayReports, error: previousDayError } = await supabase
+        .from("previous_day_reports")
+        .select("*")
+        .is("actual_attendance_record_id", null);
+
+      if (previousDayError) throw previousDayError;
+
       // Fetch active alerts
       const { data: alerts, error: alertsError } = await supabase.from("alerts").select("*").eq("status", "active");
 
@@ -79,6 +88,7 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
       const staffWithDetails: StaffWithDetails[] = ((staff as User[]) || []).map((staffMember) => {
         const todayAttendanceRecord = ((todayAttendance as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
         const todayReportRecord = ((todayReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
+        const previousDayReportRecord = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
         const activeAlertsForStaff = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
         const lastLogin = ((accessLogs as any[]) || []).find((log) => log.user_id === staffMember.id)?.login_time;
 
@@ -95,6 +105,7 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
           ...staffMember,
           todayAttendance: todayAttendanceRecord,
           todayReport: todayReportRecord,
+          previousDayReport: previousDayReportRecord,
           activeAlerts: activeAlertsForStaff,
           lastLogin,
           totalReports,
@@ -182,10 +193,11 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
 
   const getActivityScore = (staff: StaffWithDetails) => {
     let score = 0;
-    if (staff.todayAttendance?.wake_up_time) score += 1;
-    if (staff.todayAttendance?.departure_time) score += 1;
-    if (staff.todayAttendance?.arrival_time) score += 1;
-    if (staff.todayReport?.status === "submitted") score += 1;
+    if (staff.previousDayReport) score += 1; // 前日報告
+    if (staff.todayAttendance?.wake_up_time) score += 1; // 起床報告
+    if (staff.todayAttendance?.departure_time) score += 1; // 出発報告
+    if (staff.todayAttendance?.arrival_time) score += 1; // 到着報告
+    if (staff.todayReport?.status === "submitted") score += 1; // 日報提出
     return score;
   };
 
@@ -413,7 +425,7 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                     {getStatusBadge(staff)}
                     {staff.activeAlerts.length > 0 && <span className="text-xs text-red-600">{staff.activeAlerts.length}件のアラート</span>}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">進捗: {getActivityScore(staff)}/4</div>
+                  <div className="text-xs text-gray-500 mt-1">進捗: {getActivityScore(staff)}/5</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{staff.totalReports}件</td>
                 <td className="px-6 py-4 whitespace-nowrap">

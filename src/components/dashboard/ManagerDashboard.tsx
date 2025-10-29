@@ -100,15 +100,11 @@ export default function ManagerDashboard() {
 
       if (reportsError) throw reportsError;
 
-      // Fetch yesterday's previous day reports (前日の日付で前日報告を取得)
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayDateString = yesterday.toISOString().split("T")[0];
-
+      // Fetch unused previous day reports (actual_attendance_record_idが未設定の前日報告を取得)
       const { data: previousDayReports, error: previousDayError } = await supabase
         .from("previous_day_reports")
         .select("*")
-        .eq("report_date", yesterdayDateString);
+        .is("actual_attendance_record_id", null);
 
       if (previousDayError) throw previousDayError;
 
