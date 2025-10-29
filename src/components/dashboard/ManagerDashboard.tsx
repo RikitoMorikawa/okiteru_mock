@@ -33,6 +33,7 @@ export default function ManagerDashboard() {
     search: "",
     status: "all",
     sortBy: "status",
+    dayView: "today",
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -608,7 +609,7 @@ export default function ManagerDashboard() {
             title="前日報告"
             mobileTitle="前日報告"
             value={stats.activeStaffWithPreviousDayReport}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
             icon=""
             color="orange"
             onClick={() => handleStatsCardClick("previous")}
@@ -619,7 +620,7 @@ export default function ManagerDashboard() {
             title="準備中"
             mobileTitle="準備中"
             value={stats.preparingStaff}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
             icon=""
             color="gray"
             onClick={() => handleStatsCardClick("preparing")}
@@ -630,7 +631,7 @@ export default function ManagerDashboard() {
             title="活動中"
             mobileTitle="活動中"
             value={stats.activeToday}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
             icon=""
             color="green"
             onClick={() => handleStatsCardClick("active")}
@@ -641,7 +642,7 @@ export default function ManagerDashboard() {
             title="完了報告"
             mobileTitle="完了"
             value={stats.completedReports}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
             icon=""
             color="purple"
             onClick={() => handleStatsCardClick("completed")}
