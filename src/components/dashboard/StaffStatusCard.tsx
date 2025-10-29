@@ -215,7 +215,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             <span>本日の進捗</span>
             <span>
               {staff.hasResetToday && !staff.hasActiveRecord
-                ? "リセット済み"
+                ? "完了・前日報告済"
                 : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
                 ? "完了"
                 : `${completed}/${total}`}
