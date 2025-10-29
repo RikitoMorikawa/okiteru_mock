@@ -88,6 +88,21 @@ export interface AccessLog {
   created_at: string;
 }
 
+export interface PreviousDayReport {
+  id: string;
+  user_id: string;
+  report_date: string;
+  next_wake_up_time: string;
+  next_departure_time: string;
+  next_arrival_time: string;
+  appearance_photo_url: string;
+  route_photo_url: string;
+  notes?: string;
+  actual_attendance_record_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -143,6 +158,15 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Omit<AccessLog, "id" | "created_at">>;
+      };
+      previous_day_reports: {
+        Row: PreviousDayReport;
+        Insert: Omit<PreviousDayReport, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<PreviousDayReport, "id" | "created_at" | "updated_at">>;
       };
     };
     Views: {

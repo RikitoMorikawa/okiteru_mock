@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { User } from "@/types/database";
+import { User, PreviousDayReport } from "@/types/database";
 import { getAddressFromCoordinates, parseGPSLocation } from "@/utils/locationUtils";
 import { getTodayJST } from "../../utils/dateUtils";
 
@@ -95,7 +95,7 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
           }
         | undefined;
 
-      const previousDayReport = previousDayReports?.[0];
+      const previousDayReport = previousDayReports?.[0] as Pick<PreviousDayReport, "appearance_photo_url" | "route_photo_url" | "created_at"> | undefined;
 
       // 前日報告から写真を取得
       if (previousDayReport) {
