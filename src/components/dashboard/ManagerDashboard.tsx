@@ -254,8 +254,8 @@ export default function ManagerDashboard() {
     // 活動予定スタッフの中で前日報告をしている人数
     const activeStaffWithPreviousDayReport = staffList.filter((staff) => staff.active && staff.previousDayReport).length;
 
-    // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
-    const preparingStaff = staffList.filter((staff) => !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday).length;
+    // 準備中: 活動ステータスがtrueで、起床報告したが到着報告していない人数
+    const preparingStaff = staffList.filter((staff) => staff.active && staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
     // 活動中: 到着報告完了したが日報未提出のユーザー
     const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
     // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
@@ -273,6 +273,9 @@ export default function ManagerDashboard() {
       completedReports,
       staffWithReports: staffList.filter((staff) => staff.todayReport).map((s) => s.name),
       staffWithReset: staffList.filter((staff) => staff.hasResetToday && !staff.hasActiveRecord).map((s) => s.name),
+      preparingStaffDetails: staffList
+        .filter((staff) => staff.active && staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time)
+        .map((s) => s.name),
     });
 
     return {
@@ -444,7 +447,7 @@ export default function ManagerDashboard() {
             icon="📅"
             color="orange"
           />
-          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="gray" />
+          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} subtitle={`/ ${stats.activeStaffCount}`} icon="⏳" color="gray" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
         </div>
