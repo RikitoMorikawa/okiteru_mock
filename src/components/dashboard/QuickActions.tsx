@@ -88,9 +88,26 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
   };
 
   const isAllTasksComplete = () => {
-    return attendanceStatus.wakeUpReported && attendanceStatus.departureReported && attendanceStatus.arrivalReported && attendanceStatus.dailyReportSubmitted;
+    return (
+      attendanceStatus.previousDayReported &&
+      attendanceStatus.wakeUpReported &&
+      attendanceStatus.departureReported &&
+      attendanceStatus.arrivalReported &&
+      attendanceStatus.dailyReportSubmitted
+    );
   };
   const getNextAction = () => {
+    // 前日報告が未完了の場合は最初に前日報告を促す
+    if (!attendanceStatus.previousDayReported) {
+      return {
+        title: "前日報告",
+        description: "翌日の予定と準備状況を報告してください",
+        href: "/dashboard/attendance?action=previous-day",
+        icon: "🌙",
+        priority: "high",
+      };
+    }
+
     if (!attendanceStatus.wakeUpReported) {
       return {
         title: "起床報告",
@@ -361,6 +378,7 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
               <div className="mb-6">
                 <p className="text-amber-600 mb-3">⚠️ まだ完了していないタスクがあります：</p>
                 <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                  {!attendanceStatus.previousDayReported && <li>• 前日報告</li>}
                   {!attendanceStatus.wakeUpReported && <li>• 起床報告</li>}
                   {!attendanceStatus.departureReported && <li>• 出発報告</li>}
                   {!attendanceStatus.arrivalReported && <li>• 到着報告</li>}

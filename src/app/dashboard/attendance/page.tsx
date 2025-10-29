@@ -98,6 +98,7 @@ function AttendanceContent() {
 
   const isAllTasksComplete = () => {
     return (
+      attendanceStatus.previousDayReported &&
       attendanceStatus.wakeUpReported &&
       attendanceStatus.departureReported &&
       attendanceStatus.arrivalReported &&
@@ -153,6 +154,16 @@ function AttendanceContent() {
 
   // Get next action based on current progress
   const getNextAction = () => {
+    // 前日報告が未完了の場合は最初に前日報告を促す
+    if (!attendanceStatus.previousDayReported) {
+      return {
+        title: "前日報告",
+        action: "previous-day",
+        icon: "🌙",
+        priority: "high",
+      };
+    }
+
     if (!attendanceStatus.wakeUpReported) {
       return {
         title: "起床報告",
@@ -591,7 +602,7 @@ function AttendanceContent() {
                     </div>
                     <div className="text-xs sm:text-sm text-blue-700">
                       <ul className="list-disc pl-4 space-y-1">
-                        <li>前日報告で翌日の準備状況を事前に確認してください</li>
+                        <li>【重要】前日報告から開始してください（翌日の準備状況を事前確認）</li>
                         <li>起床報告は起床後すぐに行ってください</li>
                         <li>出発報告では目的地を正確に入力してください</li>
                         <li>日報提出では業務内容を詳しく記録してください</li>
@@ -622,6 +633,7 @@ function AttendanceContent() {
               <div className="mb-6">
                 <p className="text-sm sm:text-base text-amber-600 mb-3">⚠️ まだ完了していないタスクがあります：</p>
                 <ul className="text-xs sm:text-sm text-gray-600 space-y-1 mb-4">
+                  {!attendanceStatus.previousDayReported && <li>• 前日報告</li>}
                   {!attendanceStatus.wakeUpReported && <li>• 起床報告</li>}
                   {!attendanceStatus.departureReported && <li>• 出発報告</li>}
                   {!attendanceStatus.arrivalReported && <li>• 到着報告</li>}
