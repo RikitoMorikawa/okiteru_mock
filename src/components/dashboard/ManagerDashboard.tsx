@@ -586,7 +586,7 @@ export default function ManagerDashboard() {
             mobileTitle="前日報告"
             value={stats.activeStaffWithPreviousDayReport}
             subtitle={`/ ${stats.activeStaffCount}`}
-            icon="📅"
+            icon=""
             color="orange"
             onClick={() => handleStatsCardClick("previous")}
             isCompleted={stats.activeStaffWithPreviousDayReport === stats.activeStaffCount}
@@ -601,7 +601,7 @@ export default function ManagerDashboard() {
             mobileTitle="準備中"
             value={stats.preparingStaff}
             subtitle={`/ ${stats.activeStaffCount}`}
-            icon="⏳"
+            icon=""
             color="gray"
             onClick={() => handleStatsCardClick("preparing")}
             isCompleted={stats.preparingStaff === stats.activeStaffCount}
@@ -612,7 +612,7 @@ export default function ManagerDashboard() {
             mobileTitle="活動中"
             value={stats.activeToday}
             subtitle={`/ ${stats.activeStaffCount}`}
-            icon="✅"
+            icon=""
             color="green"
             onClick={() => handleStatsCardClick("active")}
             isCompleted={stats.activeToday === stats.activeStaffCount}
@@ -623,7 +623,7 @@ export default function ManagerDashboard() {
             mobileTitle="完了"
             value={stats.completedReports}
             subtitle={`/ ${stats.activeStaffCount}`}
-            icon="📝"
+            icon=""
             color="purple"
             onClick={() => handleStatsCardClick("completed")}
             isCompleted={stats.completedReports === stats.activeStaffCount}
@@ -688,7 +688,7 @@ export default function ManagerDashboard() {
               ? "活動中"
               : "完了報告"
           }
-          icon={statsModal.type === "previous" ? "📅" : statsModal.type === "preparing" ? "⏳" : statsModal.type === "active" ? "✅" : "📝"}
+          icon={statsModal.type === "previous" ? "" : statsModal.type === "preparing" ? "" : statsModal.type === "active" ? "" : ""}
           completedStaff={getStatsDetail(statsModal.type).completed}
           pendingStaff={getStatsDetail(statsModal.type).pending}
           totalActiveStaff={staffList.filter((staff) => staff.active).length}
