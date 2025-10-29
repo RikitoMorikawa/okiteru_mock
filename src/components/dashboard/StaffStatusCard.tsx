@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
 import StaffDetailModal from "@/components/staff/StaffDetailModal";
+import { supabase } from "@/lib/supabase";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
@@ -23,6 +24,7 @@ interface StaffStatusCardProps {
 export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [updatingActive, setUpdatingActive] = useState(false);
 
   // Calculate completion status
   const getCompletionStatus = () => {
@@ -105,6 +107,47 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     });
   };
 
+  // Toggle active status
+  const toggleActiveStatus = async () => {
+    try {
+      setUpdatingActive(true);
+
+      // Check if current user is a manager
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        alert("認証が必要です。再度ログインしてください。");
+        return;
+      }
+
+      // Check if user is a manager
+      const { data: currentUser } = await supabase.from("users").select("role").eq("id", session.user.id).single();
+
+      if (!currentUser || (currentUser as any).role !== "manager") {
+        alert("管理者権限が必要です。");
+        return;
+      }
+
+      // Update the staff member's active status directly
+      const { error } = await (supabase as any).from("users").update({ active: !staff.active }).eq("id", staff.id).eq("role", "staff");
+
+      if (error) {
+        console.error("Error updating active status:", error);
+        throw new Error("activeステータスの更新に失敗しました");
+      }
+
+      // Refresh the page to update the data
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating active status:", error);
+      alert("activeステータスの更新に失敗しました");
+    } finally {
+      setUpdatingActive(false);
+    }
+  };
+
   const { tasks, completed, total, percentage } = getCompletionStatus();
   const { status, label, color } = getOverallStatus();
 
@@ -136,6 +179,28 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-gray-900">{staff.name}</h3>
               <p className="text-xs text-gray-500">{staff.email}</p>
+              {/* Active Status */}
+              <button
+                onClick={toggleActiveStatus}
+                disabled={updatingActive}
+                className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                  staff.active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                } ${updatingActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                {updatingActive ? (
+                  <svg className="animate-spin -ml-1 mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                ) : (
+                  <div className={`w-1.5 h-1.5 rounded-full mr-1 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}></div>
+                )}
+                {staff.active ? "活動中" : "非活動"}
+              </button>
             </div>
           </div>
           <div className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]}`}>{label}</div>
@@ -279,6 +344,30 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             <div className="text-xs text-gray-500 space-y-1 mb-4">
               <div>最終ログイン: {formatLastLogin(staff.lastLogin)}</div>
               {staff.phone && <div>電話: {staff.phone}</div>}
+              <div className="flex items-center">
+                <span>稼働ステータス: </span>
+                <button
+                  onClick={toggleActiveStatus}
+                  disabled={updatingActive}
+                  className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                    staff.active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  } ${updatingActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {updatingActive ? (
+                    <svg className="animate-spin -ml-1 mr-1 h-2 w-2" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    <div className={`w-1.5 h-1.5 rounded-full mr-1 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}></div>
+                  )}
+                  {staff.active ? "活動中" : "非活動"}
+                </button>
+              </div>
             </div>
 
             {/* Active Alerts Details */}

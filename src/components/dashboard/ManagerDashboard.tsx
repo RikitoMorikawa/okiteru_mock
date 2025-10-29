@@ -311,10 +311,18 @@ export default function ManagerDashboard() {
       })
       .subscribe();
 
+    const usersSubscription = supabase
+      .channel("users_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => {
+        fetchStaffData();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(attendanceSubscription);
       supabase.removeChannel(reportsSubscription);
       supabase.removeChannel(previousDaySubscription);
+      supabase.removeChannel(usersSubscription);
     };
   }, []);
 
