@@ -62,7 +62,7 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-1.5 py-0.5 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded hover:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
           >
             <span className="sm:hidden">×</span>
             <span className="hidden sm:inline">クリア</span>
