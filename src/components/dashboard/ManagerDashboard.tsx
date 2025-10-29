@@ -100,11 +100,9 @@ export default function ManagerDashboard() {
 
       if (reportsError) throw reportsError;
 
-      // Fetch unused previous day reports (actual_attendance_record_idが未設定の前日報告を取得)
-      const { data: previousDayReports, error: previousDayError } = await supabase
-        .from("previous_day_reports")
-        .select("*")
-        .is("actual_attendance_record_id", null);
+      // Fetch all previous day reports (used and unused)
+      // 管理者は全ての前日報告を確認する必要がある
+      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*");
 
       if (previousDayError) throw previousDayError;
 
@@ -149,7 +147,21 @@ export default function ManagerDashboard() {
         const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
 
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-        const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
+
+        // 前日報告の検索: 今日のattendance_recordに紐づいたものまたは未使用のもの
+        let previousDayReport = null;
+
+        // まず、今日のattendance_recordに紐づいた前日報告を確認
+        if (todayAttendance) {
+          previousDayReport = ((previousDayReports as any[]) || []).find(
+            (report) => report.user_id === staffMember.id && report.actual_attendance_record_id === todayAttendance.id
+          );
+        }
+
+        // 紐づいた前日報告がない場合、未使用の前日報告を確認
+        if (!previousDayReport) {
+          previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id && !report.actual_attendance_record_id);
+        }
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {

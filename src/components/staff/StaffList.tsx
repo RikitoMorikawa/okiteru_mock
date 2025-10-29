@@ -49,11 +49,9 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
 
       if (reportsError) throw reportsError;
 
-      // Fetch unused previous day reports (actual_attendance_record_idが未設定の前日報告を取得)
-      const { data: previousDayReports, error: previousDayError } = await supabase
-        .from("previous_day_reports")
-        .select("*")
-        .is("actual_attendance_record_id", null);
+      // Fetch all previous day reports (used and unused)
+      // 管理者は全ての前日報告を確認する必要がある
+      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*");
 
       if (previousDayError) throw previousDayError;
 
@@ -88,7 +86,30 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
       const staffWithDetails: StaffWithDetails[] = ((staff as User[]) || []).map((staffMember) => {
         const todayAttendanceRecord = ((todayAttendance as AttendanceRecord[]) || []).find((record) => record.staff_id === staffMember.id);
         const todayReportRecord = ((todayReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-        const previousDayReportRecord = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
+
+        // 前日報告の検索: 今日のattendance_recordに紐づいたものまたは未使用のもの
+        let previousDayReportRecord = null;
+
+        // まず、今日のattendance_recordに紐づいた前日報告を確認
+        if (todayAttendanceRecord) {
+          previousDayReportRecord = ((previousDayReports as any[]) || []).find(
+            (report) => report.user_id === staffMember.id && report.actual_attendance_record_id === todayAttendanceRecord.id
+          );
+        }
+
+        // 紐づいた前日報告がない場合、未使用の前日報告を確認
+        if (!previousDayReportRecord) {
+          previousDayReportRecord = ((previousDayReports as any[]) || []).find(
+            (report) => report.user_id === staffMember.id && !report.actual_attendance_record_id
+          );
+        }
+
+        console.log(`StaffList - Previous day report search for ${staffMember.name}:`, {
+          staffId: staffMember.id,
+          todayAttendanceId: todayAttendanceRecord?.id,
+          allPreviousDayReports: ((previousDayReports as any[]) || []).filter((r) => r.user_id === staffMember.id),
+          selectedReport: previousDayReportRecord,
+        });
         const activeAlertsForStaff = ((alerts as Alert[]) || []).filter((alert) => alert.staff_id === staffMember.id);
         const lastLogin = ((accessLogs as any[]) || []).find((log) => log.user_id === staffMember.id)?.login_time;
 
@@ -193,11 +214,27 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
 
   const getActivityScore = (staff: StaffWithDetails) => {
     let score = 0;
-    if (staff.previousDayReport) score += 1; // 前日報告
-    if (staff.todayAttendance?.wake_up_time) score += 1; // 起床報告
-    if (staff.todayAttendance?.departure_time) score += 1; // 出発報告
-    if (staff.todayAttendance?.arrival_time) score += 1; // 到着報告
-    if (staff.todayReport?.status === "submitted") score += 1; // 日報提出
+    const tasks = {
+      previousDayReport: !!staff.previousDayReport,
+      wakeUp: !!staff.todayAttendance?.wake_up_time,
+      departure: !!staff.todayAttendance?.departure_time,
+      arrival: !!staff.todayAttendance?.arrival_time,
+      dailyReport: staff.todayReport?.status === "submitted",
+    };
+
+    if (tasks.previousDayReport) score += 1; // 前日報告
+    if (tasks.wakeUp) score += 1; // 起床報告
+    if (tasks.departure) score += 1; // 出発報告
+    if (tasks.arrival) score += 1; // 到着報告
+    if (tasks.dailyReport) score += 1; // 日報提出
+
+    console.log(`StaffList - Activity score for ${staff.name}:`, {
+      tasks,
+      score,
+      previousDayReportData: staff.previousDayReport,
+      todayAttendanceData: staff.todayAttendance,
+    });
+
     return score;
   };
 
