@@ -8,7 +8,7 @@ export type AlertStatus = "active" | "dismissed";
 // Filter types for UI components
 export interface FilterOptions {
   search: string;
-  status: "all" | "active" | "inactive" | "scheduled" | "completed" | "alerts";
+  status: "all" | "active" | "inactive" | "scheduled" | "preparing" | "completed" | "alerts";
   sortBy: "name" | "status" | "lastActivity";
 }
 

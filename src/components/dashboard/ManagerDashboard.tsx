@@ -190,6 +190,9 @@ export default function ManagerDashboard() {
           case "scheduled":
             // 活動予定: 起床して到着報告がまだないユーザー
             return staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time;
+          case "preparing":
+            // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
+            return !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday;
           case "active":
             // 活動中: 到着報告完了したが日報未提出のユーザー
             return staff.todayAttendance?.arrival_time && !staff.todayReport;
@@ -197,7 +200,7 @@ export default function ManagerDashboard() {
             // 完了: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
             return staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord);
           case "inactive":
-            // 未活動: 何も活動していないユーザー（リセットされたユーザーは除く）
+            // 未活動: 何も活動していないユーザー（リセットされたユーザーは除く）- 準備中と同じ
             return !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday;
           default:
             return true;
@@ -242,6 +245,8 @@ export default function ManagerDashboard() {
     const totalStaff = staffList.length;
     // 活動予定: 起床して到着報告がまだないユーザー
     const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
+    // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
+    const preparingStaff = staffList.filter((staff) => !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday).length;
     // 活動中: 到着報告完了したが日報未提出のユーザー
     const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
     // 完了報告: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
@@ -252,6 +257,9 @@ export default function ManagerDashboard() {
     // Debug log
     console.log("[DEBUG] Stats calculation:", {
       totalStaff,
+      scheduledStaff,
+      preparingStaff,
+      activeToday,
       completedReports,
       staffWithReports: staffList.filter((staff) => staff.todayReport).map((s) => s.name),
       staffWithReset: staffList.filter((staff) => staff.hasResetToday && !staff.hasActiveRecord).map((s) => s.name),
@@ -260,6 +268,7 @@ export default function ManagerDashboard() {
     return {
       totalStaff,
       scheduledStaff,
+      preparingStaff,
       activeToday,
       completedReports,
       activeStaff: activeStaff.length,
@@ -408,8 +417,8 @@ export default function ManagerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-6 mb-4 sm:mb-8">
-          <StatCard title="総スタッフ数" mobileTitle="スタッフ" value={stats.totalStaff} icon="👥" color="blue" />
           <StatCard title="活動予定" mobileTitle="活動予定" value={stats.scheduledStaff} icon="📅" color="orange" />
+          <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="blue" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
         </div>

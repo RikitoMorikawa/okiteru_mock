@@ -114,6 +114,7 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
             >
               <option value="all">すべて</option>
               <option value="scheduled">活動予定</option>
+              <option value="preparing">準備中</option>
               <option value="active">活動中</option>
               <option value="completed">完了</option>
               <option value="alerts">要注意</option>
