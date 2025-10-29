@@ -239,11 +239,6 @@ export default function ManagerDashboard() {
       });
     }
 
-    // 翌日モードでは翌日活動予定のスタッフのみを表示
-    if (showTodayReports) {
-      filtered = filtered.filter((staff) => staff.next_day_active);
-    }
-
     // Apply sorting - 活動中ユーザーを最初に、その中で進捗が遅い順
     filtered.sort((a, b) => {
       // まず活動ステータスで分ける（表示モードに応じてactiveまたはnext_day_activeを参照）
@@ -259,24 +254,38 @@ export default function ManagerDashboard() {
         case "name":
           return a.name.localeCompare(b.name);
         case "status":
-          const aScore = getActivityScore(a);
-          const bScore = getActivityScore(b);
-          // 進捗が遅い順（スコアが低い順）
-          return aScore - bScore;
+          if (showTodayReports) {
+            // 翌日モード: 翌日ステータスでソート（活動予定が先）
+            const aNextDayActive = a.next_day_active ? 1 : 0;
+            const bNextDayActive = b.next_day_active ? 1 : 0;
+            return bNextDayActive - aNextDayActive;
+          } else {
+            // 当日モード: 進捗スコアでソート
+            const aScore = getActivityScore(a);
+            const bScore = getActivityScore(b);
+            return aScore - bScore;
+          }
         case "lastActivity":
           const aTime = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
           const bTime = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
           return bTime - aTime;
         default:
-          // デフォルトは進捗が遅い順
-          const defaultAScore = getActivityScore(a);
-          const defaultBScore = getActivityScore(b);
-          return defaultAScore - defaultBScore;
+          if (showTodayReports) {
+            // 翌日モード: デフォルトは翌日ステータスでソート
+            const aNextDayActive = a.next_day_active ? 1 : 0;
+            const bNextDayActive = b.next_day_active ? 1 : 0;
+            return bNextDayActive - aNextDayActive;
+          } else {
+            // 当日モード: デフォルトは進捗が遅い順
+            const defaultAScore = getActivityScore(a);
+            const defaultBScore = getActivityScore(b);
+            return defaultAScore - defaultBScore;
+          }
       }
     });
 
     setFilteredStaff(filtered);
-  }, [staffList, filters]);
+  }, [staffList, filters, showTodayReports]);
 
   // Calculate activity score for sorting (低いスコア = 進捗が遅い = 優先度高)
   const getActivityScore = (staff: StaffWithStatus) => {
