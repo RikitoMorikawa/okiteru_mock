@@ -769,7 +769,7 @@ function StatCard({
               className="text-xs px-1 py-0.5 bg-gray-100 hover:bg-gray-200 rounded transition-colors ml-2 text-[10px]"
               title={toggleState ? toggleLabels.true : toggleLabels.false}
             >
-              {toggleState ? "本日" : "昨日"}
+              {toggleState ? "本日" : "前日"}
             </button>
           )}
         </div>
@@ -790,7 +790,7 @@ function StatCard({
                 className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                 title={toggleState ? toggleLabels.true : toggleLabels.false}
               >
-                {toggleState ? "本日" : "昨日"}
+                {toggleState ? "本日" : "前日"}
               </button>
             )}
           </div>
