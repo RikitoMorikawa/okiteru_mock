@@ -67,20 +67,6 @@ export default function StaffHistoryPage() {
         .lte("date", dateRange.endDate)
         .order("created_at", { ascending: false });
 
-      // Debug: Check for archived records specifically
-      const { data: archivedRecords } = await supabase
-        .from("attendance_records")
-        .select("id, date, status")
-        .eq("staff_id", staffId)
-        .gte("date", dateRange.startDate)
-        .lte("date", dateRange.endDate)
-        .eq("status", "archived");
-
-      console.log("🔍 Archived records check:", archivedRecords?.length || 0, "records found");
-      if (archivedRecords && archivedRecords.length > 0) {
-        console.log("📋 Archived records:", archivedRecords);
-      }
-
       // Fetch daily reports within date range
       const { data: dailyReports, error: reportsError } = await supabase
         .from("daily_reports")

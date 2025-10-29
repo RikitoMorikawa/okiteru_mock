@@ -26,12 +26,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "出勤記録の取得に失敗しました" }, { status: 500 });
       }
 
-      // If attendance record exists, update its status to complete
+      // If attendance record exists, update its status to archived (to exclude from history)
       if (attendanceRecord) {
         const { error: updateError } = await (supabaseAdmin as any)
           .from("attendance_records")
           .update({
-            status: "complete",
+            status: "archived",
             updated_at: new Date().toISOString(),
           })
           .eq("id", attendanceRecord.id);
@@ -41,11 +41,11 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "出勤記録の更新に失敗しました" }, { status: 500 });
         }
       } else {
-        // Create a new attendance record with complete status if none exists
+        // Create a new attendance record with archived status if none exists
         const { error: createError } = await (supabaseAdmin as any).from("attendance_records").insert({
           staff_id: req.user.id,
           date: today,
-          status: "complete",
+          status: "archived",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
