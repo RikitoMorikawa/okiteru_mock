@@ -46,18 +46,31 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
 
       console.log("Fetching images for staff:", staff.id, "date:", today);
 
-      // 最新の出発報告レコードから画像URLと位置情報を取得
+      // 前日報告から画像URLを取得
+      const { data: previousDayReports, error: previousDayError } = await supabase
+        .from("previous_day_reports")
+        .select("appearance_photo_url, route_photo_url, created_at")
+        .eq("user_id", staff.id)
+        .eq("report_date", today)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (previousDayError) {
+        console.error("Error fetching previous day reports:", previousDayError);
+      }
+
+      console.log("Previous day reports found:", previousDayReports);
+
+      // 最新の出発報告レコードから位置情報を取得
       const { data: attendanceRecords, error: attendanceError } = (await supabase
         .from("attendance_records")
-        .select("route_photo_url, appearance_photo_url, departure_time, arrival_time, arrival_gps_location, arrival_location")
+        .select("departure_time, arrival_time, arrival_gps_location, arrival_location")
         .eq("staff_id", staff.id)
         .eq("date", today)
         .not("departure_time", "is", null)
         .order("departure_time", { ascending: false })
         .limit(1)) as {
         data: Array<{
-          route_photo_url: string | null;
-          appearance_photo_url: string | null;
           departure_time: string;
           arrival_time: string | null;
           arrival_gps_location: string | null;
@@ -75,8 +88,6 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
 
       const latestRecord = attendanceRecords?.[0] as
         | {
-            route_photo_url: string | null;
-            appearance_photo_url: string | null;
             departure_time: string;
             arrival_time: string | null;
             arrival_gps_location: string | null;
@@ -84,11 +95,14 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
           }
         | undefined;
 
-      if (latestRecord) {
+      const previousDayReport = previousDayReports?.[0];
+
+      // 前日報告から写真を取得
+      if (previousDayReport) {
         // 経路写真
-        if (latestRecord.route_photo_url) {
+        if (previousDayReport.route_photo_url) {
           // URLが相対パスの場合は、Supabaseの公開URLに変換
-          let routeUrl = latestRecord.route_photo_url;
+          let routeUrl = previousDayReport.route_photo_url;
           if (!routeUrl.startsWith("http")) {
             const {
               data: { publicUrl },
@@ -100,19 +114,19 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
             {
               name: "route_photo",
               url: routeUrl,
-              created_at: latestRecord.departure_time,
+              created_at: previousDayReport.created_at,
             },
           ]);
-          console.log("Route photo found:", routeUrl);
+          console.log("Route photo found from previous day report:", routeUrl);
         } else {
           setRouteImages([]);
-          console.log("No route photo found");
+          console.log("No route photo found in previous day report");
         }
 
         // 身だしなみ写真
-        if (latestRecord.appearance_photo_url) {
+        if (previousDayReport.appearance_photo_url) {
           // URLが相対パスの場合は、Supabaseの公開URLに変換
-          let appearanceUrl = latestRecord.appearance_photo_url;
+          let appearanceUrl = previousDayReport.appearance_photo_url;
           if (!appearanceUrl.startsWith("http")) {
             const {
               data: { publicUrl },
@@ -124,16 +138,23 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
             {
               name: "appearance_photo",
               url: appearanceUrl,
-              created_at: latestRecord.departure_time,
+              created_at: previousDayReport.created_at,
             },
           ]);
-          console.log("Appearance photo found:", appearanceUrl);
+          console.log("Appearance photo found from previous day report:", appearanceUrl);
         } else {
           setGroomingImages([]);
-          console.log("No appearance photo found");
+          console.log("No appearance photo found in previous day report");
         }
+      } else {
+        // 前日報告がない場合
+        setRouteImages([]);
+        setGroomingImages([]);
+        console.log("No previous day report found");
+      }
 
-        // 位置情報の処理
+      // 位置情報の処理
+      if (latestRecord) {
         if (latestRecord.arrival_time && latestRecord.arrival_gps_location) {
           const gpsData = parseGPSLocation(latestRecord.arrival_gps_location);
           if (gpsData) {
@@ -160,11 +181,9 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
           setLocationInfo(null);
         }
       } else {
-        // 出発報告がない場合
-        setRouteImages([]);
-        setGroomingImages([]);
+        // 出勤記録がない場合
         setLocationInfo(null);
-        console.log("No departure record found for today");
+        console.log("No attendance record found for today");
       }
     } catch (error) {
       console.error("Error fetching images:", error);
@@ -243,7 +262,8 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
                             console.log("Successfully loaded grooming image:", image.url);
                           }}
                         />
-                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">前日報告</div>
+                        <div className="absolute top-2 right-2 bg-blue-600 bg-opacity-90 text-white text-xs px-2 py-1 rounded">
                           {formatTime(image.created_at)}
                         </div>
                       </div>
@@ -296,7 +316,8 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
                             console.log("Successfully loaded route image:", image.url);
                           }}
                         />
-                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                        <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">前日報告</div>
+                        <div className="absolute top-2 right-2 bg-green-600 bg-opacity-90 text-white text-xs px-2 py-1 rounded">
                           {formatTime(image.created_at)}
                         </div>
                       </div>
