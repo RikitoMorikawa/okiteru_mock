@@ -250,8 +250,10 @@ export default function ManagerDashboard() {
   const getStats = () => {
     const totalStaff = staffList.length;
     const activeStaffCount = staffList.filter((staff) => staff.active).length;
-    // 活動予定: 起床して到着報告がまだないユーザー
-    const scheduledStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
+
+    // 活動予定スタッフの中で前日報告をしている人数
+    const activeStaffWithPreviousDayReport = staffList.filter((staff) => staff.active && staff.previousDayReport).length;
+
     // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
     const preparingStaff = staffList.filter((staff) => !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday).length;
     // 活動中: 到着報告完了したが日報未提出のユーザー
@@ -265,7 +267,7 @@ export default function ManagerDashboard() {
     console.log("[DEBUG] Stats calculation:", {
       totalStaff,
       activeStaffCount,
-      scheduledStaff,
+      activeStaffWithPreviousDayReport,
       preparingStaff,
       activeToday,
       completedReports,
@@ -276,7 +278,7 @@ export default function ManagerDashboard() {
     return {
       totalStaff,
       activeStaffCount,
-      scheduledStaff,
+      activeStaffWithPreviousDayReport,
       preparingStaff,
       activeToday,
       completedReports,
@@ -434,7 +436,14 @@ export default function ManagerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-8">
-          <StatCard title="活動予定" mobileTitle="活動予定" value={stats.scheduledStaff} icon="📅" color="orange" />
+          <StatCard
+            title="前日報告"
+            mobileTitle="前日報告"
+            value={stats.activeStaffWithPreviousDayReport}
+            subtitle={`/ ${stats.activeStaffCount}`}
+            icon="📅"
+            color="orange"
+          />
           <StatCard title="準備中" mobileTitle="準備中" value={stats.preparingStaff} icon="⏳" color="gray" />
           <StatCard title="活動中" mobileTitle="活動中" value={stats.activeToday} icon="✅" color="green" />
           <StatCard title="完了報告" mobileTitle="完了" value={stats.completedReports} subtitle={`/ ${stats.activeStaff}`} icon="📝" color="purple" />
