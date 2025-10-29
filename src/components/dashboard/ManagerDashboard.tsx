@@ -751,11 +751,27 @@ function StatCard({
     <div className={`${backgroundClass} rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[actualColor]}`}>
       <div className="flex items-center justify-between sm:block">
         {/* Mobile: Single line layout */}
-        <div className="flex items-center sm:hidden">
-          <span className="text-base mr-2">{icon}</span>
-          <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
-          <span className={`text-sm font-semibold ${valueTextColor}`}>{value}</span>
-          {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
+        <div className="flex items-center justify-between w-full sm:hidden">
+          <div className="flex items-center">
+            <span className="text-base mr-2">{icon}</span>
+            <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
+            <span className={`text-sm font-semibold ${valueTextColor}`} onClick={onClick}>
+              {value}
+            </span>
+            {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
+          </div>
+          {showToggle && onToggle && toggleLabels && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              className="text-xs px-1 py-0.5 bg-gray-100 hover:bg-gray-200 rounded transition-colors ml-2 text-[10px]"
+              title={toggleState ? toggleLabels.true : toggleLabels.false}
+            >
+              {toggleState ? "本日" : "昨日"}
+            </button>
+          )}
         </div>
 
         {/* Desktop: Original layout */}
