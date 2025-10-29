@@ -96,6 +96,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Link unused previous day report to this attendance record
+        await linkPreviousDayReport(req.user.id, updatedRecord.id);
+
         return NextResponse.json({
           message: "起床時間が記録されました",
           record: updatedRecord,

@@ -20,16 +20,15 @@ export async function GET(request: NextRequest) {
         .eq("date", dateStr)
         .order("created_at", { ascending: false });
 
-      // Get previous day report for yesterday (前日の日付で前日報告を取得)
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayDateStr = yesterday.toISOString().split("T")[0];
-
+      // Get unused previous day report (actual_attendance_record_idが未設定の前日報告を取得)
+      // 前日報告は一度作成したら、attendance_recordに紐づけられるまで有効
       const { data: previousDayReport } = await (supabaseAdmin as any)
         .from("previous_day_reports")
-        .select("id")
+        .select("id, report_date, actual_attendance_record_id")
         .eq("user_id", req.user.id)
-        .eq("report_date", yesterdayDateStr)
+        .is("actual_attendance_record_id", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .single();
 
       // Find the latest active record or complete record

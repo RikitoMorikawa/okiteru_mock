@@ -73,41 +73,40 @@ export async function POST(request: NextRequest) {
         // Don't return error here as this is not critical
       }
 
-      // Step 2: Delete all previous day reports for this user (to reset for next cycle)
-      // First, check if there are any previous day reports to delete
-      const { data: existingPreviousDayReports, error: checkError } = await (supabaseAdmin as any)
-        .from("previous_day_reports")
-        .select("id, report_date")
-        .eq("user_id", req.user.id);
-
-      console.log(`Checking all previous day reports for user ${req.user.id}:`, existingPreviousDayReports);
-
-      if (checkError) {
-        console.error("Error checking previous day reports:", checkError);
-      }
-
-      if (existingPreviousDayReports && existingPreviousDayReports.length > 0) {
-        const { data: deletedReports, error: previousDayReportError } = await (supabaseAdmin as any)
+      // Step 2: Link previous day report to today's attendance record (if exists)
+      // 前日報告を今日の出勤記録に紐づけて使用済みとしてマーク
+      if (attendanceRecord) {
+        const { data: unusedPreviousDayReport } = await (supabaseAdmin as any)
           .from("previous_day_reports")
-          .delete()
+          .select("id")
           .eq("user_id", req.user.id)
-          .select();
+          .is("actual_attendance_record_id", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-        if (previousDayReportError) {
-          console.error("Error deleting previous day reports:", previousDayReportError);
-          // Don't return error here as this is not critical for completion
-        } else {
-          console.log(`Successfully deleted ${deletedReports?.length || 0} previous day reports for user ${req.user.id}`);
+        if (unusedPreviousDayReport) {
+          const { error: linkError } = await (supabaseAdmin as any)
+            .from("previous_day_reports")
+            .update({
+              actual_attendance_record_id: attendanceRecord.id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", unusedPreviousDayReport.id);
+
+          if (linkError) {
+            console.error("Error linking previous day report:", linkError);
+          } else {
+            console.log(`Successfully linked previous day report ${unusedPreviousDayReport.id} to attendance record ${attendanceRecord.id}`);
+          }
         }
-      } else {
-        console.log(`No previous day reports found for user ${req.user.id}`);
       }
 
       // Step 3: Mark the day as completed (data preservation approach)
       // All data is preserved for management review, but UI shows as completed
 
-      // No data deletion for attendance and daily reports - everything is preserved for admin management
-      console.log(`Day completed for user ${req.user.id} on ${today}. All data preserved, previous day reports reset.`);
+      // No data deletion - everything is preserved for admin management
+      console.log(`Day completed for user ${req.user.id} on ${today}. All data preserved, previous day reports linked to attendance records.`);
 
       return NextResponse.json({
         success: true,
