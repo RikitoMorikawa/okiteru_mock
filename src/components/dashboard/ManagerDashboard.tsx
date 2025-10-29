@@ -526,6 +526,8 @@ export default function ManagerDashboard() {
             icon="📅"
             color="orange"
             onClick={() => handleStatsCardClick("previous")}
+            isCompleted={stats.activeStaffWithPreviousDayReport === stats.activeStaffCount}
+            pendingCount={stats.activeStaffCount - stats.activeStaffWithPreviousDayReport}
           />
           <StatCard
             title="準備中"
@@ -535,6 +537,8 @@ export default function ManagerDashboard() {
             icon="⏳"
             color="gray"
             onClick={() => handleStatsCardClick("preparing")}
+            isCompleted={stats.preparingStaff === stats.activeStaffCount}
+            pendingCount={stats.activeStaffCount - stats.preparingStaff}
           />
           <StatCard
             title="活動中"
@@ -544,6 +548,8 @@ export default function ManagerDashboard() {
             icon="✅"
             color="green"
             onClick={() => handleStatsCardClick("active")}
+            isCompleted={stats.activeToday === stats.activeStaffCount}
+            pendingCount={stats.activeStaffCount - stats.activeToday}
           />
           <StatCard
             title="完了報告"
@@ -553,6 +559,8 @@ export default function ManagerDashboard() {
             icon="📝"
             color="purple"
             onClick={() => handleStatsCardClick("completed")}
+            isCompleted={stats.completedReports === stats.activeStaffCount}
+            pendingCount={stats.activeStaffCount - stats.completedReports}
           />
         </div>
 
@@ -623,9 +631,14 @@ interface StatCardProps {
   icon: string;
   color: "blue" | "green" | "red" | "purple" | "gray" | "orange";
   onClick?: () => void;
+  isCompleted?: boolean; // 全員完了かどうか
+  pendingCount?: number; // 未完了の人数
 }
 
-function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick }: StatCardProps) {
+function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, isCompleted, pendingCount }: StatCardProps) {
+  // 全員完了の場合はグレー、未完了がいる場合は元の色
+  const actualColor = isCompleted ? "gray" : color;
+
   const colorClasses = {
     blue: "bg-blue-50 text-blue-600 border-blue-200",
     green: "bg-green-50 text-green-600 border-green-200",
@@ -635,9 +648,15 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick }:
     orange: "bg-orange-50 text-orange-600 border-orange-200",
   };
 
+  // 数字の色は常に通常の黒
+  const valueTextColor = "text-gray-900";
+
+  // 全員完了時は背景をより濃いグレーに
+  const backgroundClass = isCompleted ? "bg-gray-200" : "bg-white";
+
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[color]} ${
+      className={`${backgroundClass} rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[actualColor]} ${
         onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
       }`}
       onClick={onClick}
@@ -647,7 +666,7 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick }:
         <div className="flex items-center sm:hidden">
           <span className="text-base mr-2">{icon}</span>
           <span className="text-xs font-medium text-gray-600 mr-2">{mobileTitle || title}</span>
-          <span className="text-sm font-semibold text-gray-900">{value}</span>
+          <span className={`text-sm font-semibold ${valueTextColor}`}>{value}</span>
           {subtitle && <span className="text-xs text-gray-500 ml-1">{subtitle}</span>}
         </div>
 
@@ -659,7 +678,7 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick }:
           <div className="ml-4 flex-1">
             <p className="text-sm font-medium text-gray-600">{title}</p>
             <div className="flex items-baseline">
-              <p className="text-2xl font-semibold text-gray-900">{value}</p>
+              <p className={`text-2xl font-semibold ${valueTextColor}`}>{value}</p>
               {subtitle && <p className="ml-2 text-sm text-gray-500">{subtitle}</p>}
             </div>
           </div>
