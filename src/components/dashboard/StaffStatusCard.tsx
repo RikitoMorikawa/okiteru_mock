@@ -241,8 +241,6 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
               )}
             </div>
 
-           
-
             {/* Additional Info */}
             <div className="text-xs text-gray-500 space-y-1 mb-4">
               <div>最終ログイン: {formatLastLogin(staff.lastLogin)}</div>
