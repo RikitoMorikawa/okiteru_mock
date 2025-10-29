@@ -13,6 +13,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
   todayReport?: DailyReport;
+  previousDayReport?: any; // 前日報告データ
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
@@ -93,6 +94,11 @@ export default function ManagerDashboard() {
 
       if (reportsError) throw reportsError;
 
+      // Fetch today's previous day reports
+      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
+
+      if (previousDayError) throw previousDayError;
+
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
       const { data: accessLogs } = await supabase
@@ -130,6 +136,7 @@ export default function ManagerDashboard() {
         const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
         const hasActiveRecord = staffAttendanceRecords.some((record) => record.status !== "reset");
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
+        const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         // Debug log for specific user
@@ -147,6 +154,7 @@ export default function ManagerDashboard() {
           ...staffMember,
           todayAttendance: hasActiveRecord ? todayAttendance : undefined, // リセットのみの場合はundefined
           todayReport,
+          previousDayReport,
           activeAlerts: [], // Keep for compatibility but empty
           lastLogin,
           hasResetToday,
@@ -219,6 +227,7 @@ export default function ManagerDashboard() {
   // Calculate activity score for sorting
   const getActivityScore = (staff: StaffWithStatus) => {
     let score = 0;
+    if (staff.previousDayReport) score += 1;
     if (staff.todayAttendance?.wake_up_time) score += 1;
     if (staff.todayAttendance?.departure_time) score += 1;
     if (staff.todayAttendance?.arrival_time) score += 1;
@@ -275,9 +284,17 @@ export default function ManagerDashboard() {
       })
       .subscribe();
 
+    const previousDaySubscription = supabase
+      .channel("previous_day_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "previous_day_reports" }, () => {
+        fetchStaffData();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(attendanceSubscription);
       supabase.removeChannel(reportsSubscription);
+      supabase.removeChannel(previousDaySubscription);
     };
   }, []);
 

@@ -8,6 +8,7 @@ import StaffDetailModal from "@/components/staff/StaffDetailModal";
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
   todayReport?: DailyReport;
+  previousDayReport?: any; // 前日報告データ
   activeAlerts: Alert[];
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
@@ -25,6 +26,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   // Calculate completion status
   const getCompletionStatus = () => {
     const tasks = [
+      { name: "前日報告", completed: !!staff.previousDayReport },
       { name: "起床報告", completed: !!staff.todayAttendance?.wake_up_time },
       { name: "出発報告", completed: !!staff.todayAttendance?.departure_time },
       { name: "到着報告", completed: !!staff.todayAttendance?.arrival_time },
@@ -202,16 +204,20 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
         {expanded && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             {/* Quick Status */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {staff.hasResetToday && !staff.hasActiveRecord ? (
                 // リセット済みの場合の表示
-                <div className="col-span-2 text-center">
+                <div className="col-span-3 text-center">
                   <div className="text-xs text-gray-500 mb-1">ステータス</div>
                   <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
                 </div>
               ) : (
-                // 通常の表示
+                // 通常の表示（5つのタスク）
                 <>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">前日</div>
+                    <div className="text-sm font-medium">{staff.previousDayReport ? "完了" : "未完了"}</div>
+                  </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-500 mb-1">起床</div>
                     <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
