@@ -239,11 +239,19 @@ export default function ManagerDashboard() {
       });
     }
 
+    // 翌日モードでは翌日活動予定のスタッフのみを表示
+    if (showTodayReports) {
+      filtered = filtered.filter((staff) => staff.next_day_active);
+    }
+
     // Apply sorting - 活動中ユーザーを最初に、その中で進捗が遅い順
     filtered.sort((a, b) => {
-      // まず活動ステータスで分ける（active: true を最初に）
-      if (a.active !== b.active) {
-        return b.active ? 1 : -1; // active: true が先に来る
+      // まず活動ステータスで分ける（表示モードに応じてactiveまたはnext_day_activeを参照）
+      const aActive = showTodayReports ? a.next_day_active : a.active;
+      const bActive = showTodayReports ? b.next_day_active : b.active;
+
+      if (aActive !== bActive) {
+        return bActive ? 1 : -1; // active: true が先に来る
       }
 
       // 同じ活動ステータス内では、選択されたソート方法に従う
@@ -321,12 +329,10 @@ export default function ManagerDashboard() {
             (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 準備中: 表示モードに応じて計算
+    // 準備中: 翌日モードでは0
     const preparingStaff = showTodayReports
-      ? // 翌日モード: 0（基本的に前日報告以外は0）
-        0
-      : // 当日モード: 従来の計算
-        staffList.filter(
+      ? 0
+      : staffList.filter(
           (staff) =>
             staff.active &&
             ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
@@ -335,23 +341,19 @@ export default function ManagerDashboard() {
               (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 活動中: 表示モードに応じて計算
+    // 活動中: 翌日モードでは0
     const activeToday = showTodayReports
-      ? // 翌日モード: 0（基本的に前日報告以外は0）
-        0
-      : // 当日モード: 従来の計算
-        staffList.filter(
+      ? 0
+      : staffList.filter(
           (staff) =>
             staff.active &&
             ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 完了報告: 表示モードに応じて計算
+    // 完了報告: 翌日モードでは0
     const completedReports = showTodayReports
-      ? // 翌日モード: 0（基本的に前日報告以外は0）
-        0
-      : // 当日モード: 従来の計算
-        staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
+      ? 0
+      : staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
 
@@ -633,7 +635,7 @@ export default function ManagerDashboard() {
             title="前日報告"
             mobileTitle="前日報告"
             value={stats.activeStaffWithPreviousDayReport}
-            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
+            subtitle={`/ ${stats.activeStaffCount}`}
             icon=""
             color="orange"
             onClick={() => handleStatsCardClick("previous")}
@@ -644,7 +646,7 @@ export default function ManagerDashboard() {
             title="準備中"
             mobileTitle="準備中"
             value={stats.preparingStaff}
-            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
+            subtitle={`/ ${stats.activeStaffCount}`}
             icon=""
             color="gray"
             onClick={() => handleStatsCardClick("preparing")}
@@ -655,7 +657,7 @@ export default function ManagerDashboard() {
             title="活動中"
             mobileTitle="活動中"
             value={stats.activeToday}
-            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
+            subtitle={`/ ${stats.activeStaffCount}`}
             icon=""
             color="green"
             onClick={() => handleStatsCardClick("active")}
@@ -666,7 +668,7 @@ export default function ManagerDashboard() {
             title="完了報告"
             mobileTitle="完了"
             value={stats.completedReports}
-            subtitle={`/ ${showTodayReports ? stats.totalStaff : stats.activeStaffCount}`}
+            subtitle={`/ ${stats.activeStaffCount}`}
             icon=""
             color="purple"
             onClick={() => handleStatsCardClick("completed")}
