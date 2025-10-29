@@ -46,12 +46,16 @@ export default function StaffDetailModal({ staff, isOpen, onClose }: StaffDetail
 
       console.log("Fetching images for staff:", staff.id, "date:", today);
 
-      // 前日報告から画像URLを取得
+      // 前日の前日報告から画像URLを取得
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayDateString = yesterday.toISOString().split("T")[0];
+
       const { data: previousDayReports, error: previousDayError } = await supabase
         .from("previous_day_reports")
         .select("appearance_photo_url, route_photo_url, created_at")
         .eq("user_id", staff.id)
-        .eq("report_date", today)
+        .eq("report_date", yesterdayDateString)
         .order("created_at", { ascending: false })
         .limit(1);
 
