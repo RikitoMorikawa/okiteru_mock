@@ -22,14 +22,20 @@ export async function GET(request: NextRequest) {
 
       // Get unused previous day report (actual_attendance_record_idが未設定の前日報告を取得)
       // 前日報告は一度作成したら、attendance_recordに紐づけられるまで有効
-      const { data: previousDayReport } = await (supabaseAdmin as any)
+      const { data: previousDayReports } = await (supabaseAdmin as any)
         .from("previous_day_reports")
-        .select("id, report_date, actual_attendance_record_id")
+        .select("id, report_date, actual_attendance_record_id, created_at")
         .eq("user_id", req.user.id)
         .is("actual_attendance_record_id", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .order("created_at", { ascending: false });
+
+      const previousDayReport = previousDayReports?.[0] || null;
+
+      console.log(`Previous day reports search for user ${req.user.id}:`, {
+        totalFound: previousDayReports?.length || 0,
+        reports: previousDayReports || [],
+        selectedReport: previousDayReport,
+      });
 
       // Find the latest active record (exclude archived records)
       const attendanceRecord = attendanceRecords?.find((record: any) => ["pending", "partial", "active", "complete"].includes(record.status)) || null;
@@ -67,6 +73,8 @@ export async function GET(request: NextRequest) {
       // Debug logging
       console.log(`Attendance status for user ${req.user.id} on ${dateStr}:`, {
         attendanceRecord: attendanceRecord ? { ...attendanceRecord } : null,
+        previousDayReport: previousDayReport ? { ...previousDayReport } : null,
+        dailyReport: dailyReport ? { ...dailyReport } : null,
         status,
       });
 

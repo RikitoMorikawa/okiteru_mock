@@ -82,6 +82,12 @@ export async function POST(request: NextRequest) {
         result = data;
       }
 
+      console.log(`Previous day report created/updated for user ${req.user.id}:`, {
+        report_date: todayDateString,
+        actual_attendance_record_id: result.actual_attendance_record_id,
+        id: result.id,
+      });
+
       return NextResponse.json({
         message: "前日報告が正常に送信されました",
         data: result,

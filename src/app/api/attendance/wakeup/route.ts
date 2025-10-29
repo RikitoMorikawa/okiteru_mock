@@ -2,6 +2,40 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/middleware/auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+// Helper function to link unused previous day report to attendance record
+async function linkPreviousDayReport(userId: string, attendanceRecordId: string) {
+  try {
+    // Find the most recent unused previous day report
+    const { data: unusedReport } = await (supabaseAdmin as any)
+      .from("previous_day_reports")
+      .select("id")
+      .eq("user_id", userId)
+      .is("actual_attendance_record_id", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (unusedReport) {
+      // Link the report to the attendance record
+      const { error: linkError } = await (supabaseAdmin as any)
+        .from("previous_day_reports")
+        .update({
+          actual_attendance_record_id: attendanceRecordId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", unusedReport.id);
+
+      if (linkError) {
+        console.error("Error linking previous day report:", linkError);
+      } else {
+        console.log(`Successfully linked previous day report ${unusedReport.id} to attendance record ${attendanceRecordId}`);
+      }
+    }
+  } catch (error) {
+    console.error("Error in linkPreviousDayReport:", error);
+  }
+}
+
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";
 
@@ -96,6 +130,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Link unused previous day report to this attendance record
+        await linkPreviousDayReport(req.user.id, updatedRecord.id);
+
         return NextResponse.json({
           message: "起床時間が記録されました",
           record: updatedRecord,
@@ -129,6 +166,9 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+
+      // Link unused previous day report to this attendance record
+      await linkPreviousDayReport(req.user.id, newRecord.id);
 
       return NextResponse.json({
         message: "起床時間が記録されました",

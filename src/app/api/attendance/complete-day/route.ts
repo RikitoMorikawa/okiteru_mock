@@ -73,34 +73,8 @@ export async function POST(request: NextRequest) {
         // Don't return error here as this is not critical
       }
 
-      // Step 2: Link previous day report to today's attendance record (if exists)
-      // 前日報告を今日の出勤記録に紐づけて使用済みとしてマーク
-      if (attendanceRecord) {
-        const { data: unusedPreviousDayReport } = await (supabaseAdmin as any)
-          .from("previous_day_reports")
-          .select("id")
-          .eq("user_id", req.user.id)
-          .is("actual_attendance_record_id", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (unusedPreviousDayReport) {
-          const { error: linkError } = await (supabaseAdmin as any)
-            .from("previous_day_reports")
-            .update({
-              actual_attendance_record_id: attendanceRecord.id,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", unusedPreviousDayReport.id);
-
-          if (linkError) {
-            console.error("Error linking previous day report:", linkError);
-          } else {
-            console.log(`Successfully linked previous day report ${unusedPreviousDayReport.id} to attendance record ${attendanceRecord.id}`);
-          }
-        }
-      }
+      // Step 2: Previous day reports are now linked during wake-up reporting
+      // No need to link here as it's already done when wake-up is reported
 
       // Step 3: Mark the day as completed (data preservation approach)
       // All data is preserved for management review, but UI shows as completed
