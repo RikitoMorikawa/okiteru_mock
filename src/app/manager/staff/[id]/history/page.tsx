@@ -46,13 +46,14 @@ export default function StaffHistoryPage() {
         throw new Error("スタッフが見つかりません");
       }
 
-      // Fetch attendance records within date range
+      // Fetch attendance records within date range (exclude archived records - preparation records)
       const { data: attendanceRecords, error: attendanceError } = await supabase
         .from("attendance_records")
         .select("*")
         .eq("staff_id", staffId)
         .gte("date", dateRange.startDate)
         .lte("date", dateRange.endDate)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
 
       if (attendanceError) throw attendanceError;
