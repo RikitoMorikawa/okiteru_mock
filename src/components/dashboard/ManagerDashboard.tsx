@@ -12,6 +12,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
+  resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
   activeAlerts: any[]; // Keep for compatibility but will be empty
@@ -94,8 +95,15 @@ export default function ManagerDashboard() {
 
       if (reportsError) throw reportsError;
 
-      // Fetch today's previous day reports
-      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
+      // Fetch yesterday's previous day reports (前日の日付で前日報告を取得)
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayDateString = yesterday.toISOString().split("T")[0];
+
+      const { data: previousDayReports, error: previousDayError } = await supabase
+        .from("previous_day_reports")
+        .select("*")
+        .eq("report_date", yesterdayDateString);
 
       if (previousDayError) throw previousDayError;
 
@@ -135,24 +143,18 @@ export default function ManagerDashboard() {
         // Check if user has been reset today (has reset record but no active record)
         const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
         const hasActiveRecord = staffAttendanceRecords.some((record) => record.status !== "reset");
+
+        // Get reset record details if exists
+        const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
+
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
         const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
-        // Debug log for specific user
-        if (staffMember.name === "斉藤三郎") {
-          console.log(`[DEBUG] ${staffMember.name}:`, {
-            staffAttendanceRecords,
-            hasResetToday,
-            hasActiveRecord,
-            todayReport: !!todayReport,
-            todayAttendance,
-          });
-        }
-
         return {
           ...staffMember,
           todayAttendance: hasActiveRecord ? todayAttendance : undefined, // リセットのみの場合はundefined
+          resetRecord, // リセットレコードの詳細を追加
           todayReport,
           previousDayReport,
           activeAlerts: [], // Keep for compatibility but empty

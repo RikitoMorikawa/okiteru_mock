@@ -7,6 +7,7 @@ import StaffDetailModal from "@/components/staff/StaffDetailModal";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
+  resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
   activeAlerts: Alert[];
@@ -25,11 +26,14 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
   // Calculate completion status
   const getCompletionStatus = () => {
+    // リセットされた場合はリセット前の記録を使用
+    const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
+
     const tasks = [
       { name: "前日報告", completed: !!staff.previousDayReport },
-      { name: "起床報告", completed: !!staff.todayAttendance?.wake_up_time },
-      { name: "出発報告", completed: !!staff.todayAttendance?.departure_time },
-      { name: "到着報告", completed: !!staff.todayAttendance?.arrival_time },
+      { name: "起床報告", completed: !!attendanceRecord?.wake_up_time },
+      { name: "出発報告", completed: !!attendanceRecord?.departure_time },
+      { name: "到着報告", completed: !!attendanceRecord?.arrival_time },
       { name: "日報提出", completed: staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" },
     ];
 
@@ -206,11 +210,42 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             {/* Quick Status */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               {staff.hasResetToday && !staff.hasActiveRecord ? (
-                // リセット済みの場合の表示
-                <div className="col-span-3 text-center">
-                  <div className="text-xs text-gray-500 mb-1">ステータス</div>
-                  <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
-                </div>
+                // リセット済みの場合の表示（リセット前の時間を表示）
+                <>
+                  <div className="col-span-3 text-center mb-2">
+                    <div className="text-xs text-gray-500 mb-1">ステータス</div>
+                    <div className="text-sm font-medium text-purple-600">本日の活動をリセット済み</div>
+                    <div className="text-xs text-gray-400 mt-1">（リセット前の記録）</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">前日</div>
+                    <div className="text-sm font-medium">{staff.previousDayReport ? "完了" : "未完了"}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">起床</div>
+                    <div className="text-sm font-medium text-gray-600">
+                      {staff.resetRecord?.wake_up_time ? formatTime(staff.resetRecord.wake_up_time) : "--:--"}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">出発</div>
+                    <div className="text-sm font-medium text-gray-600">
+                      {staff.resetRecord?.departure_time ? formatTime(staff.resetRecord.departure_time) : "--:--"}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">到着</div>
+                    <div className="text-sm font-medium text-gray-600">
+                      {staff.resetRecord?.arrival_time ? formatTime(staff.resetRecord.arrival_time) : "--:--"}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">日報</div>
+                    <div className="text-sm font-medium">
+                      {staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived" ? "提出済" : "未提出"}
+                    </div>
+                  </div>
+                </>
               ) : (
                 // 通常の表示（5つのタスク）
                 <>
@@ -220,15 +255,15 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-500 mb-1">起床</div>
-                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time)}</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.wake_up_time || staff.resetRecord?.wake_up_time)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-500 mb-1">出発</div>
-                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time)}</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.departure_time || staff.resetRecord?.departure_time)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-500 mb-1">到着</div>
-                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time)}</div>
+                    <div className="text-sm font-medium">{formatTime(staff.todayAttendance?.arrival_time || staff.resetRecord?.arrival_time)}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-gray-500 mb-1">日報</div>
