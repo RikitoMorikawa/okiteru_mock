@@ -19,6 +19,7 @@ export interface User {
   name: string;
   phone?: string;
   active: boolean;
+  next_day_active: boolean;
   created_at: string;
   updated_at: string;
 }
