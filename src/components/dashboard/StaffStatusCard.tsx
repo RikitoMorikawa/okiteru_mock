@@ -22,6 +22,7 @@ interface StaffStatusCardProps {
 export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string } | null>(null);
 
   // Calculate completion status
   const getCompletionStatus = () => {
@@ -240,32 +241,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
               )}
             </div>
 
-            {/* Task Details */}
-            <div className="space-y-2 mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">タスク詳細</h4>
-              {tasks.map((task, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{task.name}</span>
-                  <div className="flex items-center">
-                    {task.completed ? (
-                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+           
 
             {/* Additional Info */}
             <div className="text-xs text-gray-500 space-y-1 mb-4">
@@ -308,6 +284,32 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
       {/* Detail Modal */}
       <StaffDetailModal staff={staff} isOpen={showDetailModal} onClose={() => setShowDetailModal(false)} />
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={() => setSelectedPhoto(null)}>
+          <div className="max-w-4xl max-h-full p-4">
+            <div className="bg-white rounded-lg overflow-hidden">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-medium text-gray-900">{selectedPhoto.title}</h3>
+                <button onClick={() => setSelectedPhoto(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4">
+                <img
+                  src={selectedPhoto.url}
+                  alt={selectedPhoto.title}
+                  className="max-w-full max-h-96 mx-auto object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
