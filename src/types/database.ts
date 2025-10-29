@@ -10,6 +10,7 @@ export interface FilterOptions {
   search: string;
   status: "all" | "active" | "inactive" | "scheduled" | "preparing" | "completed" | "alerts" | "active_staff" | "inactive_staff";
   sortBy: "name" | "status" | "lastActivity";
+  dayView: "today" | "tomorrow";
 }
 
 export interface User {

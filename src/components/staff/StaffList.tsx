@@ -19,14 +19,16 @@ interface StaffWithDetails extends User {
 interface StaffListProps {
   searchQuery?: string;
   statusFilter?: FilterOptions["status"];
+  viewMode?: "today" | "tomorrow";
 }
 
-export default function StaffList({ searchQuery = "", statusFilter = "all" }: StaffListProps) {
+export default function StaffList({ searchQuery = "", statusFilter = "all", viewMode = "today" }: StaffListProps) {
   const [staffList, setStaffList] = useState<StaffWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"name" | "status" | "reports" | "attendance" | "active">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [updatingActive, setUpdatingActive] = useState<string | null>(null);
+  const [updatingNextDayActive, setUpdatingNextDayActive] = useState<string | null>(null);
 
   const fetchStaffDetails = async () => {
     try {
@@ -280,13 +282,40 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
         throw new Error(error.error || "activeステータスの更新に失敗しました");
       }
 
-      // Refresh the staff list
-      await fetchStaffDetails();
+      // Update only the specific staff member's active status in the local state
+      setStaffList((prevStaff) => prevStaff.map((staff) => (staff.id === staffId ? { ...staff, active: !currentActive } : staff)));
     } catch (error) {
       console.error("Error updating active status:", error);
       alert("activeステータスの更新に失敗しました");
     } finally {
       setUpdatingActive(null);
+    }
+  };
+
+  const toggleNextDayActiveStatus = async (staffId: string, currentNextDayActive: boolean) => {
+    try {
+      setUpdatingNextDayActive(staffId);
+
+      const response = await fetch(`/api/staff/${staffId}/next-day-active`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ next_day_active: !currentNextDayActive }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "翌日activeステータスの更新に失敗しました");
+      }
+
+      // Update only the specific staff member's next_day_active status in the local state
+      setStaffList((prevStaff) => prevStaff.map((staff) => (staff.id === staffId ? { ...staff, next_day_active: !currentNextDayActive } : staff)));
+    } catch (error) {
+      console.error("Error updating next day active status:", error);
+      alert("翌日activeステータスの更新に失敗しました");
+    } finally {
+      setUpdatingNextDayActive(null);
     }
   };
 
@@ -356,20 +385,23 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">スタッフ一覧 ({filteredStaff.length})</h3>
-          <button
-            onClick={fetchStaffDetails}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            更新
-          </button>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm text-gray-600">表示中: {viewMode === "today" ? "当日" : "翌日"}ステータス</span>
+            <button
+              onClick={fetchStaffDetails}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              全データ更新
+            </button>
+          </div>
         </div>
       </div>
 
@@ -435,7 +467,7 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
               >
                 <div className="flex items-center">
-                  活動ステータス
+                  {viewMode === "today" ? "当日ステータス" : "翌日ステータス"}
                   {sortBy === "active" && (
                     <svg className={`w-4 h-4 ml-1 ${sortOrder === "desc" ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -485,13 +517,21 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
-                    onClick={() => toggleActiveStatus(staff.id, staff.active)}
-                    disabled={updatingActive === staff.id}
+                    onClick={() =>
+                      viewMode === "today" ? toggleActiveStatus(staff.id, staff.active) : toggleNextDayActiveStatus(staff.id, staff.next_day_active)
+                    }
+                    disabled={viewMode === "today" ? updatingActive === staff.id : updatingNextDayActive === staff.id}
                     className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      staff.active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    } ${updatingActive === staff.id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      (viewMode === "today" ? staff.active : staff.next_day_active)
+                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                    } ${
+                      (viewMode === "today" ? updatingActive === staff.id : updatingNextDayActive === staff.id)
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
                   >
-                    {updatingActive === staff.id ? (
+                    {(viewMode === "today" ? updatingActive === staff.id : updatingNextDayActive === staff.id) ? (
                       <svg className="animate-spin -ml-1 mr-2 h-3 w-3" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path
@@ -501,9 +541,13 @@ export default function StaffList({ searchQuery = "", statusFilter = "all" }: St
                         ></path>
                       </svg>
                     ) : (
-                      <div className={`w-2 h-2 rounded-full mr-2 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full mr-2 ${
+                          (viewMode === "today" ? staff.active : staff.next_day_active) ? "bg-green-500" : "bg-gray-400"
+                        }`}
+                      ></div>
                     )}
-                    {staff.active ? "活動中" : "非活動"}
+                    {(viewMode === "today" ? staff.active : staff.next_day_active) ? "活動中" : "非活動"}
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatLastLogin(staff.lastLogin)}</td>

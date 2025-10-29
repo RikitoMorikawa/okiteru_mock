@@ -11,7 +11,9 @@ export default function StaffManagementPage() {
     search: "",
     status: "all",
     sortBy: "name",
+    dayView: "today",
   });
+  const [viewMode, setViewMode] = useState<"today" | "tomorrow">("today");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -55,8 +57,30 @@ export default function StaffManagementPage() {
           <StaffFilters filters={filters} onFiltersChange={setFilters} />
         </div>
 
+        {/* Day View Toggle */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setViewMode("today")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                viewMode === "today" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              当日
+            </button>
+            <button
+              onClick={() => setViewMode("tomorrow")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                viewMode === "tomorrow" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              翌日
+            </button>
+          </div>
+        </div>
+
         {/* Staff List */}
-        <StaffList searchQuery={filters.search} statusFilter={filters.status} />
+        <StaffList searchQuery={filters.search} statusFilter={filters.status} viewMode={viewMode} />
       </div>
     </div>
   );
