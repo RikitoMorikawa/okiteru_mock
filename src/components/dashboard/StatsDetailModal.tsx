@@ -47,9 +47,9 @@ export default function StatsDetailModal({ isOpen, onClose, title, icon, complet
             </div>
           </div>
 
-          {/* Pending Staff - 未完了を先に表示 */}
-          {pendingStaff.length > 0 && (
-            <div className="mb-4">
+          {/* Pending Staff - 未完了のみ表示 */}
+          {pendingStaff.length > 0 ? (
+            <div>
               <h4 className="text-sm font-medium text-red-800 mb-2 flex items-center">
                 <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                 未完了 ({pendingStaff.length}人)
@@ -68,33 +68,16 @@ export default function StatsDetailModal({ isOpen, onClose, title, icon, complet
                 ))}
               </div>
             </div>
-          )}
-
-          {/* Completed Staff */}
-          {completedStaff.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-green-800 mb-2 flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                完了済み ({completedStaff.length}人)
-              </h4>
-              <div className="space-y-2">
-                {completedStaff.map((staff) => (
-                  <div key={staff.id} className="flex items-center p-2 bg-green-50 rounded-md">
-                    <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-medium text-green-800">{staff.name.charAt(0)}</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{staff.name}</div>
-                      <div className="text-xs text-gray-500">{staff.email}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-green-400 text-4xl mb-2">✅</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">全員完了済み</h3>
+              <p className="text-gray-600">すべてのスタッフがこの段階を完了しています</p>
             </div>
           )}
 
-          {/* Empty State */}
-          {completedStaff.length === 0 && pendingStaff.length === 0 && (
+          {/* Empty State - 活動予定スタッフがいない場合 */}
+          {totalActiveStaff === 0 && (
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-2">👤</div>
               <p className="text-gray-600">活動予定のスタッフがいません</p>
