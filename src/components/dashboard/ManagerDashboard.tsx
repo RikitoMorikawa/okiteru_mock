@@ -16,6 +16,7 @@ interface StaffWithStatus extends User {
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
+  todayPreviousDayReport?: any; // 当日の前日報告データ
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
@@ -39,6 +40,7 @@ export default function ManagerDashboard() {
     isOpen: boolean;
     type: "previous" | "preparing" | "active" | "completed" | null;
   }>({ isOpen: false, type: null });
+  const [showTodayReports, setShowTodayReports] = useState(false); // 当日の前日報告表示フラグ
 
   // Update current time every minute
   useEffect(() => {
@@ -104,7 +106,11 @@ export default function ManagerDashboard() {
       // 管理者は全ての前日報告を確認する必要がある
       const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*");
 
+      // Fetch today's previous day reports (reports made today for tomorrow)
+      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
+
       if (previousDayError) throw previousDayError;
+      if (todayPreviousError) throw todayPreviousError;
 
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
@@ -163,6 +169,9 @@ export default function ManagerDashboard() {
         if (!previousDayReport) {
           previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id && !report.actual_attendance_record_id);
         }
+
+        // 当日の前日報告（今日報告された明日の予定）
+        const todayPreviousDayReport = ((todayPreviousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
@@ -171,6 +180,7 @@ export default function ManagerDashboard() {
           resetRecord, // リセットレコードの詳細を追加
           todayReport,
           previousDayReport,
+          todayPreviousDayReport, // 当日の前日報告を追加
           activeAlerts: [], // Keep for compatibility but empty
           lastLogin,
           hasResetToday,
@@ -297,11 +307,16 @@ export default function ManagerDashboard() {
     const totalStaff = staffList.length;
     const activeStaffCount = staffList.filter((staff) => staff.active).length;
 
-    // 前日報告: 実際に前日報告をしているか、または後の段階まで進んでいる人数
-    const activeStaffWithPreviousDayReport = staffList.filter(
-      (staff) =>
-        staff.active && (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
-    ).length;
+    // 前日報告: 表示モードに応じて計算
+    const activeStaffWithPreviousDayReport = showTodayReports
+      ? // 本日前日報告した人数
+        staffList.filter((staff) => staff.active && staff.todayPreviousDayReport).length
+      : // 昨日前日報告した人数（従来の計算）
+        staffList.filter(
+          (staff) =>
+            staff.active &&
+            (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+        ).length;
 
     // 準備中: 起床報告したが到着報告していない人、または後の段階まで進んでいる人数
     const preparingStaff = staffList.filter(
@@ -357,16 +372,23 @@ export default function ManagerDashboard() {
 
     switch (type) {
       case "previous":
-        return {
-          // 前日報告: 実際に前日報告をしているか、または後の段階（到着報告、日報完了）まで進んでいる人
-          completed: activeStaff.filter(
-            (staff) => staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-          pending: activeStaff.filter(
-            (staff) =>
-              !staff.previousDayReport && !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-        };
+        return showTodayReports
+          ? {
+              // 本日前日報告した人
+              completed: activeStaff.filter((staff) => staff.todayPreviousDayReport),
+              pending: activeStaff.filter((staff) => !staff.todayPreviousDayReport),
+            }
+          : {
+              // 昨日前日報告した人（従来の計算）
+              completed: activeStaff.filter(
+                (staff) =>
+                  staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+              pending: activeStaff.filter(
+                (staff) =>
+                  !staff.previousDayReport && !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+              ),
+            };
       case "preparing":
         return {
           // 準備中: 起床報告したが到着報告していない人、または後の段階（到着報告、日報完了）まで進んでいる人
@@ -569,6 +591,10 @@ export default function ManagerDashboard() {
             onClick={() => handleStatsCardClick("previous")}
             isCompleted={stats.activeStaffWithPreviousDayReport === stats.activeStaffCount}
             pendingCount={stats.activeStaffCount - stats.activeStaffWithPreviousDayReport}
+            showToggle={true}
+            toggleState={showTodayReports}
+            onToggle={() => setShowTodayReports(!showTodayReports)}
+            toggleLabels={{ false: "昨日の前日報告", true: "本日の前日報告" }}
           />
           <StatCard
             title="準備中"
@@ -652,7 +678,15 @@ export default function ManagerDashboard() {
           isOpen={statsModal.isOpen}
           onClose={() => setStatsModal({ isOpen: false, type: null })}
           title={
-            statsModal.type === "previous" ? "前日報告" : statsModal.type === "preparing" ? "準備中" : statsModal.type === "active" ? "活動中" : "完了報告"
+            statsModal.type === "previous"
+              ? showTodayReports
+                ? "本日の前日報告"
+                : "昨日の前日報告"
+              : statsModal.type === "preparing"
+              ? "準備中"
+              : statsModal.type === "active"
+              ? "活動中"
+              : "完了報告"
           }
           icon={statsModal.type === "previous" ? "📅" : statsModal.type === "preparing" ? "⏳" : statsModal.type === "active" ? "✅" : "📝"}
           completedStaff={getStatsDetail(statsModal.type).completed}
@@ -674,9 +708,27 @@ interface StatCardProps {
   onClick?: () => void;
   isCompleted?: boolean; // 全員完了かどうか
   pendingCount?: number; // 未完了の人数
+  showToggle?: boolean; // 切り替えボタンを表示するか
+  toggleState?: boolean; // 切り替え状態
+  onToggle?: () => void; // 切り替えハンドラー
+  toggleLabels?: { false: string; true: string }; // 切り替えラベル
 }
 
-function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, isCompleted, pendingCount }: StatCardProps) {
+function StatCard({
+  title,
+  mobileTitle,
+  value,
+  subtitle,
+  icon,
+  color,
+  onClick,
+  isCompleted,
+  pendingCount,
+  showToggle,
+  toggleState,
+  onToggle,
+  toggleLabels,
+}: StatCardProps) {
   // 全員完了の場合はグレー、未完了がいる場合は元の色
   const actualColor = isCompleted ? "gray" : color;
 
@@ -696,12 +748,7 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, i
   const backgroundClass = isCompleted ? "bg-gray-200" : "bg-white";
 
   return (
-    <div
-      className={`${backgroundClass} rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[actualColor]} ${
-        onClick ? "cursor-pointer hover:shadow-md transition-shadow" : ""
-      }`}
-      onClick={onClick}
-    >
+    <div className={`${backgroundClass} rounded-lg shadow-sm p-2 sm:p-6 border-l-4 ${colorClasses[actualColor]}`}>
       <div className="flex items-center justify-between sm:block">
         {/* Mobile: Single line layout */}
         <div className="flex items-center sm:hidden">
@@ -712,16 +759,28 @@ function StatCard({ title, mobileTitle, value, subtitle, icon, color, onClick, i
         </div>
 
         {/* Desktop: Original layout */}
-        <div className="hidden sm:flex sm:items-center">
-          <div className="flex-shrink-0">
-            <span className="text-2xl">{icon}</span>
-          </div>
-          <div className="ml-4 flex-1">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <div className="flex items-baseline">
-              <p className={`text-2xl font-semibold ${valueTextColor}`}>{value}</p>
-              {subtitle && <p className="ml-2 text-sm text-gray-500">{subtitle}</p>}
+        <div className="hidden sm:block">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <span className="text-2xl mr-3">{icon}</span>
+              <p className="text-sm font-medium text-gray-600">{title}</p>
             </div>
+            {showToggle && onToggle && toggleLabels && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                title={toggleState ? toggleLabels.true : toggleLabels.false}
+              >
+                {toggleState ? "本日" : "昨日"}
+              </button>
+            )}
+          </div>
+          <div className={`flex items-baseline ${onClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`} onClick={onClick}>
+            <p className={`text-2xl font-semibold ${valueTextColor}`}>{value}</p>
+            {subtitle && <p className="ml-2 text-sm text-gray-500">{subtitle}</p>}
           </div>
         </div>
       </div>
