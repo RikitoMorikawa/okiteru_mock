@@ -73,11 +73,41 @@ export async function POST(request: NextRequest) {
         // Don't return error here as this is not critical
       }
 
-      // Step 2: Mark the day as completed (data preservation approach)
+      // Step 2: Delete all previous day reports for this user (to reset for next cycle)
+      // First, check if there are any previous day reports to delete
+      const { data: existingPreviousDayReports, error: checkError } = await (supabaseAdmin as any)
+        .from("previous_day_reports")
+        .select("id, report_date")
+        .eq("user_id", req.user.id);
+
+      console.log(`Checking all previous day reports for user ${req.user.id}:`, existingPreviousDayReports);
+
+      if (checkError) {
+        console.error("Error checking previous day reports:", checkError);
+      }
+
+      if (existingPreviousDayReports && existingPreviousDayReports.length > 0) {
+        const { data: deletedReports, error: previousDayReportError } = await (supabaseAdmin as any)
+          .from("previous_day_reports")
+          .delete()
+          .eq("user_id", req.user.id)
+          .select();
+
+        if (previousDayReportError) {
+          console.error("Error deleting previous day reports:", previousDayReportError);
+          // Don't return error here as this is not critical for completion
+        } else {
+          console.log(`Successfully deleted ${deletedReports?.length || 0} previous day reports for user ${req.user.id}`);
+        }
+      } else {
+        console.log(`No previous day reports found for user ${req.user.id}`);
+      }
+
+      // Step 3: Mark the day as completed (data preservation approach)
       // All data is preserved for management review, but UI shows as completed
 
-      // No data deletion - everything is preserved for admin management
-      console.log(`Day completed for user ${req.user.id} on ${today}. All data preserved.`);
+      // No data deletion for attendance and daily reports - everything is preserved for admin management
+      console.log(`Day completed for user ${req.user.id} on ${today}. All data preserved, previous day reports reset.`);
 
       return NextResponse.json({
         success: true,

@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         arrivalReported: !!attendanceRecord?.arrival_time,
         dailyReportSubmitted: !!dailyReport,
         shiftScheduleSubmitted: !!shiftSchedule,
-        dayCompleted: attendanceRecord?.status === "complete" && attendanceRecord !== null,
+        dayCompleted: attendanceRecord?.status === "archived" && attendanceRecord !== null,
       };
 
       // Debug logging
