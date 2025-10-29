@@ -31,7 +31,7 @@ export default function ManagerDashboard() {
   const [filters, setFilters] = useState<FilterOptions>({
     search: "",
     status: "all",
-    sortBy: "name",
+    sortBy: "status",
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -250,24 +250,37 @@ export default function ManagerDashboard() {
     setFilteredStaff(filtered);
   }, [staffList, filters]);
 
-  // Calculate activity score for sorting (低いスコア = 進捗が遅い)
+  // Calculate activity score for sorting (低いスコア = 進捗が遅い = 優先度高)
   const getActivityScore = (staff: StaffWithStatus) => {
-    let score = 0;
-    if (staff.previousDayReport) score += 1;
-    if (staff.todayAttendance?.wake_up_time) score += 1;
-    if (staff.todayAttendance?.departure_time) score += 1;
-    if (staff.todayAttendance?.arrival_time) score += 1;
-    if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) score += 1;
+    // 進捗段階を明確に定義（数字が小さいほど優先度が高い）
 
-    // デバッグ用ログ
-    console.log(
-      `[DEBUG] ${staff.name}: score=${score}, previous=${!!staff.previousDayReport}, wake=${!!staff.todayAttendance?.wake_up_time}, departure=${!!staff
-        .todayAttendance?.departure_time}, arrival=${!!staff.todayAttendance?.arrival_time}, report=${!!staff.todayReport}, reset=${
-        staff.hasResetToday && !staff.hasActiveRecord
-      }`
-    );
+    // 完了済み（最低優先度）
+    if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) {
+      return 100; // 完了済みは最後
+    }
 
-    return score;
+    // 到着報告済みだが日報未提出（高優先度）
+    if (staff.todayAttendance?.arrival_time) {
+      return 10; // 日報提出を促すべき
+    }
+
+    // 出発報告済みだが到着報告未完了
+    if (staff.todayAttendance?.departure_time) {
+      return 8;
+    }
+
+    // 起床報告済みだが出発報告未完了
+    if (staff.todayAttendance?.wake_up_time) {
+      return 6;
+    }
+
+    // 前日報告済みだが起床報告未完了
+    if (staff.previousDayReport) {
+      return 4;
+    }
+
+    // 何も報告していない（最高優先度）
+    return 1;
   };
 
   // Get dashboard statistics
