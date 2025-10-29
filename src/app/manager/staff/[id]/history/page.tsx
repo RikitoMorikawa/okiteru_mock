@@ -53,7 +53,7 @@ export default function StaffHistoryPage() {
         .eq("staff_id", staffId)
         .gte("date", dateRange.startDate)
         .lte("date", dateRange.endDate)
-        .neq("status", "archived")
+        .not("status", "in", '("archived","active")')
         .order("created_at", { ascending: false });
 
       if (attendanceError) throw attendanceError;
