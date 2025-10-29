@@ -19,12 +19,14 @@ interface StaffWithStatus extends User {
 
 interface StaffStatusCardProps {
   staff: StaffWithStatus;
+  showTodayReports?: boolean;
 }
 
-export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
+export default function StaffStatusCard({ staff, showTodayReports = false }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [updatingActive, setUpdatingActive] = useState(false);
+  const [updatingNextDayActive, setUpdatingNextDayActive] = useState(false);
 
   // Calculate completion status
   const getCompletionStatus = () => {
@@ -148,6 +150,47 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     }
   };
 
+  // Toggle next day active status
+  const toggleNextDayActiveStatus = async () => {
+    try {
+      setUpdatingNextDayActive(true);
+
+      // Check if current user is a manager
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        alert("認証が必要です。再度ログインしてください。");
+        return;
+      }
+
+      // Check if user is a manager
+      const { data: currentUser } = await supabase.from("users").select("role").eq("id", session.user.id).single();
+
+      if (!currentUser || (currentUser as any).role !== "manager") {
+        alert("管理者権限が必要です。");
+        return;
+      }
+
+      // Update the staff member's next_day_active status directly
+      const { error } = await (supabase as any).from("users").update({ next_day_active: !staff.next_day_active }).eq("id", staff.id).eq("role", "staff");
+
+      if (error) {
+        console.error("Error updating next day active status:", error);
+        throw new Error("翌日activeステータスの更新に失敗しました");
+      }
+
+      // Refresh the page to update the data
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating next day active status:", error);
+      alert("翌日activeステータスの更新に失敗しました");
+    } finally {
+      setUpdatingNextDayActive(false);
+    }
+  };
+
   const { tasks, completed, total, percentage } = getCompletionStatus();
   const { status, label, color } = getOverallStatus();
 
@@ -181,15 +224,17 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
                 <div>
                   <h3 className="text-sm mr-4 font-medium text-gray-900">{staff.name}</h3>
                 </div>
-                {/* Active Status - moved to the right of name */}
+                {/* Active Status - 表示モードに応じて切り替え */}
                 <button
-                  onClick={toggleActiveStatus}
-                  disabled={updatingActive}
+                  onClick={showTodayReports ? toggleNextDayActiveStatus : toggleActiveStatus}
+                  disabled={showTodayReports ? updatingNextDayActive : updatingActive}
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                    staff.active ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  } ${updatingActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    (showTodayReports ? staff.next_day_active : staff.active)
+                      ? "bg-green-100 text-green-800 hover:bg-green-200"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  } ${(showTodayReports ? updatingNextDayActive : updatingActive) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
-                  {updatingActive ? (
+                  {(showTodayReports ? updatingNextDayActive : updatingActive) ? (
                     <svg className="animate-spin -ml-1 mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path
@@ -199,9 +244,11 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
                       ></path>
                     </svg>
                   ) : (
-                    <div className={`w-1.5 h-1.5 rounded-full mr-1 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}></div>
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full mr-1 ${(showTodayReports ? staff.next_day_active : staff.active) ? "bg-green-500" : "bg-gray-400"}`}
+                    ></div>
                   )}
-                  {staff.active ? "活動中" : "非活動"}
+                  {showTodayReports ? (staff.next_day_active ? "翌日活動予定" : "翌日非活動") : staff.active ? "活動中" : "非活動"}
                 </button>
               </div>
             </div>
