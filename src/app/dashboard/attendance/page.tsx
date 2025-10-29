@@ -16,6 +16,26 @@ import { api } from "@/lib/api-client";
 
 type AttendanceAction = "previous-day" | "wakeup" | "departure" | "arrival" | "report" | null;
 
+// Helper function to determine the next action based on attendance status
+function getDefaultAction(status: any): AttendanceAction {
+  // 日が完了している場合は完了ボタンを表示（nullを返す）
+  if (status.dayCompleted) {
+    return null; // 完了状態
+  }
+
+  // 全てのタスクが完了している場合は完了ボタンを表示（nullを返す）
+  if (status.previousDayReported && status.wakeUpReported && status.departureReported && status.arrivalReported && status.dailyReportSubmitted) {
+    return null; // 完了状態
+  }
+
+  if (!status.previousDayReported) return "previous-day";
+  if (!status.wakeUpReported) return "wakeup";
+  if (!status.departureReported) return "departure";
+  if (!status.arrivalReported) return "arrival";
+  if (!status.dailyReportSubmitted) return "report";
+  return null; // All tasks completed
+}
+
 function AttendanceContent() {
   const searchParams = useSearchParams();
   const [activeAction, setActiveAction] = useState<AttendanceAction>(null);
@@ -35,6 +55,7 @@ function AttendanceContent() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStartingNewDay, setIsStartingNewDay] = useState(false);
   const [showNewDayConfirm, setShowNewDayConfirm] = useState(false);
+  const [skipAutoAction, setSkipAutoAction] = useState(false); // 自動アクション設定をスキップするフラグ
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
