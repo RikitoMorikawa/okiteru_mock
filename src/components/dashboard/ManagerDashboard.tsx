@@ -312,10 +312,10 @@ export default function ManagerDashboard() {
           return a.name.localeCompare(b.name);
         case "status":
           if (showTodayReports) {
-            // 翌日モード: 翌日ステータスでソート（活動予定が先）
-            const aNextDayActive = a.next_day_active ? 1 : 0;
-            const bNextDayActive = b.next_day_active ? 1 : 0;
-            return bNextDayActive - aNextDayActive;
+            // 翌日モード: 前日報告の有無でソート（未報告が先に来る）
+            const aScore = getActivityScore(a); // 0 or 1
+            const bScore = getActivityScore(b); // 0 or 1
+            return aScore - bScore; // 未報告(0)が先、報告済み(1)が後
           } else {
             // 当日モード: 進捗スコアでソート
             const aScore = getActivityScore(a);
@@ -328,10 +328,10 @@ export default function ManagerDashboard() {
           return bTime - aTime;
         default:
           if (showTodayReports) {
-            // 翌日モード: デフォルトは翌日ステータスでソート
-            const aNextDayActive = a.next_day_active ? 1 : 0;
-            const bNextDayActive = b.next_day_active ? 1 : 0;
-            return bNextDayActive - aNextDayActive;
+            // 翌日モード: デフォルトは前日報告の有無でソート（未報告が先）
+            const aScore = getActivityScore(a); // 0 or 1
+            const bScore = getActivityScore(b); // 0 or 1
+            return aScore - bScore; // 未報告(0)が先、報告済み(1)が後
           } else {
             // 当日モード: デフォルトは進捗が遅い順
             const defaultAScore = getActivityScore(a);
@@ -346,8 +346,13 @@ export default function ManagerDashboard() {
 
   // Calculate activity score for sorting (低いスコア = 進捗が遅い = 優先度高)
   const getActivityScore = (staff: StaffWithStatus) => {
-    // 進捗段階を明確に定義（数字が小さいほど優先度が高い）
+    // 翌日モードの場合は、前日報告の有無のみで判定（0 or 1）
+    if (showTodayReports) {
+      // 翌日モード: 当日の前日報告（明日の予定）があるかどうかのみ
+      return staff.todayPreviousDayReport ? 1 : 0; // 報告済み=1, 未報告=0
+    }
 
+    // 当日モード: 従来の詳細な進捗段階
     // 完了済み（最低優先度）
     if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) {
       return 100; // 完了済みは最後

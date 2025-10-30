@@ -11,6 +11,7 @@ interface StaffWithStatus extends User {
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
+  todayPreviousDayReport?: any; // 当日の前日報告データ（翌日の予定）
   activeAlerts: Alert[];
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
@@ -30,6 +31,18 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
 
   // Calculate completion status
   const getCompletionStatus = () => {
+    // 翌日モードの場合は前日報告の有無のみをチェック
+    if (showTodayReports) {
+      const tasks = [{ name: "前日報告", completed: !!(staff as any).todayPreviousDayReport }];
+
+      const completed = tasks.filter((task) => task.completed).length;
+      const total = tasks.length;
+      const percentage = Math.round((completed / total) * 100);
+
+      return { tasks, completed, total, percentage };
+    }
+
+    // 当日モードの場合は従来通りの詳細な進捗
     // リセットされた場合はリセット前の記録を使用
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
@@ -48,11 +61,22 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
     return { tasks, completed, total, percentage };
   };
 
-  // Get overall status - 常に当日のステータスを表示
+  // Get overall status
   const getOverallStatus = () => {
     const { percentage } = getCompletionStatus();
     const hasAlerts = staff.activeAlerts.length > 0;
 
+    // 翌日モードの場合は前日報告の有無のみで判定
+    if (showTodayReports) {
+      const hasTodayPreviousDayReport = !!(staff as any).todayPreviousDayReport;
+      if (hasTodayPreviousDayReport) {
+        return { status: "complete", label: "報告済み", color: "green" };
+      } else {
+        return { status: "inactive", label: "未報告", color: "gray" };
+      }
+    }
+
+    // 当日モードの場合は従来通りの詳細な判定
     // リセットされたユーザーは「報告済み」として表示
     if (staff.hasResetToday && !staff.hasActiveRecord) {
       return { status: "reset", label: "報告済み", color: "purple" };
@@ -259,9 +283,15 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
         {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>本日の進捗</span>
+            <span>{showTodayReports ? "翌日の準備" : "本日の進捗"}</span>
             <span>
-              {staff.hasResetToday && !staff.hasActiveRecord
+              {showTodayReports
+                ? // 翌日モード: 前日報告の有無のみ表示
+                  (staff as any).todayPreviousDayReport
+                  ? "報告済み"
+                  : "未報告"
+                : // 当日モード: 従来通りの詳細表示
+                staff.hasResetToday && !staff.hasActiveRecord
                 ? "完了・前日報告済"
                 : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
                 ? "完了"
