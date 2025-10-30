@@ -95,9 +95,9 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
     }
 
     // 当日モードで活動中のユーザーは従来通りの詳細な判定
-    // リセットされたユーザーは「報告済み」として表示
+    // リセットされたユーザーは「完了」として表示（緑色）
     if (staff.hasResetToday && !staff.hasActiveRecord) {
-      return { status: "reset", label: "報告済み", color: "purple" };
+      return { status: "complete", label: "完了", color: "green" };
     }
 
     // 日報が提出されている場合は「完了」として表示
@@ -312,7 +312,7 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
                 !staff.active
                 ? "非活動"
                 : staff.hasResetToday && !staff.hasActiveRecord
-                ? "完了・前日報告済"
+                ? "完了"
                 : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
                 ? "完了"
                 : `${completed}/${total}`}
