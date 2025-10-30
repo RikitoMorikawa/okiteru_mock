@@ -56,6 +56,7 @@ function AttendanceContent() {
   const [isStartingNewDay, setIsStartingNewDay] = useState(false);
   const [showNewDayConfirm, setShowNewDayConfirm] = useState(false);
   const [skipAutoAction, setSkipAutoAction] = useState(false); // 自動アクション設定をスキップするフラグ
+  const [previousDayReportDate, setPreviousDayReportDate] = useState<string | null>(null); // 前日報告した日付
 
   useEffect(() => {
     const action = searchParams.get("action") as AttendanceAction;
@@ -87,6 +88,18 @@ function AttendanceContent() {
           dailyReportSubmitted: data.status.dailyReportSubmitted || data.status.reportSubmitted || false,
           dayCompleted: data.status.dayCompleted || false,
         });
+
+        // 前日報告の日付を設定（シンプル版）
+        if (data.status.previousDayReported) {
+          // 前日報告がある場合、今日の日付を設定
+          const today = new Date().toISOString().split("T")[0];
+          setPreviousDayReportDate(today);
+          console.log("[DEBUG] Previous day report exists, setting date:", today);
+        } else {
+          // 前日報告がない場合はクリア
+          setPreviousDayReportDate(null);
+          console.log("[DEBUG] No previous day report, clearing date");
+        }
       } else {
         console.error("Failed to fetch attendance status");
       }
@@ -125,6 +138,43 @@ function AttendanceContent() {
       attendanceStatus.arrivalReported &&
       (attendanceStatus.reportSubmitted || attendanceStatus.dailyReportSubmitted)
     );
+  };
+
+  // 前日報告した日と現在の日付を比較して、当日かどうかを判定
+  const isCurrentDay = () => {
+    if (!previousDayReportDate) {
+      console.log("[DEBUG] No previousDayReportDate, returning true");
+      return true; // 前日報告がない場合は制限なし
+    }
+
+    const today = new Date();
+    const reportDate = new Date(previousDayReportDate);
+
+    // 日付のみを比較（時間は無視）
+    const todayDateString = today.toISOString().split("T")[0];
+    const reportDateString = reportDate.toISOString().split("T")[0];
+
+    console.log("[DEBUG] Date comparison:", {
+      today: todayDateString,
+      reportDate: reportDateString,
+      isSameDay: todayDateString === reportDateString,
+      previousDayReportDate,
+    });
+
+    // 前日報告した日と今日が同じ日の場合はfalse（起床報告以降は無効）
+    // 日付が変わった場合はtrue（起床報告以降が有効）
+    return todayDateString !== reportDateString;
+  };
+
+  // 前日報告完了後の待機状態かどうかを判定
+  const isWaitingForNextDay = () => {
+    const result = attendanceStatus.previousDayReported && !isCurrentDay();
+    console.log("[DEBUG] isWaitingForNextDay:", {
+      previousDayReported: attendanceStatus.previousDayReported,
+      isCurrentDay: isCurrentDay(),
+      result,
+    });
+    return result;
   };
 
   const handleCompleteDay = async () => {
@@ -475,7 +525,11 @@ function AttendanceContent() {
 
                     // 前日報告が完了していない場合、前日報告以外のアクションを無効化
                     const isPreviousDayRequired = !attendanceStatus.previousDayReported && action.id !== "previous-day";
-                    const isDisabled = isDayCompleted || isPreviousDayRequired;
+
+                    // 前日報告完了後、日付が変わるまで起床報告以降を無効化
+                    const isWaitingForNewDay = isWaitingForNextDay() && action.id !== "previous-day";
+
+                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay;
 
                     return (
                       <button
