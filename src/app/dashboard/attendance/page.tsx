@@ -473,15 +473,19 @@ function AttendanceContent() {
                     const isNextAction = nextAction?.action === action.id;
                     const isDayCompleted = isTodayCompleted();
 
+                    // 前日報告が完了していない場合、前日報告以外のアクションを無効化
+                    const isPreviousDayRequired = !attendanceStatus.previousDayReported && action.id !== "previous-day";
+                    const isDisabled = isDayCompleted || isPreviousDayRequired;
+
                     return (
                       <button
                         key={action.id}
-                        onClick={() => !isDayCompleted && setActiveAction(action.id)}
-                        disabled={isDayCompleted}
+                        onClick={() => !isDisabled && setActiveAction(action.id)}
+                        disabled={isDisabled}
                         className={`
                           relative p-6 rounded-lg border-2 transition-all 
                           ${
-                            isDayCompleted
+                            isDisabled
                               ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60"
                               : isCompleted
                               ? "border-gray-200 bg-gray-50 text-gray-600 hover:shadow-lg hover:scale-105"
@@ -509,7 +513,7 @@ function AttendanceContent() {
                             </div>
                           )}
 
-                          {!isDayCompleted && isCompleted && (
+                          {!isDisabled && isCompleted && (
                             <div className="absolute top-2 right-2">
                               <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -523,7 +527,7 @@ function AttendanceContent() {
                             </div>
                           )}
 
-                          {!isDayCompleted && isNextAction && !isCompleted && (
+                          {!isDisabled && isNextAction && !isCompleted && (
                             <div className="absolute top-2 right-2">
                               <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
