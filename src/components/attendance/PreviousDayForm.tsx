@@ -143,7 +143,6 @@ export default function PreviousDayForm({ onSuccess }: PreviousDayFormProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center mb-6">
-        <span className="text-2xl sm:text-3xl mr-3 sm:mr-4">🌙</span>
         <div>
           <h2 className="text-lg sm:text-2xl font-bold text-gray-900">前日報告</h2>
           <p className="text-sm sm:text-base text-gray-600">翌日の予定と準備状況を報告してください</p>
@@ -206,7 +205,7 @@ export default function PreviousDayForm({ onSuccess }: PreviousDayFormProps) {
         {/* 身だしなみ写真 */}
         <PhotoUpload
           label="身だしなみ写真"
-          description="翌日の準備として身だしなみを確認できる写真をアップロードしてください"
+          description=""
           selectedPhoto={appearancePhoto}
           onPhotoSelect={handleAppearancePhotoSelect}
           onPhotoRemove={handleAppearancePhotoRemove}
@@ -217,7 +216,7 @@ export default function PreviousDayForm({ onSuccess }: PreviousDayFormProps) {
         {/* 経路スクリーンショット */}
         <PhotoUpload
           label="経路スクリーンショット"
-          description="翌日使用予定の経路をナビアプリで確認し、スクリーンショットをアップロードしてください"
+          description=""
           selectedPhoto={routePhoto}
           onPhotoSelect={handleRoutePhotoSelect}
           onPhotoRemove={handleRoutePhotoRemove}
@@ -236,7 +235,7 @@ export default function PreviousDayForm({ onSuccess }: PreviousDayFormProps) {
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
-            placeholder="翌日の特記事項や準備状況があれば記入してください"
+            placeholder="翌日の特記事項があれば記入してください"
             maxLength={500}
           />
         </div>
@@ -295,10 +294,9 @@ export default function PreviousDayForm({ onSuccess }: PreviousDayFormProps) {
           </div>
           <div className="text-xs sm:text-sm text-blue-700">
             <ul className="list-disc pl-4 space-y-1">
-              <li>翌日の業務に向けた準備状況を報告してください</li>
-              <li>時間は起床→出発→到着の順序で設定してください</li>
-              <li>身だしなみ写真と経路確認は翌日の円滑な業務のために重要です</li>
-              <li>特別な予定や注意事項がある場合は備考欄に記入してください</li>
+              <li>翌日の準備状況を報告してください</li>
+              <li>時間は予定時間で設定してください</li>
+              <li>身だしなみと経路確認の写真が必要です</li>
             </ul>
           </div>
         </div>

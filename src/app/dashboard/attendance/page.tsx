@@ -687,11 +687,11 @@ function AttendanceContent() {
                     </div>
                     <div className="text-xs sm:text-sm text-blue-700">
                       <ul className="list-disc pl-4 space-y-1">
-                        <li>【重要】前日報告から開始してください（翌日の準備状況を事前確認）</li>
+                        <li>前日報告から開始してください</li>
                         <li>起床報告は起床後すぐに行ってください</li>
                         <li>出発報告では目的地を正確に入力してください</li>
+                        <li>到着報告は現在地を取得してください</li>
                         <li>日報提出では業務内容を詳しく記録してください</li>
-                        <li>各報告は正確な時間で記録して下さい</li>
                       </ul>
                     </div>
                   </div>
