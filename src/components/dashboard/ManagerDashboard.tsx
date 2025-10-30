@@ -621,11 +621,29 @@ export default function ManagerDashboard() {
 
               {/* 当日/翌日切り替えボタン */}
               <button
-                onClick={() => {
+                onClick={async () => {
+                  console.log("[DEBUG] ===== BUTTON CLICKED =====");
+                  console.log(`[DEBUG] Current state - dashboardViewPreference: ${dashboardViewPreference}, showTodayReports: ${showTodayReports}`);
+
                   const newPreference = dashboardViewPreference === "today" ? "next_day" : "today";
-                  saveDashboardPreference(newPreference);
+                  console.log(`[DEBUG] Button clicked. Current: ${dashboardViewPreference}, New: ${newPreference}`);
+
+                  await saveDashboardPreference(newPreference);
+
+                  // Verify the change was saved
+                  setTimeout(async () => {
+                    console.log("[DEBUG] Verifying database state...");
+                    if (user?.id) {
+                      const { data } = await supabase.from("users").select("dashboard_view_preference").eq("id", user.id).single();
+                      console.log("[DEBUG] Current DB value:", data);
+                    }
+                  }, 1000);
                 }}
-                className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  showTodayReports
+                    ? "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300" // 翌日モード: 緑色
+                    : "bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300" // 当日モード: 青色
+                }`}
                 title={showTodayReports ? "翌日の統計を表示中" : "当日の統計を表示中"}
               >
                 {showTodayReports ? "翌日" : "当日"}
