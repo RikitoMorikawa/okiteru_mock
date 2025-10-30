@@ -42,7 +42,20 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
       return { tasks, completed, total, percentage };
     }
 
-    // 当日モードの場合は従来通りの詳細な進捗
+    // 当日モードで非活動のユーザーは進捗0
+    if (!staff.active) {
+      const tasks = [
+        { name: "前日報告", completed: false },
+        { name: "起床報告", completed: false },
+        { name: "出発報告", completed: false },
+        { name: "到着報告", completed: false },
+        { name: "日報提出", completed: false },
+      ];
+
+      return { tasks, completed: 0, total: tasks.length, percentage: 0 };
+    }
+
+    // 当日モードで活動中のユーザーは従来通りの詳細な進捗
     // リセットされた場合はリセット前の記録を使用
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
@@ -76,7 +89,12 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
       }
     }
 
-    // 当日モードの場合は従来通りの詳細な判定
+    // 当日モードで非活動のユーザーは常に「非活動」
+    if (!staff.active) {
+      return { status: "inactive", label: "非活動", color: "gray" };
+    }
+
+    // 当日モードで活動中のユーザーは従来通りの詳細な判定
     // リセットされたユーザーは「報告済み」として表示
     if (staff.hasResetToday && !staff.hasActiveRecord) {
       return { status: "reset", label: "報告済み", color: "purple" };
@@ -290,8 +308,10 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
                   (staff as any).todayPreviousDayReport
                   ? "報告済み"
                   : "未報告"
-                : // 当日モード: 従来通りの詳細表示
-                staff.hasResetToday && !staff.hasActiveRecord
+                : // 当日モード
+                !staff.active
+                ? "非活動"
+                : staff.hasResetToday && !staff.hasActiveRecord
                 ? "完了・前日報告済"
                 : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
                 ? "完了"
