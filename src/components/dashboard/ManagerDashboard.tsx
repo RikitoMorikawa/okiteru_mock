@@ -42,6 +42,7 @@ export default function ManagerDashboard() {
     type: "previous" | "preparing" | "active" | "completed" | null;
   }>({ isOpen: false, type: null });
   const [showTodayReports, setShowTodayReports] = useState(false); // 当日の前日報告表示フラグ
+  const [dashboardViewPreference, setDashboardViewPreference] = useState<"today" | "next_day">("today"); // データベースから読み込む設定
 
   // Update current time every minute
   useEffect(() => {
@@ -76,6 +77,62 @@ export default function ManagerDashboard() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showProfileMenu]);
+
+  // Load manager's dashboard view preference
+  const loadDashboardPreference = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase.from("users").select("dashboard_view_preference").eq("id", user.id).single();
+
+      if (error) {
+        console.error("Error loading dashboard preference:", error);
+        return;
+      }
+
+      // Type-safe access to the preference field
+      const preference = (data as any)?.dashboard_view_preference as "today" | "next_day" | undefined;
+      const finalPreference = preference || "today";
+      setDashboardViewPreference(finalPreference);
+      setShowTodayReports(finalPreference === "next_day");
+    } catch (error) {
+      console.error("Error loading dashboard preference:", error);
+    }
+  };
+
+  // Save manager's dashboard view preference
+  const saveDashboardPreference = async (preference: "today" | "next_day") => {
+    if (!user?.id) return;
+
+    try {
+      // Method 1: Try using the database function with type assertion
+      const { error } = await (supabase as any).rpc("update_user_dashboard_preference", {
+        user_id: user.id,
+        preference: preference,
+      });
+
+      // Method 2: Fallback to direct update if RPC function doesn't exist
+      if (error && error.message?.includes("function")) {
+        console.log("RPC function not found, using direct update");
+        // Cast the entire supabase client to bypass strict typing
+        const supabaseAny = supabase as any;
+        const { error: updateError } = await supabaseAny.from("users").update({ dashboard_view_preference: preference }).eq("id", user.id);
+
+        if (updateError) {
+          console.error("Error saving dashboard preference:", updateError);
+          return;
+        }
+      } else if (error) {
+        console.error("Error saving dashboard preference:", error);
+        return;
+      }
+
+      setDashboardViewPreference(preference);
+      setShowTodayReports(preference === "next_day");
+    } catch (error) {
+      console.error("Error saving dashboard preference:", error);
+    }
+  };
 
   // Fetch staff data
   const fetchStaffData = async () => {
@@ -482,6 +539,13 @@ export default function ManagerDashboard() {
     setStatsModal({ isOpen: true, type });
   };
 
+  // Load dashboard preference on component mount
+  useEffect(() => {
+    if (user?.id) {
+      loadDashboardPreference();
+    }
+  }, [user?.id]);
+
   // Set up real-time subscriptions
   useEffect(() => {
     fetchStaffData();
@@ -557,7 +621,10 @@ export default function ManagerDashboard() {
 
               {/* 当日/翌日切り替えボタン */}
               <button
-                onClick={() => setShowTodayReports(!showTodayReports)}
+                onClick={() => {
+                  const newPreference = dashboardViewPreference === "today" ? "next_day" : "today";
+                  saveDashboardPreference(newPreference);
+                }}
                 className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
                 title={showTodayReports ? "翌日の統計を表示中" : "当日の統計を表示中"}
               >

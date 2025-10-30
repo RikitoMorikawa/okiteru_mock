@@ -21,6 +21,7 @@ export interface User {
   phone?: string;
   active: boolean;
   next_day_active: boolean;
+  dashboard_view_preference?: "today" | "next_day";
   created_at: string;
   updated_at: string;
 }
