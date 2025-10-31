@@ -222,20 +222,8 @@ export default function ManagerDashboard() {
 
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
 
-        // 前日報告の検索: 今日のattendance_recordに紐づいたものまたは未使用のもの
-        let previousDayReport = null;
-
-        // まず、今日のattendance_recordに紐づいた前日報告を確認
-        if (todayAttendance) {
-          previousDayReport = ((previousDayReports as any[]) || []).find(
-            (report) => report.user_id === staffMember.id && report.actual_attendance_record_id === todayAttendance.id
-          );
-        }
-
-        // 紐づいた前日報告がない場合、未使用の前日報告を確認
-        if (!previousDayReport) {
-          previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id && !report.actual_attendance_record_id);
-        }
+        // 前日報告の検索: report_dateが昨日以前の前日報告
+        const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
 
         // 当日の前日報告（今日報告された明日の予定）
         const todayPreviousDayReport = ((todayPreviousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
