@@ -7,9 +7,8 @@
  */
 export function getTodayJST(): string {
   const now = new Date();
-  // 日本時間 (UTC+9) に変換
-  const japanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return japanTime.toISOString().split("T")[0];
+  // 正確な日本時間での日付を取得
+  return now.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
 /**

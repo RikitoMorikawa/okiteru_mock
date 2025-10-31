@@ -140,6 +140,7 @@ export default function ManagerDashboard() {
       setLoading(true);
       const today = getTodayJST();
       console.log("[ManagerDashboard] Using date:", today);
+      console.log("[DEBUG] Current date check - today:", today, "typeof:", typeof today);
 
       // Fetch all staff members
       const { data: staff, error: staffError } = await supabase.from("users").select("*").eq("role", "staff").order("name");
@@ -164,8 +165,10 @@ export default function ManagerDashboard() {
       // 管理者は全ての前日報告を確認する必要がある
       const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*");
 
-      // Fetch today's previous day reports (reports made today for tomorrow)
+      // Fetch today's previous day reports (reports with report_date = today)
+      console.log("[DEBUG] Fetching previous day reports for report_date:", today);
       const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
+      console.log("[DEBUG] Today's previous day reports (by report_date):", todayPreviousDayReports);
 
       if (previousDayError) throw previousDayError;
       if (todayPreviousError) throw todayPreviousError;
@@ -230,6 +233,7 @@ export default function ManagerDashboard() {
 
         // 当日の前日報告（今日報告された明日の予定）
         const todayPreviousDayReport = ((todayPreviousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
+        console.log(`[DEBUG] Staff ${staffMember.name} todayPreviousDayReport:`, todayPreviousDayReport);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
@@ -387,7 +391,14 @@ export default function ManagerDashboard() {
     // 前日報告: 表示モードに応じて計算
     const activeStaffWithPreviousDayReport = showTodayReports
       ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
-        staffList.filter((staff) => staff.next_day_active && staff.todayPreviousDayReport).length
+        (() => {
+          const filtered = staffList.filter((staff) => staff.todayPreviousDayReport);
+          console.log(
+            "[DEBUG] 翌日モード - 前日報告済みスタッフ:",
+            filtered.map((s) => ({ name: s.name, hasReport: !!s.todayPreviousDayReport }))
+          );
+          return filtered.length;
+        })()
       : // 当日モード: 昨日前日報告した人数（当日の予定として報告された）
         staffList.filter(
           (staff) =>
