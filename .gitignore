@@ -82,3 +82,6 @@ pids
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# TypeScript build info
+*.tsbuildinfo
