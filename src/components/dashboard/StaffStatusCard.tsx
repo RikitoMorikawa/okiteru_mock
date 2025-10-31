@@ -55,12 +55,11 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
       return { tasks, completed: 0, total: tasks.length, percentage: 0 };
     }
 
-    // 当日モードで活動中のユーザーは従来通りの詳細な進捗
+    // 当日モードで活動中のユーザー：シンプルに4段階の進捗
     // リセットされた場合はリセット前の記録を使用
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
     const tasks = [
-      { name: "前日報告", completed: !!staff.previousDayReport },
       { name: "起床報告", completed: !!attendanceRecord?.wake_up_time },
       { name: "出発報告", completed: !!attendanceRecord?.departure_time },
       { name: "到着報告", completed: !!attendanceRecord?.arrival_time },

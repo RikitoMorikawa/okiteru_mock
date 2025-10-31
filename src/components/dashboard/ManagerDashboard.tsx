@@ -352,7 +352,7 @@ export default function ManagerDashboard() {
       return staff.todayPreviousDayReport ? 1 : 0; // 報告済み=1, 未報告=0
     }
 
-    // 当日モード: 従来の詳細な進捗段階
+    // 当日モード: シンプルに4段階の進捗
     // 完了済み（最低優先度）
     if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) {
       return 100; // 完了済みは最後
@@ -371,11 +371,6 @@ export default function ManagerDashboard() {
     // 起床報告済みだが出発報告未完了
     if (staff.todayAttendance?.wake_up_time) {
       return 6;
-    }
-
-    // 前日報告済みだが起床報告未完了
-    if (staff.previousDayReport) {
-      return 4;
     }
 
     // 何も報告していない（最高優先度）
@@ -406,7 +401,8 @@ export default function ManagerDashboard() {
       : staffList.filter(
           (staff) =>
             staff.active &&
-            ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+            ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
+              staff.todayAttendance?.departure_time ||
               staff.todayAttendance?.arrival_time ||
               staff.todayReport ||
               (staff.hasResetToday && !staff.hasActiveRecord))
@@ -490,10 +486,11 @@ export default function ManagerDashboard() {
               pending: activeStaff,
             }
           : {
-              // 当日モード: 準備中の計算
+              // 当日モード: 準備中の計算（起床報告済み）
               completed: activeStaff.filter(
                 (staff) =>
-                  (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
+                  (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
+                  staff.todayAttendance?.departure_time ||
                   staff.todayAttendance?.arrival_time ||
                   staff.todayReport ||
                   (staff.hasResetToday && !staff.hasActiveRecord)
@@ -501,6 +498,7 @@ export default function ManagerDashboard() {
               pending: activeStaff.filter(
                 (staff) =>
                   !staff.todayAttendance?.wake_up_time &&
+                  !staff.todayAttendance?.departure_time &&
                   !staff.todayAttendance?.arrival_time &&
                   !staff.todayReport &&
                   !(staff.hasResetToday && !staff.hasActiveRecord)
