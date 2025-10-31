@@ -31,8 +31,14 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
 
   // Calculate completion status
   const getCompletionStatus = () => {
-    // 翌日モードの場合は前日報告の有無のみをチェック
+    // 翌日モードの場合は前日報告の有無のみをチェック（非活動ユーザーは初期値）
     if (showTodayReports) {
+      // 非活動ユーザーは前日報告があっても進捗0
+      if (!staff.next_day_active) {
+        const tasks = [{ name: "前日報告", completed: false }];
+        return { tasks, completed: 0, total: tasks.length, percentage: 0 };
+      }
+
       const tasks = [{ name: "前日報告", completed: !!(staff as any).todayPreviousDayReport }];
 
       const completed = tasks.filter((task) => task.completed).length;
@@ -78,8 +84,13 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
     const { percentage } = getCompletionStatus();
     const hasAlerts = staff.activeAlerts.length > 0;
 
-    // 翌日モードの場合は前日報告の有無のみで判定
+    // 翌日モードの場合は前日報告の有無のみで判定（ただし非活動ユーザーは初期値）
     if (showTodayReports) {
+      // 非活動ユーザーは前日報告があっても初期値（未報告）
+      if (!staff.next_day_active) {
+        return { status: "inactive", label: "未報告", color: "gray" };
+      }
+
       const hasTodayPreviousDayReport = !!(staff as any).todayPreviousDayReport;
       if (hasTodayPreviousDayReport) {
         return { status: "complete", label: "報告済み", color: "green" };
