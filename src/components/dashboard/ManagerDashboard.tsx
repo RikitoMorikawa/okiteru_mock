@@ -393,35 +393,33 @@ export default function ManagerDashboard() {
     const activeStaffWithPreviousDayReport = showTodayReports
       ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
         staffList.filter((staff) => staff.next_day_active && staff.todayPreviousDayReport).length
-      : // 当日モード: 昨日前日報告した人数（当日の予定として報告された）
+      : // 当日モード: 前日報告または起床報告があるスタッフ数
         staffList.filter(
           (staff) =>
             staff.active &&
-            (staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+            (staff.previousDayReport || staff.todayAttendance?.wake_up_time || (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 準備中: 翌日モードでは0
+    // 準備中: 起床または前日報告があり、かつ出発報告があるスタッフ数
     const preparingStaff = showTodayReports
       ? 0
       : staffList.filter(
           (staff) =>
             staff.active &&
-            ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
-              staff.todayAttendance?.arrival_time ||
-              staff.todayReport ||
+            ((staff.previousDayReport || staff.todayAttendance?.wake_up_time) && staff.todayAttendance?.departure_time ||
               (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 活動中: 翌日モードでは0
+    // 活動中: 出発報告があり、かつ到着報告があるスタッフ数
     const activeToday = showTodayReports
       ? 0
       : staffList.filter(
           (staff) =>
             staff.active &&
-            ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+            (staff.todayAttendance?.departure_time && staff.todayAttendance?.arrival_time || (staff.hasResetToday && !staff.hasActiveRecord))
         ).length;
 
-    // 完了報告: 翌日モードでは0
+    // 完了報告: 日報があるスタッフ数
     const completedReports = showTodayReports
       ? 0
       : staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
@@ -472,14 +470,14 @@ export default function ManagerDashboard() {
               pending: activeStaff.filter((staff) => !staff.todayPreviousDayReport),
             }
           : {
-              // 当日モード: 昨日前日報告した人（当日の予定として報告された）
+              // 当日モード: 前日報告または起床報告があるスタッフ
               completed: activeStaff.filter(
                 (staff) =>
-                  staff.previousDayReport || staff.todayAttendance?.arrival_time || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+                  staff.previousDayReport || staff.todayAttendance?.wake_up_time || (staff.hasResetToday && !staff.hasActiveRecord)
               ),
               pending: activeStaff.filter(
                 (staff) =>
-                  !staff.previousDayReport && !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+                  !staff.previousDayReport && !staff.todayAttendance?.wake_up_time && !(staff.hasResetToday && !staff.hasActiveRecord)
               ),
             };
       case "preparing":
@@ -490,19 +488,15 @@ export default function ManagerDashboard() {
               pending: activeStaff,
             }
           : {
-              // 当日モード: 準備中の計算
+              // 当日モード: 起床または前日報告があり、かつ出発報告があるスタッフ
               completed: activeStaff.filter(
                 (staff) =>
-                  (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time) ||
-                  staff.todayAttendance?.arrival_time ||
-                  staff.todayReport ||
+                  (staff.previousDayReport || staff.todayAttendance?.wake_up_time) && staff.todayAttendance?.departure_time ||
                   (staff.hasResetToday && !staff.hasActiveRecord)
               ),
               pending: activeStaff.filter(
                 (staff) =>
-                  !staff.todayAttendance?.wake_up_time &&
-                  !staff.todayAttendance?.arrival_time &&
-                  !staff.todayReport &&
+                  !(staff.previousDayReport || staff.todayAttendance?.wake_up_time) || !staff.todayAttendance?.departure_time &&
                   !(staff.hasResetToday && !staff.hasActiveRecord)
               ),
             };
@@ -514,12 +508,12 @@ export default function ManagerDashboard() {
               pending: activeStaff,
             }
           : {
-              // 当日モード: 活動中の計算
+              // 当日モード: 出発報告があり、かつ到着報告があるスタッフ
               completed: activeStaff.filter(
-                (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+                (staff) => staff.todayAttendance?.departure_time && staff.todayAttendance?.arrival_time || (staff.hasResetToday && !staff.hasActiveRecord)
               ),
               pending: activeStaff.filter(
-                (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+                (staff) => !staff.todayAttendance?.departure_time || !staff.todayAttendance?.arrival_time && !(staff.hasResetToday && !staff.hasActiveRecord)
               ),
             };
       case "completed":
@@ -530,7 +524,7 @@ export default function ManagerDashboard() {
               pending: activeStaff,
             }
           : {
-              // 当日モード: 完了報告の計算
+              // 当日モード: 日報があるスタッフ
               completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
               pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
             };
