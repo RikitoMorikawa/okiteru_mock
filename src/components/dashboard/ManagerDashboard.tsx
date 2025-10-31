@@ -165,10 +165,20 @@ export default function ManagerDashboard() {
       // 管理者は全ての前日報告を確認する必要がある
       const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*");
 
-      // Fetch today's previous day reports (reports with report_date = today)
-      console.log("[DEBUG] Fetching previous day reports for report_date:", today);
-      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
-      console.log("[DEBUG] Today's previous day reports (by report_date):", todayPreviousDayReports);
+      // Fetch today's previous day reports (reports made today for tomorrow)
+      console.log("[DEBUG] Fetching today's previous day reports created today:", today);
+
+      // 日本時間での今日の範囲を計算
+      const todayStart = new Date(`${today}T00:00:00+09:00`).toISOString();
+      const todayEnd = new Date(`${today}T23:59:59+09:00`).toISOString();
+      console.log("[DEBUG] Date range - start:", todayStart, "end:", todayEnd);
+
+      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase
+        .from("previous_day_reports")
+        .select("*")
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd);
+      console.log("[DEBUG] Today's previous day reports (by created_at):", todayPreviousDayReports);
 
       if (previousDayError) throw previousDayError;
       if (todayPreviousError) throw todayPreviousError;
@@ -392,7 +402,7 @@ export default function ManagerDashboard() {
     const activeStaffWithPreviousDayReport = showTodayReports
       ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
         (() => {
-          const filtered = staffList.filter((staff) => staff.todayPreviousDayReport);
+          const filtered = staffList.filter((staff) => staff.next_day_active && staff.todayPreviousDayReport);
           console.log(
             "[DEBUG] 翌日モード - 前日報告済みスタッフ:",
             filtered.map((s) => ({ name: s.name, hasReport: !!s.todayPreviousDayReport }))
