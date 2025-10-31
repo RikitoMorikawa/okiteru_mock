@@ -166,19 +166,15 @@ export default function ManagerDashboard() {
       const todayEnd = new Date(`${today}T23:59:59+09:00`).toISOString();
       console.log("[DEBUG] Date range - start:", todayStart, "end:", todayEnd);
 
-      // Fetch previous day reports (excluding today's reports)
-      // 昨日以前に作成された前日報告のみを取得
-      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").lt("created_at", todayStart);
+      // Fetch previous day reports (report_date < today)
+      // 昨日以前の日付の前日報告を取得
+      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").lt("report_date", today);
 
-      // Fetch today's previous day reports (reports made today for tomorrow)
-      console.log("[DEBUG] Fetching today's previous day reports created today:", today);
+      // Fetch today's previous day reports (report_date = today)
+      console.log("[DEBUG] Fetching today's previous day reports for report_date:", today);
 
-      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase
-        .from("previous_day_reports")
-        .select("*")
-        .gte("created_at", todayStart)
-        .lte("created_at", todayEnd);
-      console.log("[DEBUG] Today's previous day reports (by created_at):", todayPreviousDayReports);
+      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
+      console.log("[DEBUG] Today's previous day reports (by report_date):", todayPreviousDayReports);
 
       if (previousDayError) throw previousDayError;
       if (todayPreviousError) throw todayPreviousError;
