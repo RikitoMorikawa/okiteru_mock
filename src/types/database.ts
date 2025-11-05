@@ -20,8 +20,6 @@ export interface User {
   name: string;
   phone?: string;
   active: boolean;
-  next_day_active: boolean;
-  dashboard_view_preference?: "today" | "next_day";
   created_at: string;
   updated_at: string;
 }
@@ -57,36 +55,11 @@ export interface DailyReport {
   updated_at: string;
 }
 
-export interface ShiftSchedule {
-  id: string;
-  staff_id: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  location?: string;
-  notes?: string;
-  status: ShiftStatus;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface StaffAvailability {
   id: string;
   staff_id: string;
   date: string;
   notes?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Alert {
-  id: string;
-  staff_id: string;
-  type: AlertType;
-  message: string;
-  triggered_at: string;
-  dismissed_at?: string;
-  status: AlertStatus;
   created_at: string;
   updated_at: string;
 }
@@ -145,24 +118,6 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<DailyReport, "id" | "created_at" | "updated_at">>;
-      };
-      shift_schedules: {
-        Row: ShiftSchedule;
-        Insert: Omit<ShiftSchedule, "id" | "created_at" | "updated_at"> & {
-          id?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: Partial<Omit<ShiftSchedule, "id" | "created_at" | "updated_at">>;
-      };
-      alerts: {
-        Row: Alert;
-        Insert: Omit<Alert, "id" | "created_at" | "updated_at"> & {
-          id?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: Partial<Omit<Alert, "id" | "created_at" | "updated_at">>;
       };
       access_logs: {
         Row: AccessLog;
