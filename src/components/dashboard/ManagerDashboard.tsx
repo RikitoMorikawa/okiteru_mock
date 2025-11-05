@@ -16,7 +16,6 @@ interface StaffWithStatus extends User {
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
-  todayPreviousDayReport?: any; // 当日の前日報告データ
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
@@ -41,8 +40,6 @@ export default function ManagerDashboard() {
     isOpen: boolean;
     type: "previous" | "preparing" | "active" | "completed" | null;
   }>({ isOpen: false, type: null });
-  const [showTodayReports, setShowTodayReports] = useState(false); // 当日の前日報告表示フラグ
-  const [dashboardViewPreference, setDashboardViewPreference] = useState<"today" | "next_day">("today"); // データベースから読み込む設定
 
   // Update current time every minute
   useEffect(() => {
@@ -77,62 +74,6 @@ export default function ManagerDashboard() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showProfileMenu]);
-
-  // Load manager's dashboard view preference
-  const loadDashboardPreference = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase.from("users").select("dashboard_view_preference").eq("id", user.id).single();
-
-      if (error) {
-        console.error("Error loading dashboard preference:", error);
-        return;
-      }
-
-      // Type-safe access to the preference field
-      const preference = (data as any)?.dashboard_view_preference as "today" | "next_day" | undefined;
-      const finalPreference = preference || "today";
-      setDashboardViewPreference(finalPreference);
-      setShowTodayReports(finalPreference === "next_day");
-    } catch (error) {
-      console.error("Error loading dashboard preference:", error);
-    }
-  };
-
-  // Save manager's dashboard view preference
-  const saveDashboardPreference = async (preference: "today" | "next_day") => {
-    if (!user?.id) return;
-
-    try {
-      // Method 1: Try using the database function with type assertion
-      const { error } = await (supabase as any).rpc("update_user_dashboard_preference", {
-        user_id: user.id,
-        preference: preference,
-      });
-
-      // Method 2: Fallback to direct update if RPC function doesn't exist
-      if (error && error.message?.includes("function")) {
-        console.log("RPC function not found, using direct update");
-        // Cast the entire supabase client to bypass strict typing
-        const supabaseAny = supabase as any;
-        const { error: updateError } = await supabaseAny.from("users").update({ dashboard_view_preference: preference }).eq("id", user.id);
-
-        if (updateError) {
-          console.error("Error saving dashboard preference:", updateError);
-          return;
-        }
-      } else if (error) {
-        console.error("Error saving dashboard preference:", error);
-        return;
-      }
-
-      setDashboardViewPreference(preference);
-      setShowTodayReports(preference === "next_day");
-    } catch (error) {
-      console.error("Error saving dashboard preference:", error);
-    }
-  };
 
   // Fetch staff data
   const fetchStaffData = async () => {
@@ -170,14 +111,7 @@ export default function ManagerDashboard() {
       // 昨日以前の日付の前日報告を取得
       const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").lt("report_date", today);
 
-      // Fetch today's previous day reports (report_date = today)
-      console.log("[DEBUG] Fetching today's previous day reports for report_date:", today);
-
-      const { data: todayPreviousDayReports, error: todayPreviousError } = await supabase.from("previous_day_reports").select("*").eq("report_date", today);
-      console.log("[DEBUG] Today's previous day reports (by report_date):", todayPreviousDayReports);
-
       if (previousDayError) throw previousDayError;
-      if (todayPreviousError) throw todayPreviousError;
 
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
@@ -225,11 +159,8 @@ export default function ManagerDashboard() {
         // 前日報告の検索: report_dateが昨日以前の前日報告
         const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
 
-        // 当日の前日報告（今日報告された明日の予定）
-        const todayPreviousDayReport = ((todayPreviousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
         console.log(`[DEBUG] Staff ${staffMember.name}:`, {
           previousDayReport: previousDayReport,
-          todayPreviousDayReport: todayPreviousDayReport,
           active: staffMember.active,
         });
         const lastLogin = lastLoginMap.get(staffMember.id);
@@ -240,7 +171,6 @@ export default function ManagerDashboard() {
           resetRecord, // リセットレコードの詳細を追加
           todayReport,
           previousDayReport,
-          todayPreviousDayReport, // 当日の前日報告を追加
           activeAlerts: [], // Keep for compatibility but empty
           lastLogin,
           hasResetToday,
@@ -300,9 +230,9 @@ export default function ManagerDashboard() {
 
     // Apply sorting - 活動中ユーザーを最初に、その中で進捗が遅い順
     filtered.sort((a, b) => {
-      // まず活動ステータスで分ける（表示モードに応じてactiveまたはnext_day_activeを参照）
-      const aActive = showTodayReports ? a.next_day_active : a.active;
-      const bActive = showTodayReports ? b.next_day_active : b.active;
+      // まず活動ステータスで分ける
+      const aActive = a.active;
+      const bActive = b.active;
 
       if (aActive !== bActive) {
         return bActive ? 1 : -1; // active: true が先に来る
@@ -313,47 +243,27 @@ export default function ManagerDashboard() {
         case "name":
           return a.name.localeCompare(b.name);
         case "status":
-          if (showTodayReports) {
-            // 翌日モード: 前日報告の有無でソート（未報告が先に来る）
-            const aScore = getActivityScore(a); // 0 or 1
-            const bScore = getActivityScore(b); // 0 or 1
-            return aScore - bScore; // 未報告(0)が先、報告済み(1)が後
-          } else {
-            // 当日モード: 進捗スコアでソート
-            const aScore = getActivityScore(a);
-            const bScore = getActivityScore(b);
-            return aScore - bScore;
-          }
+          // 当日モード: 進捗スコアでソート
+          const aScore = getActivityScore(a);
+          const bScore = getActivityScore(b);
+          return aScore - bScore;
         case "lastActivity":
           const aTime = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
           const bTime = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
           return bTime - aTime;
         default:
-          if (showTodayReports) {
-            // 翌日モード: デフォルトは前日報告の有無でソート（未報告が先）
-            const aScore = getActivityScore(a); // 0 or 1
-            const bScore = getActivityScore(b); // 0 or 1
-            return aScore - bScore; // 未報告(0)が先、報告済み(1)が後
-          } else {
-            // 当日モード: デフォルトは進捗が遅い順
-            const defaultAScore = getActivityScore(a);
-            const defaultBScore = getActivityScore(b);
-            return defaultAScore - defaultBScore;
-          }
+          // 当日モード: デフォルトは進捗が遅い順
+          const defaultAScore = getActivityScore(a);
+          const defaultBScore = getActivityScore(b);
+          return defaultAScore - defaultBScore;
       }
     });
 
     setFilteredStaff(filtered);
-  }, [staffList, filters, showTodayReports]);
+  }, [staffList, filters]);
 
   // Calculate activity score for sorting (低いスコア = 進捗が遅い = 優先度高)
   const getActivityScore = (staff: StaffWithStatus) => {
-    // 翌日モードの場合は、前日報告の有無のみで判定（0 or 1）
-    if (showTodayReports) {
-      // 翌日モード: 当日の前日報告（明日の予定）があるかどうかのみ
-      return staff.todayPreviousDayReport ? 1 : 0; // 報告済み=1, 未報告=0
-    }
-
     // 当日モード: シンプルに4段階の進捗
     // 完了済み（最低優先度）
     if (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)) {
@@ -382,62 +292,40 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
-    const activeStaffCount = showTodayReports
-      ? staffList.filter((staff) => staff.next_day_active).length // 翌日モード: 翌日activeなスタッフ数
-      : staffList.filter((staff) => staff.active).length; // 当日モード: 当日activeなスタッフ数
+    const activeStaffCount = staffList.filter((staff) => staff.active).length; // 当日モード: 当日activeなスタッフ数
 
-    // 前日報告: 表示モードに応じて計算
-    const activeStaffWithPreviousDayReport = showTodayReports
-      ? // 翌日モード: 当日前日報告した人数（翌日の予定として報告）
-        (() => {
-          const filtered = staffList.filter((staff) => staff.next_day_active && staff.todayPreviousDayReport);
-          console.log(
-            "[DEBUG] 翌日モード - 前日報告済みスタッフ:",
-            filtered.map((s) => ({ name: s.name, hasReport: !!s.todayPreviousDayReport }))
-          );
-          return filtered.length;
-        })()
-      : // 当日モード: 昨日前日報告した人数のみ（当日の前日報告は除外）
-        (() => {
-          const filtered = staffList.filter((staff) => staff.active && staff.previousDayReport);
-          console.log(
-            "[DEBUG] 当日モード - 前日報告済みスタッフ:",
-            filtered.map((s) => ({
-              name: s.name,
-              hasPreviousDayReport: !!s.previousDayReport,
-              hasTodayPreviousDayReport: !!s.todayPreviousDayReport,
-              active: s.active,
-            }))
-          );
-          return filtered.length;
-        })();
+    // 前日報告: 昨日前日報告した人数のみ
+    const filtered = staffList.filter((staff) => staff.active && staff.previousDayReport);
+    console.log(
+      "[DEBUG] 当日モード - 前日報告済みスタッフ:",
+      filtered.map((s) => ({
+        name: s.name,
+        hasPreviousDayReport: !!s.previousDayReport,
+        active: s.active,
+      }))
+    );
+    const activeStaffWithPreviousDayReport = filtered.length;
 
-    // 準備中: 翌日モードでは0
-    const preparingStaff = showTodayReports
-      ? 0
-      : staffList.filter(
-          (staff) =>
-            staff.active &&
-            ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
-              staff.todayAttendance?.departure_time ||
-              staff.todayAttendance?.arrival_time ||
-              staff.todayReport ||
-              (staff.hasResetToday && !staff.hasActiveRecord))
-        ).length;
+    // 準備中
+    const preparingStaff = staffList.filter(
+      (staff) =>
+        staff.active &&
+        ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
+          staff.todayAttendance?.departure_time ||
+          staff.todayAttendance?.arrival_time ||
+          staff.todayReport ||
+          (staff.hasResetToday && !staff.hasActiveRecord))
+    ).length;
 
-    // 活動中: 翌日モードでは0
-    const activeToday = showTodayReports
-      ? 0
-      : staffList.filter(
-          (staff) =>
-            staff.active &&
-            ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
-        ).length;
+    // 活動中
+    const activeToday = staffList.filter(
+      (staff) =>
+        staff.active &&
+        ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+    ).length;
 
-    // 完了報告: 翌日モードでは0
-    const completedReports = showTodayReports
-      ? 0
-      : staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
+    // 完了報告
+    const completedReports = staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
 
     const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
 
@@ -471,78 +359,52 @@ export default function ManagerDashboard() {
 
   // Get detailed stats for modal
   const getStatsDetail = (type: "previous" | "preparing" | "active" | "completed") => {
-    // 表示モードに応じて対象スタッフを決定
-    const activeStaff = showTodayReports
-      ? staffList.filter((staff) => staff.next_day_active) // 翌日モード: 翌日activeなスタッフ
-      : staffList.filter((staff) => staff.active); // 当日モード: 当日activeなスタッフ
+    // 当日activeなスタッフのみ対象
+    const activeStaff = staffList.filter((staff) => staff.active);
 
     switch (type) {
       case "previous":
-        return showTodayReports
-          ? {
-              // 翌日モード: 当日前日報告した人（翌日の予定として報告）
-              completed: activeStaff.filter((staff) => staff.todayPreviousDayReport),
-              pending: activeStaff.filter((staff) => !staff.todayPreviousDayReport),
-            }
-          : {
-              // 当日モード: 昨日前日報告した人（当日の前日報告は除外）
-              completed: activeStaff.filter((staff) => staff.previousDayReport),
-              pending: activeStaff.filter((staff) => !staff.previousDayReport),
-            };
+        return {
+          // 当日モード: 昨日前日報告した人
+          completed: activeStaff.filter((staff) => staff.previousDayReport),
+          pending: activeStaff.filter((staff) => !staff.previousDayReport),
+        };
       case "preparing":
-        return showTodayReports
-          ? {
-              // 翌日モード: 準備中は基本的に0
-              completed: [],
-              pending: activeStaff,
-            }
-          : {
-              // 当日モード: 準備中の計算（起床報告済み）
-              completed: activeStaff.filter(
-                (staff) =>
-                  (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
-                  staff.todayAttendance?.departure_time ||
-                  staff.todayAttendance?.arrival_time ||
-                  staff.todayReport ||
-                  (staff.hasResetToday && !staff.hasActiveRecord)
-              ),
-              pending: activeStaff.filter(
-                (staff) =>
-                  !staff.todayAttendance?.wake_up_time &&
-                  !staff.todayAttendance?.departure_time &&
-                  !staff.todayAttendance?.arrival_time &&
-                  !staff.todayReport &&
-                  !(staff.hasResetToday && !staff.hasActiveRecord)
-              ),
-            };
+        return {
+          // 当日モード: 準備中の計算（起床報告済み）
+          completed: activeStaff.filter(
+            (staff) =>
+              (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
+              staff.todayAttendance?.departure_time ||
+              staff.todayAttendance?.arrival_time ||
+              staff.todayReport ||
+              (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: activeStaff.filter(
+            (staff) =>
+              !staff.todayAttendance?.wake_up_time &&
+              !staff.todayAttendance?.departure_time &&
+              !staff.todayAttendance?.arrival_time &&
+              !staff.todayReport &&
+              !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+        };
       case "active":
-        return showTodayReports
-          ? {
-              // 翌日モード: 活動中は基本的に0
-              completed: [],
-              pending: activeStaff,
-            }
-          : {
-              // 当日モード: 活動中の計算
-              completed: activeStaff.filter(
-                (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
-              ),
-              pending: activeStaff.filter(
-                (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
-              ),
-            };
+        return {
+          // 当日モード: 活動中の計算
+          completed: activeStaff.filter(
+            (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: activeStaff.filter(
+            (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+        };
       case "completed":
-        return showTodayReports
-          ? {
-              // 翌日モード: 完了報告は基本的に0
-              completed: [],
-              pending: activeStaff,
-            }
-          : {
-              // 当日モード: 完了報告の計算
-              completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
-              pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
-            };
+        return {
+          // 当日モード: 完了報告の計算
+          completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
+          pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
+        };
       default:
         return { completed: [], pending: [] };
     }
@@ -552,13 +414,6 @@ export default function ManagerDashboard() {
   const handleStatsCardClick = (type: "previous" | "preparing" | "active" | "completed") => {
     setStatsModal({ isOpen: true, type });
   };
-
-  // Load dashboard preference on component mount
-  useEffect(() => {
-    if (user?.id) {
-      loadDashboardPreference();
-    }
-  }, [user?.id]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -632,36 +487,6 @@ export default function ManagerDashboard() {
                   minute: "2-digit",
                 })}
               </div>
-
-              {/* 当日/翌日切り替えボタン */}
-              <button
-                onClick={async () => {
-                  console.log("[DEBUG] ===== BUTTON CLICKED =====");
-                  console.log(`[DEBUG] Current state - dashboardViewPreference: ${dashboardViewPreference}, showTodayReports: ${showTodayReports}`);
-
-                  const newPreference = dashboardViewPreference === "today" ? "next_day" : "today";
-                  console.log(`[DEBUG] Button clicked. Current: ${dashboardViewPreference}, New: ${newPreference}`);
-
-                  await saveDashboardPreference(newPreference);
-
-                  // Verify the change was saved
-                  setTimeout(async () => {
-                    console.log("[DEBUG] Verifying database state...");
-                    if (user?.id) {
-                      const { data } = await supabase.from("users").select("dashboard_view_preference").eq("id", user.id).single();
-                      console.log("[DEBUG] Current DB value:", data);
-                    }
-                  }, 1000);
-                }}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  showTodayReports
-                    ? "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300" // 翌日モード: 緑色
-                    : "bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300" // 当日モード: 青色
-                }`}
-                title={showTodayReports ? "翌日の統計を表示中" : "当日の統計を表示中"}
-              >
-                {showTodayReports ? "翌日" : "当日"}
-              </button>
 
               {/* Profile Menu */}
               <div className="relative">
@@ -837,7 +662,7 @@ export default function ManagerDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredStaff.map((staff) => (
-                <StaffStatusCard key={staff.id} staff={staff} showTodayReports={showTodayReports} />
+                <StaffStatusCard key={staff.id} staff={staff} />
               ))}
             </div>
           )}
@@ -851,9 +676,7 @@ export default function ManagerDashboard() {
           onClose={() => setStatsModal({ isOpen: false, type: null })}
           title={
             statsModal.type === "previous"
-              ? showTodayReports
-                ? "翌日の前日報告"
-                : "当日の前日報告"
+              ? "当日の前日報告"
               : statsModal.type === "preparing"
               ? "準備中"
               : statsModal.type === "active"

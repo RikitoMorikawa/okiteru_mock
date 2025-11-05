@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, AttendanceRecord, DailyReport, Alert } from "@/types/database";
+import { User, AttendanceRecord, DailyReport } from "@/types/database";
 import StaffDetailModal from "@/components/staff/StaffDetailModal";
 import { supabase } from "@/lib/supabase";
 
@@ -11,8 +11,6 @@ interface StaffWithStatus extends User {
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
   previousDayReport?: any; // 前日報告データ
-  todayPreviousDayReport?: any; // 当日の前日報告データ（翌日の予定）
-  activeAlerts: Alert[];
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
@@ -20,35 +18,16 @@ interface StaffWithStatus extends User {
 
 interface StaffStatusCardProps {
   staff: StaffWithStatus;
-  showTodayReports?: boolean;
 }
 
-export default function StaffStatusCard({ staff, showTodayReports = false }: StaffStatusCardProps) {
+export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [updatingActive, setUpdatingActive] = useState(false);
-  const [updatingNextDayActive, setUpdatingNextDayActive] = useState(false);
 
   // Calculate completion status
   const getCompletionStatus = () => {
-    // 翌日モードの場合は前日報告の有無のみをチェック（非活動ユーザーは初期値）
-    if (showTodayReports) {
-      // 非活動ユーザーは前日報告があっても進捗0
-      if (!staff.next_day_active) {
-        const tasks = [{ name: "前日報告", completed: false }];
-        return { tasks, completed: 0, total: tasks.length, percentage: 0 };
-      }
-
-      const tasks = [{ name: "前日報告", completed: !!(staff as any).todayPreviousDayReport }];
-
-      const completed = tasks.filter((task) => task.completed).length;
-      const total = tasks.length;
-      const percentage = Math.round((completed / total) * 100);
-
-      return { tasks, completed, total, percentage };
-    }
-
-    // 当日モードで非活動のユーザーは進捗0
+    // 非活動のユーザーは進捗0
     if (!staff.active) {
       const tasks = [
         { name: "前日報告", completed: false },
@@ -61,7 +40,7 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
       return { tasks, completed: 0, total: tasks.length, percentage: 0 };
     }
 
-    // 当日モードで活動中のユーザー：シンプルに4段階の進捗
+    // 活動中のユーザー：シンプルに4段階の進捗
     // リセットされた場合はリセット前の記録を使用
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
@@ -82,29 +61,13 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
   // Get overall status
   const getOverallStatus = () => {
     const { percentage } = getCompletionStatus();
-    const hasAlerts = staff.activeAlerts.length > 0;
 
-    // 翌日モードの場合は前日報告の有無のみで判定（ただし非活動ユーザーは初期値）
-    if (showTodayReports) {
-      // 非活動ユーザーは前日報告があっても初期値（未報告）
-      if (!staff.next_day_active) {
-        return { status: "inactive", label: "未報告", color: "gray" };
-      }
-
-      const hasTodayPreviousDayReport = !!(staff as any).todayPreviousDayReport;
-      if (hasTodayPreviousDayReport) {
-        return { status: "complete", label: "報告済み", color: "green" };
-      } else {
-        return { status: "inactive", label: "未報告", color: "gray" };
-      }
-    }
-
-    // 当日モードで非活動のユーザーは常に「非活動」
+    // 非活動のユーザーは常に「非活動」
     if (!staff.active) {
       return { status: "inactive", label: "非活動", color: "gray" };
     }
 
-    // 当日モードで活動中のユーザーは従来通りの詳細な判定
+    // 活動中のユーザーは従来通りの詳細な判定
     // リセットされたユーザーは「完了」として表示（緑色）
     if (staff.hasResetToday && !staff.hasActiveRecord) {
       return { status: "complete", label: "完了", color: "green" };
@@ -115,7 +78,6 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
       return { status: "complete", label: "完了", color: "green" };
     }
 
-    if (hasAlerts) return { status: "alert", label: "要注意", color: "red" };
     if (percentage === 100) return { status: "complete", label: "完了", color: "green" };
     if (percentage > 0) return { status: "partial", label: "進行中", color: "yellow" };
     return { status: "inactive", label: "未開始", color: "gray" };
@@ -202,46 +164,6 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
     }
   };
 
-  // Toggle next day active status
-  const toggleNextDayActiveStatus = async () => {
-    try {
-      setUpdatingNextDayActive(true);
-
-      // Check if current user is a manager
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        alert("認証が必要です。再度ログインしてください。");
-        return;
-      }
-
-      // Check if user is a manager
-      const { data: currentUser } = await supabase.from("users").select("role").eq("id", session.user.id).single();
-
-      if (!currentUser || (currentUser as any).role !== "manager") {
-        alert("管理者権限が必要です。");
-        return;
-      }
-
-      // Update the staff member's next_day_active status directly
-      const { error } = await (supabase as any).from("users").update({ next_day_active: !staff.next_day_active }).eq("id", staff.id).eq("role", "staff");
-
-      if (error) {
-        console.error("Error updating next day active status:", error);
-        throw new Error("翌日activeステータスの更新に失敗しました");
-      }
-
-      // Refresh the page to update the data
-      window.location.reload();
-    } catch (error) {
-      console.error("Error updating next day active status:", error);
-      alert("翌日activeステータスの更新に失敗しました");
-    } finally {
-      setUpdatingNextDayActive(false);
-    }
-  };
 
   const { tasks, completed, total, percentage } = getCompletionStatus();
   const { status, label, color } = getOverallStatus();
@@ -276,17 +198,17 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
                 <div>
                   <h3 className="text-sm mr-4 font-medium text-gray-900">{staff.name}</h3>
                 </div>
-                {/* Active Status - 表示モードに応じて切り替え */}
+                {/* Active Status */}
                 <button
-                  onClick={showTodayReports ? toggleNextDayActiveStatus : toggleActiveStatus}
-                  disabled={showTodayReports ? updatingNextDayActive : updatingActive}
+                  onClick={toggleActiveStatus}
+                  disabled={updatingActive}
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                    (showTodayReports ? staff.next_day_active : staff.active)
+                    staff.active
                       ? "bg-green-100 text-green-800 hover:bg-green-200"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  } ${(showTodayReports ? updatingNextDayActive : updatingActive) ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  } ${updatingActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
-                  {(showTodayReports ? updatingNextDayActive : updatingActive) ? (
+                  {updatingActive ? (
                     <svg className="animate-spin -ml-1 mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path
@@ -297,10 +219,10 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
                     </svg>
                   ) : (
                     <div
-                      className={`w-1.5 h-1.5 rounded-full mr-1 ${(showTodayReports ? staff.next_day_active : staff.active) ? "bg-green-500" : "bg-gray-400"}`}
+                      className={`w-1.5 h-1.5 rounded-full mr-1 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}
                     ></div>
                   )}
-                  {showTodayReports ? (staff.next_day_active ? "活動予定" : "非活動") : staff.active ? "活動中" : "非活動"}
+                  {staff.active ? "活動中" : "非活動"}
                 </button>
               </div>
             </div>
@@ -311,15 +233,9 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
         {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>{showTodayReports ? "翌日の準備" : "本日の進捗"}</span>
+            <span>本日の進捗</span>
             <span>
-              {showTodayReports
-                ? // 翌日モード: 前日報告の有無のみ表示
-                  (staff as any).todayPreviousDayReport
-                  ? "報告済み"
-                  : "未報告"
-                : // 当日モード
-                !staff.active
+              {!staff.active
                 ? "非活動"
                 : staff.hasResetToday && !staff.hasActiveRecord
                 ? "完了"
@@ -352,22 +268,6 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
           </div>
         </div>
 
-        {/* Alerts */}
-        {staff.activeAlerts.length > 0 && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-center">
-              <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="text-sm font-medium text-red-800">{staff.activeAlerts.length}件のアラート</span>
-            </div>
-          </div>
-        )}
-
         {/* Expand/Collapse Button */}
         <button
           onClick={() => setExpanded(!expanded)}
@@ -387,20 +287,6 @@ export default function StaffStatusCard({ staff, showTodayReports = false }: Sta
               <div>最終ログイン: {formatLastLogin(staff.lastLogin)}</div>
               {staff.phone && <div>電話: {staff.phone}</div>}
             </div>
-
-            {/* Active Alerts Details */}
-            {staff.activeAlerts.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs font-medium text-gray-700 mb-2">アクティブアラート:</div>
-                <div className="space-y-1">
-                  {staff.activeAlerts.map((alert) => (
-                    <div key={alert.id} className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {alert.message}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex space-x-2">
