@@ -2,32 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShiftSchedule, User } from "@/types/database";
+import { StaffAvailability } from "@/types/database";
 
 interface ShiftMonthlyCalendarProps {
   userId: string;
   userName: string;
 }
 
-interface DayShift {
-  date: string;
-  shifts: ShiftSchedule[];
-}
-
 export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [shifts, setShifts] = useState<ShiftSchedule[]>([]);
+  const [availabilities, setAvailabilities] = useState<StaffAvailability[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [shiftForm, setShiftForm] = useState({
-    start_time: "",
-    end_time: "",
-    location: "",
-    notes: "",
-  });
 
-  // Fetch shifts for the current month
-  const fetchShifts = async () => {
+  // Fetch availability data for the current month
+  const fetchAvailabilities = async () => {
     try {
       setLoading(true);
       const year = currentDate.getFullYear();
@@ -37,25 +25,24 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
       const endDate = new Date(year, month + 1, 0).toISOString().split("T")[0];
 
       const { data, error } = await supabase
-        .from("shift_schedules")
+        .from("staff_availability")
         .select("*")
         .eq("staff_id", userId)
         .gte("date", startDate)
         .lte("date", endDate)
-        .order("date")
-        .order("start_time");
+        .order("date");
 
       if (error) throw error;
-      setShifts((data as ShiftSchedule[]) || []);
+      setAvailabilities((data as StaffAvailability[]) || []);
     } catch (error) {
-      console.error("Error fetching shifts:", error);
+      console.error("Error fetching availabilities:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchShifts();
+    fetchAvailabilities();
   }, [currentDate, userId]);
 
   // Get calendar days for the current month
@@ -82,11 +69,11 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     return days;
   };
 
-  // Get shifts for a specific date
-  const getShiftsForDate = (date: Date | null): ShiftSchedule[] => {
-    if (!date) return [];
+  // Check if a date is available
+  const isDateAvailable = (date: Date | null): boolean => {
+    if (!date) return false;
     const dateStr = date.toISOString().split("T")[0];
-    return shifts.filter((shift) => shift.date === dateStr);
+    return availabilities.some((avail) => avail.date === dateStr);
   };
 
   // Handle month navigation
@@ -98,65 +85,33 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
-  // Handle date click
-  const handleDateClick = (date: Date | null) => {
+  // Handle date click - toggle availability
+  const handleDateClick = async (date: Date | null) => {
     if (!date) return;
+
     const dateStr = date.toISOString().split("T")[0];
-    setSelectedDate(dateStr);
-    setShiftForm({
-      start_time: "",
-      end_time: "",
-      location: "",
-      notes: "",
-    });
-  };
-
-  // Handle shift save
-  const handleSaveShift = async () => {
-    if (!selectedDate || !shiftForm.start_time || !shiftForm.end_time) {
-      alert("開始時刻と終了時刻を入力してください");
-      return;
-    }
+    const existing = availabilities.find((avail) => avail.date === dateStr);
 
     try {
-      const { error } = await supabase.from("shift_schedules").insert({
-        staff_id: userId,
-        date: selectedDate,
-        start_time: shiftForm.start_time,
-        end_time: shiftForm.end_time,
-        location: shiftForm.location || null,
-        notes: shiftForm.notes || null,
-        status: "scheduled",
-      });
+      if (existing) {
+        // Remove availability (出社不可にする)
+        const { error } = await supabase.from("staff_availability").delete().eq("id", existing.id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Add availability (出社可能にする)
+        const { error } = await supabase.from("staff_availability").insert({
+          staff_id: userId,
+          date: dateStr,
+        });
 
-      await fetchShifts();
-      setSelectedDate(null);
-      setShiftForm({
-        start_time: "",
-        end_time: "",
-        location: "",
-        notes: "",
-      });
+        if (error) throw error;
+      }
+
+      await fetchAvailabilities();
     } catch (error) {
-      console.error("Error saving shift:", error);
-      alert("シフトの保存に失敗しました");
-    }
-  };
-
-  // Handle shift delete
-  const handleDeleteShift = async (shiftId: string) => {
-    if (!confirm("このシフトを削除しますか？")) return;
-
-    try {
-      const { error } = await supabase.from("shift_schedules").delete().eq("id", shiftId);
-
-      if (error) throw error;
-      await fetchShifts();
-    } catch (error) {
-      console.error("Error deleting shift:", error);
-      alert("シフトの削除に失敗しました");
+      console.error("Error toggling availability:", error);
+      alert("出社可能日の更新に失敗しました");
     }
   };
 
@@ -188,12 +143,24 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
         </button>
       </div>
 
+      {/* Instructions */}
+      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800">
+          📅 日付をクリックすると出社可能日として登録・解除できます
+        </p>
+      </div>
+
       {/* Calendar Grid */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-gray-200">
-          {["日", "月", "火", "水", "木", "金", "土"].map((day) => (
-            <div key={day} className="p-2 text-center text-sm font-semibold text-gray-600">
+          {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
+            <div
+              key={day}
+              className={`p-2 text-center text-sm font-semibold ${
+                index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"
+              }`}
+            >
               {day}
             </div>
           ))}
@@ -202,44 +169,44 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
         {/* Calendar Days */}
         <div className="grid grid-cols-7">
           {calendarDays.map((date, index) => {
-            const dayShifts = getShiftsForDate(date);
             const dateStr = date?.toISOString().split("T")[0];
             const isToday = dateStr === today;
-            const isSelected = dateStr === selectedDate;
+            const isAvailable = isDateAvailable(date);
+            const dayOfWeek = date?.getDay();
 
             return (
               <div
                 key={index}
                 onClick={() => handleDateClick(date)}
-                className={`min-h-24 p-2 border-b border-r border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  !date ? "bg-gray-50" : ""
-                } ${isToday ? "bg-blue-50" : ""} ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+                className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${
+                  !date ? "bg-gray-50 cursor-default" : ""
+                } ${isToday ? "ring-2 ring-blue-500 ring-inset" : ""} ${
+                  isAvailable ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"
+                }`}
               >
                 {date && (
-                  <>
-                    <div className={`text-sm font-semibold mb-1 ${isToday ? "text-blue-600" : ""}`}>
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div
+                      className={`text-sm font-semibold mb-1 ${
+                        isToday
+                          ? "text-blue-600"
+                          : dayOfWeek === 0
+                          ? "text-red-600"
+                          : dayOfWeek === 6
+                          ? "text-blue-600"
+                          : isAvailable
+                          ? "text-blue-700"
+                          : "text-gray-700"
+                      }`}
+                    >
                       {date.getDate()}
                     </div>
-                    <div className="space-y-1">
-                      {dayShifts.map((shift) => (
-                        <div
-                          key={shift.id}
-                          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex justify-between items-center group"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span>
-                            {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteShift(shift.id)}
-                            className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-800"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                    {isAvailable && (
+                      <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded">
+                        出社可
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -247,79 +214,13 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
         </div>
       </div>
 
-      {/* Shift Form Modal */}
-      {selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              シフト登録 - {new Date(selectedDate).toLocaleDateString("ja-JP")}
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  開始時刻 *
-                </label>
-                <input
-                  type="time"
-                  value={shiftForm.start_time}
-                  onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  終了時刻 *
-                </label>
-                <input
-                  type="time"
-                  value={shiftForm.end_time}
-                  onChange={(e) => setShiftForm({ ...shiftForm, end_time: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">場所</label>
-                <input
-                  type="text"
-                  value={shiftForm.location}
-                  onChange={(e) => setShiftForm({ ...shiftForm, location: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="勤務場所"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">メモ</label>
-                <textarea
-                  value={shiftForm.notes}
-                  onChange={(e) => setShiftForm({ ...shiftForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="備考・注意事項など"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleSaveShift}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                保存
-              </button>
-            </div>
-          </div>
+      {/* Summary */}
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">今月の出社可能日数:</span>
+          <span className="text-lg font-semibold text-gray-900">{availabilities.length}日</span>
         </div>
-      )}
+      </div>
     </div>
   );
 }
