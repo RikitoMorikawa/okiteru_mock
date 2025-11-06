@@ -436,13 +436,13 @@ export default function ManagerDashboard() {
               onClick={() => setSelectedDate(getPreviousWeekJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              1週間前
+              &lt; &lt;
             </button>
             <button
               onClick={() => setSelectedDate(getPreviousDayJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              前日
+              &lt;
             </button>
             <input
               type="date"
@@ -455,13 +455,13 @@ export default function ManagerDashboard() {
               onClick={() => setSelectedDate(getNextDayJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors"
             >
-              明日
+              &gt;
             </button>
             <button
               onClick={() => setSelectedDate(getNextWeekJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              1週間後
+              &gt; &gt;
             </button>
           </div>
         </div>
