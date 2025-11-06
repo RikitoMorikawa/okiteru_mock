@@ -16,8 +16,9 @@
 | `previous_day_reports` | 112 kB | 前日の日報 |
 | `staff_availability` | 96 kB | スタッフ出社可能日 |
 | `users` | 96 kB | ユーザー情報（スタッフ・管理者） |
+| `worksites` | 64 kB | 現場マスタ（勤務先現場情報） |
 
-**合計**: 6テーブル
+**合計**: 7テーブル
 
 ---
 
@@ -100,6 +101,7 @@
 | `id` | uuid | NO | gen_random_uuid() | プライマリキー |
 | `staff_id` | uuid | NO | - | スタッフID（外部キー → users.id） |
 | `date` | date | NO | - | 出社可能日 |
+| `worksite_id` | uuid | YES | - | 勤務予定の現場ID（外部キー → worksites.id） |
 | `notes` | text | YES | - | 備考・メモ |
 | `created_at` | timestamptz | YES | now() | 作成日時 |
 | `updated_at` | timestamptz | YES | now() | 更新日時 |
@@ -116,6 +118,18 @@
 | `user_agent` | text | YES | - | ユーザーエージェント |
 | `created_at` | timestamptz | YES | now() | 作成日時 |
 
+### 2.7 `worksites` テーブル
+
+| カラム名 | データ型 | NULL許可 | デフォルト値 | 説明 |
+|---------|---------|---------|------------|------|
+| `id` | uuid | NO | gen_random_uuid() | プライマリキー |
+| `name` | text | NO | - | 現場名（例：渋谷現場、新宿オフィスビル） |
+| `address` | text | YES | - | 住所 |
+| `description` | text | YES | - | 説明・備考 |
+| `is_active` | boolean | NO | true | 有効/無効フラグ |
+| `created_at` | timestamptz | YES | now() | 作成日時 |
+| `updated_at` | timestamptz | YES | now() | 更新日時 |
+
 ---
 
 ## 3. プライマリキー
@@ -128,6 +142,7 @@
 | `previous_day_reports` | `id` | `previous_day_reports_pkey` |
 | `staff_availability` | `id` | `staff_availability_pkey` |
 | `users` | `id` | `users_pkey` |
+| `worksites` | `id` | `worksites_pkey` |
 
 **すべてのテーブルで `id` カラムがプライマリキーとして使用されています。**
 
@@ -143,10 +158,12 @@
 | `daily_reports` | `attendance_record_id` | `attendance_records` | `id` | `daily_reports_attendance_record_id_fkey` | SET NULL |
 | `previous_day_reports` | `actual_attendance_record_id` | `attendance_records` | `id` | `previous_day_reports_actual_attendance_record_id_fkey` | SET NULL |
 | `staff_availability` | `staff_id` | `users` | `id` | `staff_availability_staff_id_fkey` | CASCADE |
+| `staff_availability` | `worksite_id` | `worksites` | `id` | `staff_availability_worksite_id_fkey` | SET NULL |
 
 **リレーションの説明**:
 - **users** が削除されると、関連する `access_logs`, `attendance_records`, `daily_reports`, `staff_availability` も削除されます（CASCADE）
 - **attendance_records** が削除されても、関連する `daily_reports` と `previous_day_reports` の該当カラムは NULL に設定されます（SET NULL）
+- **worksites** が削除されても、関連する `staff_availability` の該当カラムは NULL に設定されます（SET NULL）
 
 ---
 
@@ -182,10 +199,17 @@
 - `idx_staff_availability_staff_date`: `staff_id, date` - スタッフ別日付検索用
 - `idx_staff_availability_staff`: `staff_id` - スタッフ検索用
 - `idx_staff_availability_date`: `date` - 日付検索用
+- `idx_staff_availability_worksite_id`: `worksite_id` - 現場検索用
 
 ### 5.6 `access_logs` テーブル
 - `access_logs_pkey` (UNIQUE): `id` - プライマリキー
 - `idx_access_logs_user_login`: `user_id, login_time` - ユーザーのログイン履歴検索用
+
+### 5.7 `worksites` テーブル
+- `worksites_pkey` (UNIQUE): `id` - プライマリキー
+- `worksites_name_key` (UNIQUE): `name` - 現場名の一意性
+- `idx_worksites_is_active`: `is_active` - 有効/無効状態での検索用
+- `idx_worksites_name`: `name` - 現場名検索用
 
 ---
 
@@ -206,6 +230,7 @@
 | `users` | `update_users_updated_at` | UPDATE | BEFORE | `update_updated_at_column()` |
 | `attendance_records` | `update_attendance_records_updated_at` | UPDATE | BEFORE | `update_updated_at_column()` |
 | `daily_reports` | `update_daily_reports_updated_at` | UPDATE | BEFORE | `update_updated_at_column()` |
+| `worksites` | `update_worksites_updated_at` | UPDATE | BEFORE | `update_updated_at_column()` |
 
 **説明**: これらのトリガーは、レコードが更新される際に自動的に `updated_at` カラムを現在時刻に更新します。
 
@@ -217,8 +242,9 @@
 |-----------|--------|--------|------|
 | `users` | `users_email_key` | `email` | メールアドレスの一意性を保証 |
 | `staff_availability` | `staff_availability_staff_id_date_key` | `staff_id`, `date` | 同じスタッフが同じ日に複数の出社可能記録を持てないようにする |
+| `worksites` | `worksites_name_key` | `name` | 現場名の一意性を保証 |
 
-**注意**: プライマリキー以外のユニーク制約はこの2つのみです。`attendance_records` や `daily_reports` などのテーブルには明示的なユニーク制約が設定されていません。
+**注意**: プライマリキー以外のユニーク制約はこの3つのみです。`attendance_records` や `daily_reports` などのテーブルには明示的なユニーク制約が設定されていません。
 
 ---
 
@@ -342,11 +368,21 @@
 | UPDATE | `access_logs_update_policy` | マネージャーのみ |
 | DELETE | `access_logs_delete_policy` | マネージャーのみ |
 
+### 11.7 `worksites` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `Anyone can view active worksites` | 有効な現場（is_active = true）を全ユーザーが閲覧可能 |
+| INSERT | `Managers can insert worksites` | マネージャーのみ |
+| UPDATE | `Managers can update worksites` | マネージャーのみ |
+| DELETE | `Managers can delete worksites` | マネージャーのみ |
+
 **セキュリティポイント**:
 - **マネージャー**: 全てのデータに対する完全なアクセス権限
 - **スタッフ**: 自分のデータのみアクセス可能
 - **削除権限**: 基本的にマネージャーのみ（`previous_day_reports`と`staff_availability`は例外）
 - **認証**: `auth.uid()`を使用してSupabase Authと連携
+- **現場マスタ**: 全ユーザーが有効な現場を閲覧可能、管理はマネージャーのみ
 
 ---
 
@@ -369,10 +405,10 @@
          ├──────────────┐
          │              │
          ▼              ▼
-┌──────────────────┐  ┌─────────────────────┐
-│  daily_reports   │  │ staff_availability  │
-│   (日報)          │  │ (出社可能日)         │
-└──────────────────┘  └─────────────────────┘
+┌──────────────────┐  ┌─────────────────────┐       ┌─────────────┐
+│  daily_reports   │  │ staff_availability  │──────▶│  worksites  │
+│   (日報)          │  │ (出社可能日)         │       │  (現場)      │
+└──────────────────┘  └─────────────────────┘       └─────────────┘
          │
          ▼
 ┌──────────────────────┐
