@@ -166,6 +166,23 @@ function AttendanceContent() {
     return result;
   };
 
+  // 前日報告カードを非表示にするべきかどうか（report_dateが今日より後の場合）
+  const shouldHidePreviousDayReport = () => {
+    if (!attendanceStatus.previousDayReported) {
+      return false; // 未報告なら表示する
+    }
+
+    if (!previousDayReportDate) {
+      return false; // report_dateがない場合は表示する（念のため）
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const reportDate = previousDayReportDate;
+
+    // report_dateが今日より後の場合（今日報告した場合）、カードを非表示にする
+    return reportDate > today;
+  };
+
   const handleCompleteDay = async () => {
     try {
       setIsCompleting(true);
@@ -215,6 +232,7 @@ function AttendanceContent() {
   // Get next action based on current progress
   const getNextAction = () => {
     // 前日報告が未完了の場合は最初に前日報告を促す
+    // ただし、report_dateが今日より後（今日報告済み）の場合は非表示
     if (!attendanceStatus.previousDayReported) {
       return {
         title: "前日報告",
@@ -222,6 +240,10 @@ function AttendanceContent() {
         icon: "🌙",
         priority: "high",
       };
+    } else if (shouldHidePreviousDayReport()) {
+      // 前日報告済みだが、今日報告したばかりで翌日まで非表示にする場合
+      // 次のアクションをスキップして起床報告以降を表示しない
+      return null;
     }
 
     if (!attendanceStatus.wakeUpReported) {
@@ -517,7 +539,10 @@ function AttendanceContent() {
                     // 前日報告完了後、日付が変わるまで起床報告以降を無効化
                     const isWaitingForNewDay = isWaitingForNextDay() && action.id !== "previous-day";
 
-                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay;
+                    // 前日報告カード自体を無効化（今日報告済みで、report_dateが明日の場合）
+                    const isPreviousDayReportDisabled = action.id === "previous-day" && shouldHidePreviousDayReport();
+
+                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay || isPreviousDayReportDisabled;
 
                     return (
                       <button

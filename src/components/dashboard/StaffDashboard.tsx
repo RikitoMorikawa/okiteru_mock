@@ -28,6 +28,7 @@ export default function StaffDashboard() {
     dayCompleted: false,
     // shiftScheduleSubmitted: false,
   });
+  const [previousDayReportDate, setPreviousDayReportDate] = useState<string | null>(null); // 前日報告のreport_date
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +65,24 @@ export default function StaffDashboard() {
       if (response.ok) {
         const data = await response.json();
         setAttendanceStatus(data.status);
+
+        // 前日報告の日付を設定（report_dateを使用）
+        if (data.status.previousDayReported) {
+          let reportDate = null;
+
+          // APIから前日報告のreport_dateを取得
+          if (data.previousDayReport) {
+            reportDate = data.previousDayReport.report_date;
+          }
+
+          if (reportDate) {
+            setPreviousDayReportDate(reportDate);
+          } else {
+            setPreviousDayReportDate(null);
+          }
+        } else {
+          setPreviousDayReportDate(null);
+        }
       } else {
         console.error("Failed to fetch attendance status");
       }
@@ -166,7 +185,7 @@ export default function StaffDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <QuickActions attendanceStatus={attendanceStatus} onStatusUpdate={fetchAttendanceStatus} />
+            <QuickActions attendanceStatus={attendanceStatus} previousDayReportDate={previousDayReportDate} onStatusUpdate={fetchAttendanceStatus} />
 
             {/* Today's Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">

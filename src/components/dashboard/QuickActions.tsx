@@ -16,10 +16,11 @@ interface AttendanceStatus {
 
 interface QuickActionsProps {
   attendanceStatus: AttendanceStatus;
+  previousDayReportDate?: string | null; // report_date from previous day report
   onStatusUpdate?: () => void;
 }
 
-export default function QuickActions({ attendanceStatus, onStatusUpdate }: QuickActionsProps) {
+export default function QuickActions({ attendanceStatus, previousDayReportDate, onStatusUpdate }: QuickActionsProps) {
   const [isCompleting, setIsCompleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isStartingNewDay, setIsStartingNewDay] = useState(false);
@@ -97,8 +98,27 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
       attendanceStatus.dailyReportSubmitted
     );
   };
+
+  // 前日報告カードを非表示にするべきかどうか（report_dateが今日より後の場合）
+  const shouldHidePreviousDayReport = () => {
+    if (!attendanceStatus.previousDayReported) {
+      return false; // 未報告なら表示する
+    }
+
+    if (!previousDayReportDate) {
+      return false; // report_dateがない場合は表示する（念のため）
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const reportDate = previousDayReportDate;
+
+    // report_dateが今日より後の場合（今日報告した場合）、カードを非表示にする
+    return reportDate > today;
+  };
+
   const getNextAction = () => {
     // 前日報告が未完了の場合は最初に前日報告を促す
+    // ただし、report_dateが今日より後（今日報告済み）の場合は非表示
     if (!attendanceStatus.previousDayReported) {
       return {
         title: "前日報告",
@@ -107,6 +127,10 @@ export default function QuickActions({ attendanceStatus, onStatusUpdate }: Quick
         icon: "🌙",
         priority: "high",
       };
+    } else if (shouldHidePreviousDayReport()) {
+      // 前日報告済みだが、今日報告したばかりで翌日まで非表示にする場合
+      // 次のアクションをスキップして起床報告以降を表示しない
+      return null;
     }
 
     if (!attendanceStatus.wakeUpReported) {
