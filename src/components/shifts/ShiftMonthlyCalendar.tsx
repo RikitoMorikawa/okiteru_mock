@@ -19,6 +19,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorksiteId, setSelectedWorksiteId] = useState<string>("");
+  const [initialWorksiteId, setInitialWorksiteId] = useState<string>("");
 
   // Fetch availability data for the current month
   const fetchAvailabilities = async () => {
@@ -112,11 +113,12 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   const handleDateClick = (date: Date | null) => {
     if (!date) return;
 
-    // 既存の出社可能日データがあれば、その現場IDを設定
     const dateStr = date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const existing = availabilities.find((avail) => avail.date === dateStr);
-    setSelectedWorksiteId(existing?.worksite_id || "");
-
+    const currentWorksiteId = existing?.worksite_id || "";
+    
+    setSelectedWorksiteId(currentWorksiteId);
+    setInitialWorksiteId(currentWorksiteId);
     setSelectedDate(date);
     setIsModalOpen(true);
   };
@@ -130,42 +132,40 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
 
     try {
       if (makeAvailable) {
-        // Add or update availability (出社可能にする)
+        // Add or update availability
         if (existing) {
-          // 既存レコードを更新
+          // Update existing record
           const { error } = await supabase
             .from("staff_availability")
             // @ts-expect-error
             .update({
-              worksite_id: selectedWorksiteId || undefined,
+              worksite_id: selectedWorksiteId || null,
             })
             .eq("id", existing.id);
 
           if (error) throw error;
         } else {
-          // 新規レコードを挿入
+          // Insert new record
           const { error } = await supabase.from("staff_availability")
             // @ts-expect-error
             .insert({
               staff_id: userId,
               date: dateStr,
-              worksite_id: selectedWorksiteId || undefined,
+              worksite_id: selectedWorksiteId || null,
             });
 
           if (error) throw error;
         }
       } else {
-        // Remove availability (出社不可にする)
+        // Remove availability
         if (existing) {
           const { error } = await supabase.from("staff_availability").delete().eq("id", existing.id);
-
           if (error) throw error;
         }
       }
 
       await fetchAvailabilities();
-      setIsModalOpen(false);
-      setSelectedWorksiteId(""); // リセット
+      setInitialWorksiteId(selectedWorksiteId); // Reset initial state after update
     } catch (error) {
       console.error("Error toggling availability:", error);
       alert("出社可能日の更新に失敗しました");
@@ -364,7 +364,12 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                 <>
                   <button
                     onClick={() => handleToggleAvailability(true)}
-                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all bg-green-600 text-white hover:bg-green-700 active:scale-95`}
+                    disabled={selectedWorksiteId === initialWorksiteId}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
+                      selectedWorksiteId === initialWorksiteId
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-green-600 text-white hover:bg-green-700 active:scale-95"
+                    }`}
                   >
                     勤務地を更新
                   </button>
