@@ -498,7 +498,7 @@ function AttendanceContent() {
                 )}
 
                 {/* Current Time Display */}
-                <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="bg-white rounded-lg shadow-sm p-4" style={{ marginTop: "16px" }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-green-400 rounded-full mr-3 animate-pulse"></div>
