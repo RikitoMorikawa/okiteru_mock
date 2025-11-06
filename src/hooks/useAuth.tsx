@@ -26,31 +26,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = async (userId?: string) => {
-    console.log("[refreshUser] Starting with userId:", userId);
     try {
       let uid = userId;
 
       // If no userId provided, get from session
       if (!uid) {
-        console.log("[refreshUser] No userId, getting session...");
         const {
           data: { session },
         } = await supabase.auth.getSession();
         uid = session?.user?.id;
-        console.log("[refreshUser] Session userId:", uid);
       }
 
       if (!uid) {
-        console.log("[refreshUser] No uid found, setting user to null");
         setUser(null);
         return;
       }
 
       // Get user profile from database
-      console.log("[refreshUser] Fetching profile for uid:", uid);
       const { data: profile, error } = await supabase.from("users").select("*").eq("id", uid).single();
 
-      console.log("[refreshUser] Profile result:", { profile, error });
 
       if (error || !profile) {
         console.error("[refreshUser] Profile fetch error:", error);
