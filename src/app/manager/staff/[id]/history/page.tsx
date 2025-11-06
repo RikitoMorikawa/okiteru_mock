@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport } from "@/types/database";
+import { User, AttendanceRecord, DailyReport, PreviousDayReport } from "@/types/database";
 import { parseGPSLocation, getAddressFromCoordinates } from "@/utils/locationUtils";
 
 interface StaffHistoryData {
   user: User;
   attendanceRecords: AttendanceRecord[];
   dailyReports: DailyReport[];
+  previousDayReports: PreviousDayReport[];
 }
 
 export default function StaffHistoryPage() {
@@ -59,6 +60,8 @@ export default function StaffHistoryPage() {
 
       if (attendanceError) throw attendanceError;
 
+      console.log("Fetched attendance records:", attendanceRecords);
+
       // Debug: First fetch all records to see what statuses exist
       const { data: allRecords } = await supabase
         .from("attendance_records")
@@ -79,10 +82,21 @@ export default function StaffHistoryPage() {
 
       if (reportsError) throw reportsError;
 
+      // Fetch previous day reports within date range
+      const { data: previousDayReports, error: previousDayError } = await supabase
+        .from("previous_day_reports")
+        .select("*")
+        .eq("user_id", staffId)
+        .gte("report_date", dateRange.startDate)
+        .lte("report_date", dateRange.endDate);
+
+      if (previousDayError) throw previousDayError;
+
       setHistoryData({
         user: staffUser as User,
         attendanceRecords: (attendanceRecords as AttendanceRecord[]) || [],
         dailyReports: (dailyReports as DailyReport[]) || [],
+        previousDayReports: (previousDayReports as PreviousDayReport[]) || [],
       });
     } catch (err) {
       console.error("Error fetching history data:", err);
@@ -212,6 +226,23 @@ export default function StaffHistoryPage() {
 
                 // For each attendance record, find matching daily report
                 historyData.attendanceRecords.forEach((record) => {
+                  // Find the corresponding previous day report
+                  const previousDayReport = historyData.previousDayReports.find((prevReport) => {
+                    const prevReportDate = new Date(prevReport.report_date);
+                    const recordDate = new Date(record.date);
+                    // The report_date should be one day before the attendance record date
+                    return prevReportDate.getFullYear() === recordDate.getFullYear() &&
+                           prevReportDate.getMonth() === recordDate.getMonth() &&
+                           prevReportDate.getDate() === recordDate.getDate() - 1;
+                  });
+
+                  // Merge photo URLs into the attendance record
+                  const attendanceRecordWithPhotos = {
+                    ...record,
+                    appearance_photo_url: previousDayReport?.appearance_photo_url,
+                    route_photo_url: previousDayReport?.route_photo_url,
+                  };
+
                   // 勤怠記録IDで直接紐付け、なければ日付とスタッフIDで検索（ただし未使用のもののみ）
                   const matchingReport = historyData.dailyReports.find((report) => {
                     // 勤怠記録IDがある場合は直接マッチング
@@ -228,7 +259,7 @@ export default function StaffHistoryPage() {
 
                   workSessions.push({
                     id: `session-${record.id}`,
-                    attendanceRecord: record,
+                    attendanceRecord: attendanceRecordWithPhotos,
                     dailyReport: matchingReport,
                     sortDate: new Date(record.created_at),
                   });
@@ -460,6 +491,7 @@ const InfoItem = ({ label, value }: { label: string; value?: string | null }) =>
 };
 
 const ImageItem = ({ label, url }: { label: string; url?: string | null }) => {
+  console.log(`ImageItem (${label}):`, url);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
