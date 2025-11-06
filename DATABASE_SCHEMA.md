@@ -279,9 +279,74 @@
 
 ---
 
-## 11. RLSポリシー
+## 11. RLSポリシー（Row Level Security）
 
-_（次のクエリ結果を待っています...）_
+すべてのテーブルでRLSが有効化されており、ユーザーロールに基づいたアクセス制御が実装されています。
+
+### 11.1 `users` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `users_select_policy` | マネージャーまたは自分自身のレコード |
+| INSERT | `users_insert_policy` | マネージャーのみ |
+| UPDATE | `users_update_policy` | マネージャーまたは自分自身のレコード |
+| DELETE | `users_delete_policy` | マネージャーのみ |
+
+### 11.2 `attendance_records` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `attendance_records_select_policy` | マネージャーまたは自分の勤怠記録 |
+| INSERT | `attendance_records_insert_policy` | マネージャーまたは自分の勤怠記録 |
+| UPDATE | `attendance_records_update_policy` | マネージャーまたは自分の勤怠記録 |
+| DELETE | `attendance_records_delete_policy` | マネージャーのみ |
+
+### 11.3 `daily_reports` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `daily_reports_select_policy` | マネージャーまたは自分の日報 |
+| INSERT | `daily_reports_insert_policy` | マネージャーまたは自分の日報 |
+| UPDATE | `daily_reports_update_policy` | マネージャーまたは自分の日報 |
+| DELETE | `daily_reports_delete_policy` | マネージャーのみ |
+
+### 11.4 `previous_day_reports` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `Users can view own previous day reports` | 自分の前日報告 |
+| SELECT | `Managers can view all previous day reports` | マネージャーは全ての前日報告 |
+| INSERT | `Users can insert own previous day reports` | 自分の前日報告 |
+| UPDATE | `Users can update own previous day reports` | 自分の前日報告 |
+| DELETE | `Users can delete own previous day reports` | 自分の前日報告 |
+
+### 11.5 `staff_availability` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `Staff can view own availability` | スタッフは自分の出社可能日 |
+| SELECT | `Managers can view all availability` | マネージャーは全ての出社可能日 |
+| INSERT | `Staff can insert own availability` | スタッフは自分の出社可能日 |
+| INSERT | `Managers can insert all availability` | マネージャーは全ての出社可能日 |
+| UPDATE | `Staff can update own availability` | スタッフは自分の出社可能日 |
+| UPDATE | `Managers can update all availability` | マネージャーは全ての出社可能日 |
+| DELETE | `Staff can delete own availability` | スタッフは自分の出社可能日 |
+| DELETE | `Managers can delete all availability` | マネージャーは全ての出社可能日 |
+
+### 11.6 `access_logs` テーブル
+
+| 操作 | ポリシー名 | 条件 |
+|-----|----------|------|
+| SELECT | `access_logs_select_policy` | マネージャーまたは自分のアクセスログ |
+| INSERT | `access_logs_insert_policy` | 全てのユーザー |
+| UPDATE | `access_logs_update_policy` | マネージャーのみ |
+| DELETE | `access_logs_delete_policy` | マネージャーのみ |
+
+**セキュリティポイント**:
+- **マネージャー**: 全てのデータに対する完全なアクセス権限
+- **スタッフ**: 自分のデータのみアクセス可能
+- **削除権限**: 基本的にマネージャーのみ（`previous_day_reports`と`staff_availability`は例外）
+- **認証**: `auth.uid()`を使用してSupabase Authと連携
 
 ---
 
