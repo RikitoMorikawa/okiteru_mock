@@ -18,6 +18,11 @@ type AttendanceAction = "previous-day" | "wakeup" | "departure" | "arrival" | "r
 
 // Helper function to determine the next action based on attendance status
 function getDefaultAction(status: any): AttendanceAction {
+  // 出社可能日でない場合
+  if (!status.isAvailableToday) {
+    return null;
+  }
+
   // 日が完了している場合は完了ボタンを表示（nullを返す）
   if (status.dayCompleted) {
     return null; // 完了状態
@@ -28,7 +33,7 @@ function getDefaultAction(status: any): AttendanceAction {
     return null; // 完了状態
   }
 
-  if (!status.previousDayReported) return "previous-day";
+  if (!status.previousDayReported && status.isAvailableTomorrow) return "previous-day";
   if (!status.wakeUpReported) return "wakeup";
   if (!status.departureReported) return "departure";
   if (!status.arrivalReported) return "arrival";
@@ -49,6 +54,8 @@ function AttendanceContent() {
     reportSubmitted: false,
     dailyReportSubmitted: false,
     dayCompleted: false,
+    isAvailableToday: true,
+    isAvailableTomorrow: true,
   });
   const [loading, setLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -87,6 +94,8 @@ function AttendanceContent() {
           reportSubmitted: data.status.reportSubmitted || data.status.dailyReportSubmitted || false,
           dailyReportSubmitted: data.status.dailyReportSubmitted || data.status.reportSubmitted || false,
           dayCompleted: data.status.dayCompleted || false,
+          isAvailableToday: data.status.isAvailableToday !== false,
+          isAvailableTomorrow: data.status.isAvailableTomorrow !== false,
         });
 
         // 前日報告の日付を設定（report_dateを使用）
@@ -231,8 +240,13 @@ function AttendanceContent() {
 
   // Get next action based on current progress
   const getNextAction = () => {
-    // 前日報告が未完了の場合は最初に前日報告を促す
-    if (!attendanceStatus.previousDayReported) {
+    // 出社可能日チェック
+    if (!attendanceStatus.isAvailableToday) {
+      return null; // 今日出社可能でない場合は何も表示しない
+    }
+
+    // 前日報告が未完了の場合は最初に前日報告を促す（翌日が出社可能な場合のみ）
+    if (!attendanceStatus.previousDayReported && attendanceStatus.isAvailableTomorrow) {
       return {
         title: "前日報告",
         action: "previous-day",
@@ -545,8 +559,14 @@ function AttendanceContent() {
                     // 前日報告カード自体を無効化（今日報告済みで、report_dateが明日の場合）
                     const isPreviousDayReportDisabled = action.id === "previous-day" && shouldHidePreviousDayReport();
 
+                    // 出社可能日チェック
+                    // 前日報告：翌日が出社可能でなければdisable
+                    // その他のアクション：今日が出社可能でなければdisable
+                    const isNotAvailable =
+                      action.id === "previous-day" ? !attendanceStatus.isAvailableTomorrow : !attendanceStatus.isAvailableToday;
+
                     // 完了済みのアクションも無効化
-                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay || isPreviousDayReportDisabled || isCompleted;
+                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay || isPreviousDayReportDisabled || isCompleted || isNotAvailable;
 
                     return (
                       <button

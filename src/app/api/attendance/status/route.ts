@@ -79,6 +79,25 @@ export async function GET(request: NextRequest) {
         .eq("date", dateStr)
         .single();
 
+      // Check today's and tomorrow's availability
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+      const { data: todayAvailability } = await (supabaseAdmin as any)
+        .from("staff_availability")
+        .select("id")
+        .eq("staff_id", req.user.id)
+        .eq("date", dateStr)
+        .single();
+
+      const { data: tomorrowAvailability } = await (supabaseAdmin as any)
+        .from("staff_availability")
+        .select("id")
+        .eq("staff_id", req.user.id)
+        .eq("date", tomorrowStr)
+        .single();
+
       // Build status object
       const status = {
         previousDayReported: !!previousDayReport,
@@ -88,6 +107,8 @@ export async function GET(request: NextRequest) {
         dailyReportSubmitted: !!dailyReport,
         shiftScheduleSubmitted: !!shiftSchedule,
         dayCompleted: (attendanceRecord?.status === "archived" || attendanceRecord?.status === "complete") && attendanceRecord !== null,
+        isAvailableToday: !!todayAvailability,
+        isAvailableTomorrow: !!tomorrowAvailability,
       };
 
       // Debug logging
