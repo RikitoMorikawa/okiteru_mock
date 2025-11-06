@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { StaffAvailability } from "@/types/database";
+import { StaffAvailability, Worksite } from "@/types/database";
 
 interface ShiftMonthlyCalendarProps {
   userId: string;
@@ -12,9 +12,11 @@ interface ShiftMonthlyCalendarProps {
 export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availabilities, setAvailabilities] = useState<StaffAvailability[]>([]);
+  const [worksites, setWorksites] = useState<Worksite[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedWorksiteId, setSelectedWorksiteId] = useState<string>("");
 
   // Fetch availability data for the current month
   const fetchAvailabilities = async () => {
@@ -43,8 +45,25 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     }
   };
 
+  // Fetch worksites (現場マスタ)
+  const fetchWorksites = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("worksites")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) throw error;
+      setWorksites((data as Worksite[]) || []);
+    } catch (error) {
+      console.error("Error fetching worksites:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAvailabilities();
+    fetchWorksites();
   }, [currentDate, userId]);
 
   // Get calendar days for the current month
@@ -90,6 +109,12 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   // Handle date click - open modal
   const handleDateClick = (date: Date | null) => {
     if (!date) return;
+
+    // 既存の出社可能日データがあれば、その現場IDを設定
+    const dateStr = date.toISOString().split("T")[0];
+    const existing = availabilities.find((avail) => avail.date === dateStr);
+    setSelectedWorksiteId(existing?.worksite_id || "");
+
     setSelectedDate(date);
     setIsModalOpen(true);
   };
@@ -103,11 +128,23 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
 
     try {
       if (makeAvailable) {
-        // Add availability (出社可能にする)
-        if (!existing) {
+        // Add or update availability (出社可能にする)
+        if (existing) {
+          // 既存レコードを更新
+          const { error } = await supabase
+            .from("staff_availability")
+            .update({
+              worksite_id: selectedWorksiteId || null,
+            })
+            .eq("id", existing.id);
+
+          if (error) throw error;
+        } else {
+          // 新規レコードを挿入
           const { error } = await supabase.from("staff_availability").insert({
             staff_id: userId,
             date: dateStr,
+            worksite_id: selectedWorksiteId || null,
           });
 
           if (error) throw error;
@@ -123,6 +160,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
 
       await fetchAvailabilities();
       setIsModalOpen(false);
+      setSelectedWorksiteId(""); // リセット
     } catch (error) {
       console.error("Error toggling availability:", error);
       alert("出社可能日の更新に失敗しました");
@@ -215,11 +253,23 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                     >
                       {date.getDate()}
                     </div>
-                    {isAvailable && (
-                      <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded">
-                        出社可
-                      </div>
-                    )}
+                    {isAvailable && (() => {
+                      const dateStr = date.toISOString().split("T")[0];
+                      const existing = availabilities.find((avail) => avail.date === dateStr);
+                      const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                      return (
+                        <>
+                          <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded mb-1">
+                            出社可
+                          </div>
+                          {worksite && (
+                            <div className="text-xs text-gray-600 text-center px-1">
+                              📍 {worksite.name}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -265,6 +315,46 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                   <span className="text-gray-600">✗ 出社不可</span>
                 )}
               </p>
+              {isDateAvailable(selectedDate) && (() => {
+                const dateStr = selectedDate.toISOString().split("T")[0];
+                const existing = availabilities.find((avail) => avail.date === dateStr);
+                const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                return worksite ? (
+                  <p className="text-sm text-gray-600 mt-2">
+                    📍 現場: {worksite.name}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500 mt-2">
+                    📍 現場: 未設定
+                  </p>
+                );
+              })()}
+            </div>
+
+            {/* Worksite Selection */}
+            <div className="mb-6">
+              <label htmlFor="worksite" className="block text-sm font-medium text-gray-700 mb-2">
+                勤務現場を選択
+              </label>
+              <select
+                id="worksite"
+                value={selectedWorksiteId}
+                onChange={(e) => setSelectedWorksiteId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <option value="">-- 現場を選択してください --</option>
+                {worksites.map((worksite) => (
+                  <option key={worksite.id} value={worksite.id}>
+                    {worksite.name} {worksite.address && `(${worksite.address})`}
+                  </option>
+                ))}
+              </select>
+              {selectedWorksiteId && (() => {
+                const worksite = worksites.find((w) => w.id === selectedWorksiteId);
+                return worksite?.description ? (
+                  <p className="text-xs text-gray-500 mt-1">{worksite.description}</p>
+                ) : null;
+              })()}
             </div>
 
             {/* Action Buttons */}
