@@ -96,19 +96,15 @@ function AttendanceContent() {
           // APIから前日報告のreport_dateを取得
           if (data.previousDayReport) {
             reportDate = data.previousDayReport.report_date;
-            console.log("[DEBUG] Got report_date from previousDayReport:", reportDate);
           }
 
           if (reportDate) {
             setPreviousDayReportDate(reportDate);
-            console.log("[DEBUG] Set previousDayReportDate to report_date:", reportDate);
           } else {
             setPreviousDayReportDate(null);
-            console.warn("[DEBUG] No report_date found in previousDayReport");
           }
         } else {
           setPreviousDayReportDate(null);
-          console.log("[DEBUG] No previous day report");
         }
       } else {
         console.error("Failed to fetch attendance status");
@@ -153,19 +149,11 @@ function AttendanceContent() {
   // report_dateと今日の日付を比較して判定
   const shouldEnableActions = () => {
     if (!previousDayReportDate) {
-      console.log("[DEBUG] No previousDayReportDate, actions enabled");
       return true; // 前日報告がない場合は制限なし
     }
 
     const today = new Date().toISOString().split("T")[0];
     const reportDate = previousDayReportDate;
-
-    console.log("[DEBUG] Action enable check:", {
-      today,
-      reportDate,
-      comparison: `${reportDate} < ${today}`,
-      result: reportDate < today,
-    });
 
     // report_dateが昨日以前（当日に翌日の準備として登録したものが過去になった）なら有効
     // report_dateが今日（当日に登録したばかり）なら無効
@@ -175,11 +163,6 @@ function AttendanceContent() {
   // 前日報告完了後の待機状態かどうかを判定
   const isWaitingForNextDay = () => {
     const result = attendanceStatus.previousDayReported && !shouldEnableActions();
-    console.log("[DEBUG] isWaitingForNextDay:", {
-      previousDayReported: attendanceStatus.previousDayReported,
-      shouldEnableActions: shouldEnableActions(),
-      result,
-    });
     return result;
   };
 
@@ -460,7 +443,6 @@ function AttendanceContent() {
                     attendanceStatus,
                     showButton: !loading && !isTodayCompleted() && isAllTasksComplete(),
                   };
-                  console.log("完了ボタン表示デバッグ:", debugInfo);
                   return null;
                 })()}
                 {!loading && !isTodayCompleted() && isAllTasksComplete() && (

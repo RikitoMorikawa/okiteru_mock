@@ -78,10 +78,6 @@ export default function StaffHistoryPage() {
 
       if (reportsError) throw reportsError;
 
-      // デバッグ用ログ
-      console.log("取得した日報データ:", dailyReports);
-      console.log("取得した勤怠記録:", attendanceRecords);
-
       setHistoryData({
         user: staffUser as User,
         attendanceRecords: (attendanceRecords as AttendanceRecord[]) || [],
@@ -229,21 +225,6 @@ export default function StaffHistoryPage() {
                     );
                   });
 
-                  // デバッグ用ログ
-                  console.log(`勤怠記録 ${record.date} (${record.id}):`, {
-                    recordDate: record.date,
-                    recordId: record.id,
-                    staffId: record.staff_id,
-                    matchingReport: matchingReport
-                      ? {
-                          id: matchingReport.id,
-                          date: matchingReport.date,
-                          attendanceRecordId: matchingReport.attendance_record_id,
-                          status: matchingReport.status,
-                        }
-                      : null,
-                  });
-
                   workSessions.push({
                     id: `session-${record.id}`,
                     attendanceRecord: record,
@@ -283,19 +264,6 @@ export default function StaffHistoryPage() {
                   const hasAttendance = !!session.attendanceRecord.id;
                   const hasReport = !!(session.dailyReport && session.dailyReport.id && session.dailyReport.content);
 
-                  // デバッグ用ログ
-                  console.log(`セッション ${session.id}:`, {
-                    hasAttendance,
-                    hasReport,
-                    reportData: session.dailyReport
-                      ? {
-                          id: session.dailyReport.id,
-                          date: session.dailyReport.date,
-                          content: session.dailyReport.content ? "内容あり" : "内容なし",
-                          status: session.dailyReport.status,
-                        }
-                      : "なし",
-                  });
                   const attendanceStatus = hasAttendance ? getAttendanceStatus(session.attendanceRecord) : null;
 
                   return (

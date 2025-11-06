@@ -18,14 +18,11 @@ export default function UserShiftPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[UserShiftPage] useEffect triggered", { authLoading, user: user?.role });
 
     if (!authLoading) {
       if (!user) {
-        console.log("[UserShiftPage] No user, redirecting to login");
         router.push("/login");
       } else if (user.role !== "manager") {
-        console.log("[UserShiftPage] User is not manager, redirecting to dashboard");
         router.push("/dashboard/attendance");
       }
     }

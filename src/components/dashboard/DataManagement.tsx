@@ -16,7 +16,6 @@ export default function DataManagement() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = getTodayJST();
-    console.log("[DataManagement] Initial date:", today);
     return today;
   });
   const [selectedStaff, setSelectedStaff] = useState<string>("all");
@@ -29,7 +28,6 @@ export default function DataManagement() {
   useEffect(() => {
     const today = getTodayJST();
     if (selectedDate !== today) {
-      console.log("[DataManagement] Resetting date from", selectedDate, "to", today);
       setSelectedDate(today);
     }
   }, []);
@@ -41,12 +39,6 @@ export default function DataManagement() {
       const params = new URLSearchParams({
         date: selectedDate,
         staffId: selectedStaff,
-      });
-
-      console.log("[DataManagement] Fetching staff data:", {
-        selectedDate,
-        todayJST: getTodayJST(),
-        params: params.toString(),
       });
 
       const response = await api.get(`/api/admin/staff-data?${params}`);
@@ -120,7 +112,6 @@ export default function DataManagement() {
               <button
                 onClick={() => {
                   const today = getTodayJST();
-                  console.log("[DataManagement] Reset to today:", today);
                   setSelectedDate(today);
                 }}
                 className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"

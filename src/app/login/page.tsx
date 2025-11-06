@@ -46,14 +46,11 @@ export default function LoginPage() {
       return;
     }
 
-    console.log("[Login] Starting login process...");
     setLoading(true);
     setError("");
 
     try {
-      console.log("[Login] Calling signIn...");
       await signIn(email, password);
-      console.log("[Login] signIn completed, redirecting to home page...");
 
       // ホームページにリダイレクトして、そこで役割に応じた分岐を行う
       router.push("/");
@@ -61,7 +58,6 @@ export default function LoginPage() {
       console.error("[Login] Error:", err);
       setError(err instanceof Error ? err.message : "ログインに失敗しました");
     } finally {
-      console.log("[Login] Setting loading to false");
       setLoading(false);
     }
   };

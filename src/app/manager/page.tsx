@@ -10,14 +10,11 @@ export default function ManagerPage() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log("[ManagerPage] useEffect triggered", { loading, user: user?.role });
 
     if (!loading) {
       if (!user) {
-        console.log("[ManagerPage] No user, redirecting to login");
         router.push("/login");
       } else if (user.role !== "manager") {
-        console.log("[ManagerPage] User is not manager, redirecting to dashboard");
         router.push("/dashboard/attendance");
       }
     }

@@ -58,7 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      console.log("[refreshUser] Setting user state");
       setUser({
         id: (profile as any).id,
         email: (profile as any).email,
@@ -66,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: (profile as any).name,
         phone: (profile as any).phone,
       });
-      console.log("[refreshUser] User state set successfully");
     } catch (error) {
       console.error("[refreshUser] Exception:", error);
       setUser(null);
@@ -74,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log("[signIn] Starting...");
 
     // Add timeout to detect if it hangs
     const timeoutPromise = new Promise((_, reject) => {
@@ -86,19 +83,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
-    console.log("[signIn] Waiting for auth response...");
     const { data, error } = (await Promise.race([signInPromise, timeoutPromise])) as any;
 
-    console.log("[signIn] Auth response received:", { user: data?.user?.id, error });
 
     if (error) {
       throw new Error(error.message);
     }
 
     if (data.user) {
-      console.log("[signIn] Calling refreshUser with userId:", data.user.id);
       await refreshUser(data.user.id);
-      console.log("[signIn] refreshUser completed");
 
       // Log user access
       try {
@@ -116,30 +109,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log("[useAuth] useEffect initializing...");
     // Simple initial load
     refreshUser().finally(() => {
-      console.log("[useAuth] Initial load complete, setting loading to false");
       setLoading(false);
     });
 
     // Listen for auth changes
-    console.log("[useAuth] Setting up onAuthStateChange listener...");
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[useAuth] Auth state change detected:", event, session?.user?.id);
 
       // Don't call refreshUser during sign in - it will be called explicitly
       if (event === "SIGNED_OUT") {
-        console.log("[useAuth] User signed out, clearing user state");
         setUser(null);
       }
       // Remove the SIGNED_IN handler to prevent double refresh
     });
 
     return () => {
-      console.log("[useAuth] Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, []);

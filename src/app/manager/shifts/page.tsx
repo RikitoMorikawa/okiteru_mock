@@ -11,14 +11,11 @@ export default function ManagerShiftsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log("[ManagerShiftsPage] useEffect triggered", { loading, user: user?.role });
 
     if (!loading) {
       if (!user) {
-        console.log("[ManagerShiftsPage] No user, redirecting to login");
         router.push("/login");
       } else if (user.role !== "manager") {
-        console.log("[ManagerShiftsPage] User is not manager, redirecting to dashboard");
         router.push("/dashboard/attendance");
       }
     }
