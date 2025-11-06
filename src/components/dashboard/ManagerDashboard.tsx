@@ -267,7 +267,7 @@ export default function ManagerDashboard() {
   };
 
   // Get detailed stats for modal
-  const getStatsDetail = (type: "preparing" | "active" | "completed") => {
+  const getStatsDetail = (type: "preparing" | "active" | "completed" | "previousDayReport") => {
     switch (type) {
       case "preparing":
         return {
@@ -311,7 +311,7 @@ export default function ManagerDashboard() {
   };
 
   // Handle stats card click
-  const handleStatsCardClick = (type: "preparing" | "active" | "completed") => {
+  const handleStatsCardClick = (type: "preparing" | "active" | "completed" | "previousDayReport") => {
     setStatsModal({ isOpen: true, type });
   };
 
