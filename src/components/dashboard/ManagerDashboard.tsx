@@ -466,6 +466,12 @@ export default function ManagerDashboard() {
               className="sm:max-w-[100px] px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             />
             <button
+              onClick={() => setSelectedDate(getTodayJST())}
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
+            >
+              当日
+            </button>
+            <button
               onClick={() => setSelectedDate(getNextDayJST(selectedDate))}
               className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors mx-1"
             >
@@ -476,12 +482,6 @@ export default function ManagerDashboard() {
               className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             >
               &gt;&gt;
-            </button>
-            <button
-              onClick={() => setSelectedDate(getTodayJST())}
-              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
-            >
-              当日
             </button>
           </div>
         </div>
