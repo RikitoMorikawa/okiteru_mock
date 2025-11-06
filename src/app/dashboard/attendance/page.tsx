@@ -240,6 +240,27 @@ function AttendanceContent() {
 
   // Get next action based on current progress
   const getNextAction = () => {
+    const shouldHide = shouldHidePreviousDayReport();
+    console.log("=== getNextAction Debug ===");
+    console.log("previousDayReported:", attendanceStatus.previousDayReported);
+    console.log("previousDayReportDate:", previousDayReportDate);
+    console.log("shouldHidePreviousDayReport:", shouldHide);
+    console.log("isAvailableToday:", attendanceStatus.isAvailableToday);
+
+    // 前日報告完了後、翌日まで待機する場合は優先的にメッセージを表示
+    if (shouldHide) {
+      // 前日報告済みだが、今日報告したばかりで翌日まで待機する場合
+      // 案内メッセージを表示
+      console.log("Returning: 翌日の起床時間に報告してください");
+      return {
+        title: "起床報告",
+        action: null,
+        icon: "⏰",
+        priority: "info",
+        description: "翌日の起床時間に報告してください。",
+      };
+    }
+
     // 出社可能日チェック
     if (!attendanceStatus.isAvailableToday) {
       return null; // 今日出社可能でない場合は何も表示しない
@@ -247,21 +268,12 @@ function AttendanceContent() {
 
     // 前日報告が未完了の場合は最初に前日報告を促す（翌日が出社可能な場合のみ）
     if (!attendanceStatus.previousDayReported && attendanceStatus.isAvailableTomorrow) {
+      console.log("Returning: 前日報告");
       return {
         title: "前日報告",
         action: "previous-day",
         icon: "🌙",
         priority: "high",
-      };
-    } else if (shouldHidePreviousDayReport()) {
-      // 前日報告済みだが、今日報告したばかりで翌日まで待機する場合
-      // 案内メッセージを表示
-      return {
-        title: "起床報告",
-        action: null,
-        icon: "⏰",
-        priority: "info",
-        description: "翌日の起床時間に報告してください。",
       };
     }
 
