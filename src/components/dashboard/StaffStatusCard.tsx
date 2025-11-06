@@ -123,11 +123,11 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             <div className="ml-2 flex-grow">
               <div className="flex items-center">
                 <h3 className="text-xs font-medium text-gray-900 truncate">{staff.name}</h3>
-                {staff.isConfirmed && (
-                  <span className="ml-2 px-1.5 py-0.5 text-[0.6rem] font-medium bg-blue-100 text-blue-800 rounded-full flex-shrink-0">確定</span>
-                )}
                 {label === "未開始" && (
                   <div className={`px-1.5 py-0.5 text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+                )}
+                {staff.isConfirmed && (
+                  <span className="ml-2 px-1.5 py-0.5 text-[0.6rem] font-medium bg-blue-100 text-blue-800 rounded-full flex-shrink-0">確定</span>
                 )}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
