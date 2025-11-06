@@ -134,7 +134,6 @@ export async function isManager(userId?: string): Promise<boolean> {
 
 // Log user access
 export async function logUserAccess(userId: string, ipAddress?: string, userAgent?: string) {
-  console.log("[logUserAccess] Attempting to log access for user:", userId);
 
   const logData = {
     user_id: userId,
@@ -143,7 +142,6 @@ export async function logUserAccess(userId: string, ipAddress?: string, userAgen
     user_agent: userAgent,
   };
 
-  console.log("[logUserAccess] Log data:", logData);
 
   const { data, error } = await (supabase as any).from("access_logs").insert(logData);
 
@@ -156,7 +154,6 @@ export async function logUserAccess(userId: string, ipAddress?: string, userAgen
       hint: error.hint,
     });
   } else {
-    console.log("[logUserAccess] Successfully logged user access:", data);
   }
 }
 
