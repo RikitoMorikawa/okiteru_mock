@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { StaffAvailability, Worksite } from "@/types/database";
+import { StaffAvailability, Worksite, Database } from "@/types/database";
 
 interface ShiftMonthlyCalendarProps {
   userId: string;
@@ -48,11 +48,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   // Fetch worksites (現場マスタ)
   const fetchWorksites = async () => {
     try {
-      const { data, error } = await supabase
-        .from("worksites")
-        .select("*")
-        .eq("is_active", true)
-        .order("name");
+      const { data, error } = await supabase.from("worksites").select("*").eq("is_active", true).order("name");
 
       if (error) throw error;
       setWorksites((data as Worksite[]) || []);
@@ -133,19 +129,22 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
           // 既存レコードを更新
           const { error } = await supabase
             .from("staff_availability")
+            // @ts-expect-error
             .update({
-              worksite_id: selectedWorksiteId || null,
+              worksite_id: selectedWorksiteId || undefined,
             })
             .eq("id", existing.id);
 
           if (error) throw error;
         } else {
           // 新規レコードを挿入
-          const { error } = await supabase.from("staff_availability").insert({
-            staff_id: userId,
-            date: dateStr,
-            worksite_id: selectedWorksiteId || null,
-          });
+          const { error } = await supabase.from("staff_availability")
+            // @ts-expect-error
+            .insert({
+              staff_id: userId,
+              date: dateStr,
+              worksite_id: selectedWorksiteId || undefined,
+            });
 
           if (error) throw error;
         }
@@ -174,10 +173,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     <div>
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={previousMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
+        <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -185,10 +181,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
         <h2 className="text-xl font-semibold">
           {currentDate.getFullYear()}年 {currentDate.getMonth() + 1}月
         </h2>
-        <button
-          onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
+        <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
@@ -197,9 +190,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
 
       {/* Instructions */}
       <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800">
-          📅 日付をクリックすると詳細モーダルが開きます。そこで出社可否を設定できます。
-        </p>
+        <p className="text-sm text-blue-800">📅 日付をクリックすると詳細モーダルが開きます。そこで出社可否を設定できます。</p>
       </div>
 
       {/* Calendar Grid */}
@@ -209,9 +200,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
           {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
             <div
               key={day}
-              className={`p-2 text-center text-sm font-semibold ${
-                index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"
-              }`}
+              className={`p-2 text-center text-sm font-semibold ${index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"}`}
             >
               {day}
             </div>
@@ -230,11 +219,9 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
               <div
                 key={index}
                 onClick={() => handleDateClick(date)}
-                className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${
-                  !date ? "bg-gray-50 cursor-default" : ""
-                } ${isToday ? "ring-2 ring-blue-500 ring-inset" : ""} ${
-                  isAvailable ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"
-                }`}
+                className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${!date ? "bg-gray-50 cursor-default" : ""} ${
+                  isToday ? "ring-2 ring-blue-500 ring-inset" : ""
+                } ${isAvailable ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"}`}
               >
                 {date && (
                   <div className="flex flex-col items-center justify-center h-full">
@@ -253,23 +240,18 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                     >
                       {date.getDate()}
                     </div>
-                    {isAvailable && (() => {
-                      const dateStr = date.toISOString().split("T")[0];
-                      const existing = availabilities.find((avail) => avail.date === dateStr);
-                      const worksite = worksites.find((w) => w.id === existing?.worksite_id);
-                      return (
-                        <>
-                          <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded mb-1">
-                            出社可
-                          </div>
-                          {worksite && (
-                            <div className="text-xs text-gray-600 text-center px-1">
-                              📍 {worksite.name}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
+                    {isAvailable &&
+                      (() => {
+                        const dateStr = date.toISOString().split("T")[0];
+                        const existing = availabilities.find((avail) => avail.date === dateStr);
+                        const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                        return (
+                          <>
+                            <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded mb-1">出社可</div>
+                            {worksite && <div className="text-xs text-gray-600 text-center px-1">📍 {worksite.name}</div>}
+                          </>
+                        );
+                      })()}
                   </div>
                 )}
               </div>
@@ -295,10 +277,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
               <h3 className="text-lg font-semibold text-gray-900">
                 {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
               </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -309,26 +288,19 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">現在のステータス:</p>
               <p className="text-base font-semibold">
-                {isDateAvailable(selectedDate) ? (
-                  <span className="text-blue-600">✓ 出社可能</span>
-                ) : (
-                  <span className="text-gray-600">✗ 出社不可</span>
-                )}
+                {isDateAvailable(selectedDate) ? <span className="text-blue-600">✓ 出社可能</span> : <span className="text-gray-600">✗ 出社不可</span>}
               </p>
-              {isDateAvailable(selectedDate) && (() => {
-                const dateStr = selectedDate.toISOString().split("T")[0];
-                const existing = availabilities.find((avail) => avail.date === dateStr);
-                const worksite = worksites.find((w) => w.id === existing?.worksite_id);
-                return worksite ? (
-                  <p className="text-sm text-gray-600 mt-2">
-                    📍 現場: {worksite.name}
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-500 mt-2">
-                    📍 現場: 未設定
-                  </p>
-                );
-              })()}
+              {isDateAvailable(selectedDate) &&
+                (() => {
+                  const dateStr = selectedDate.toISOString().split("T")[0];
+                  const existing = availabilities.find((avail) => avail.date === dateStr);
+                  const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                  return worksite ? (
+                    <p className="text-sm text-gray-600 mt-2">📍 現場: {worksite.name}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 mt-2">📍 現場: 未設定</p>
+                  );
+                })()}
             </div>
 
             {/* Worksite Selection */}
@@ -349,12 +321,11 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                   </option>
                 ))}
               </select>
-              {selectedWorksiteId && (() => {
-                const worksite = worksites.find((w) => w.id === selectedWorksiteId);
-                return worksite?.description ? (
-                  <p className="text-xs text-gray-500 mt-1">{worksite.description}</p>
-                ) : null;
-              })()}
+              {selectedWorksiteId &&
+                (() => {
+                  const worksite = worksites.find((w) => w.id === selectedWorksiteId);
+                  return worksite?.description ? <p className="text-xs text-gray-500 mt-1">{worksite.description}</p> : null;
+                })()}
             </div>
 
             {/* Action Buttons */}
@@ -363,9 +334,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                 onClick={() => handleToggleAvailability(true)}
                 disabled={isDateAvailable(selectedDate)}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  isDateAvailable(selectedDate)
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                  isDateAvailable(selectedDate) ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
                 }`}
               >
                 {isDateAvailable(selectedDate) ? "✓ すでに出社可能に設定済み" : "出社可能にする"}
@@ -375,9 +344,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                 onClick={() => handleToggleAvailability(false)}
                 disabled={!isDateAvailable(selectedDate)}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  !isDateAvailable(selectedDate)
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
+                  !isDateAvailable(selectedDate) ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
                 }`}
               >
                 {!isDateAvailable(selectedDate) ? "✓ すでに出社不可に設定済み" : "出社不可にする"}
