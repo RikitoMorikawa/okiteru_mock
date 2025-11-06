@@ -30,6 +30,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
     const tasks = [
+      { name: "前日報告", completed: !!staff.hasPreviousDayReport },
       { name: "起床報告", completed: !!attendanceRecord?.wake_up_time },
       { name: "出発報告", completed: !!attendanceRecord?.departure_time },
       { name: "到着報告", completed: !!attendanceRecord?.arrival_time },

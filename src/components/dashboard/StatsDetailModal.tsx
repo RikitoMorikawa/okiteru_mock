@@ -55,22 +55,6 @@ export default function StatsDetailModal({ isOpen, onClose, title, icon, complet
                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                   未完了 ({pendingStaff.length}人)
                 </h4>
-                <button
-                  onClick={() => {
-                    // TODO: 通知機能を実装
-                    console.log(
-                      "通知を送信:",
-                      pendingStaff.map((s) => s.name)
-                    );
-                    alert(`${pendingStaff.length}人に通知を送信します`);
-                  }}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors flex items-center"
-                >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h8v-2H4v2zM4 11h8V9H4v2z" />
-                  </svg>
-                  通知送信
-                </button>
               </div>
               <div className="space-y-2">
                 {pendingStaff.map((staff) => (
@@ -84,19 +68,6 @@ export default function StatsDetailModal({ isOpen, onClose, title, icon, complet
                         <div className="text-xs text-gray-500">{staff.email}</div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        // TODO: 個別通知機能を実装
-                        console.log("個別通知を送信:", staff.name);
-                        alert(`${staff.name}さんに通知を送信します`);
-                      }}
-                      className="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors"
-                      title={`${staff.name}さんに通知`}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                      </svg>
-                    </button>
                   </div>
                 ))}
               </div>
