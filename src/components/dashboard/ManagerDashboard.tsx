@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport, FilterOptions, StaffAvailability } from "@/types/database";
+import { User, AttendanceRecord, DailyReport, PreviousDayReport, FilterOptions, StaffAvailability } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StatsDetailModal from "./StatsDetailModal";
 import { getTodayJST, getPreviousDayJST, getNextDayJST, getPreviousWeekJST, getNextWeekJST } from "../../utils/dateUtils";
@@ -107,6 +107,7 @@ export default function ManagerDashboard() {
       if (reportsError) throw reportsError;
 
       // Fetch previous day's reports (for the selectedDate)
+      // 前日報告の report_date は当日の日付（6日に報告すると report_date = 7日）
       const { data: previousDayReports, error: previousDayReportsError } = await supabase
         .from("previous_day_reports") // previous_day_reports テーブルから取得
         .select("*")
@@ -150,7 +151,7 @@ export default function ManagerDashboard() {
           const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
           const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
           const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-          const hasPreviousDayReport = ((previousDayReports as DailyReport[]) || []).some((report) => report.staff_id === staffMember.id);
+          const hasPreviousDayReport = ((previousDayReports as PreviousDayReport[]) || []).some((report) => report.user_id === staffMember.id);
           const lastLogin = lastLoginMap.get(staffMember.id);
 
           return {
