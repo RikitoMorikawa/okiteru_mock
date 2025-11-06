@@ -80,6 +80,7 @@ export default function StaffShiftCalendar() {
         if (error) throw error;
       } else {
         // Add availability
+        // @ts-expect-error
         const { error } = await supabase.from("staff_availability").insert({
           staff_id: user.id,
           date: dateStr,
