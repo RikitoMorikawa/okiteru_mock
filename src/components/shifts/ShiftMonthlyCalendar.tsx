@@ -200,81 +200,83 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Day Headers */}
-        <div className="grid grid-cols-7 border-b border-gray-200">
-          {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
-            <div
-              key={day}
-              className={`p-2 text-center text-sm font-semibold ${index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"}`}
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Days */}
-        <div className="grid grid-cols-7">
-          {calendarDays.map((date, index) => {
-            const dateStr = date?.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-            const isToday = dateStr === today;
-            const { isAvailable, worksiteId } = getAvailabilityStatus(date);
-            const dayOfWeek = date?.getDay();
-
-            return (
+      <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200" style={{ minWidth: "640px" }}>
+          {/* Day Headers */}
+          <div className="grid grid-cols-7 border-b border-gray-200">
+            {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
               <div
-                key={index}
-                onClick={() => handleDateClick(date)}
-                className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${!date ? "bg-gray-50 cursor-default" : ""} ${
-                  isToday ? "ring-2 ring-blue-500 ring-inset" : ""
-                } ${
-                  isAvailable
-                    ? worksiteId
-                      ? "bg-green-100 hover:bg-green-200"
-                      : "bg-blue-100 hover:bg-blue-200"
-                    : "hover:bg-gray-50"
-                }`}
+                key={day}
+                className={`p-2 text-center text-sm font-semibold ${index === 0 ? "text-red-600" : index === 6 ? "text-blue-600" : "text-gray-600"}`}
               >
-                {date && (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div
-                      className={`text-sm font-semibold mb-1 ${
-                        isToday
-                          ? "text-blue-600"
-                          : dayOfWeek === 0
-                          ? "text-red-600"
-                          : dayOfWeek === 6
-                          ? "text-blue-600"
-                          : isAvailable
-                          ? worksiteId
-                            ? "text-green-700"
-                            : "text-blue-700"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {date.getDate()}
-                    </div>
-                    {isAvailable &&
-                      (() => {
-                        const worksite = worksites.find((w) => w.id === worksiteId);
-                        return (
-                          <>
-                            <div
-                              className={`text-xs font-medium px-2 py-1 rounded mb-1 ${
-                                worksiteId ? "bg-green-200 text-green-800" : "bg-blue-200 text-blue-700"
-                              }`}
-                            >
-                              {worksiteId ? "出社確定" : "出社可"}
-                            </div>
-                            {worksite && <div className="text-xs text-gray-600 text-center px-1">📍 {worksite.name}</div>}
-                          </>
-                        );
-                      })()}
-                  </div>
-                )}
+                {day}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Calendar Days */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((date, index) => {
+              const dateStr = date?.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+              const isToday = dateStr === today;
+              const { isAvailable, worksiteId } = getAvailabilityStatus(date);
+              const dayOfWeek = date?.getDay();
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => handleDateClick(date)}
+                  className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${!date ? "bg-gray-50 cursor-default" : ""} ${
+                    isToday ? "ring-2 ring-blue-500 ring-inset" : ""
+                  } ${
+                    isAvailable
+                      ? worksiteId
+                        ? "bg-green-100 hover:bg-green-200"
+                        : "bg-blue-100 hover:bg-blue-200"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  {date && (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div
+                        className={`text-sm font-semibold mb-1 ${
+                          isToday
+                            ? "text-blue-600"
+                            : dayOfWeek === 0
+                            ? "text-red-600"
+                            : dayOfWeek === 6
+                            ? "text-blue-600"
+                            : isAvailable
+                            ? worksiteId
+                              ? "text-green-700"
+                              : "text-blue-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </div>
+                      {isAvailable &&
+                        (() => {
+                          const worksite = worksites.find((w) => w.id === worksiteId);
+                          return (
+                            <>
+                              <div
+                                className={`text-xs font-medium px-2 py-1 rounded mb-1 ${
+                                  worksiteId ? "bg-green-200 text-green-800" : "bg-blue-200 text-blue-700"
+                                }`}
+                              >
+                                {worksiteId ? "出社確定" : "出社可"}
+                              </div>
+                              {worksite && <div className="text-xs text-gray-600 text-center px-1">📍 {worksite.name}</div>}
+                            </>
+                          );
+                        })()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
