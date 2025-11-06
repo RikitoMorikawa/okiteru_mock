@@ -513,12 +513,14 @@ const ImageItem = ({ label, url }: { label: string; url?: string | null }) => {
   return (
     <div>
       <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
-      <img
-        src={imageUrl}
-        alt={label}
-        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-        onClick={() => setSelectedImage(imageUrl)}
-      />
+      <div className="w-full h-48 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
+        <img
+          src={imageUrl}
+          alt={label}
+          className="max-w-full max-h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => setSelectedImage(imageUrl)}
+        />
+      </div>
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
           <img src={selectedImage} alt="拡大表示" className="max-w-full max-h-full object-contain rounded-lg" />
