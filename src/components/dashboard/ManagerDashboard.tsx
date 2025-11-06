@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, FilterOptions, StaffAvailability } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StatsDetailModal from "./StatsDetailModal";
-import { getTodayJST, getPreviousDayJST } from "../../utils/dateUtils";
+import { getTodayJST, getPreviousDayJST, getNextDayJST, getPreviousWeekJST, getNextWeekJST } from "../../utils/dateUtils";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
@@ -470,13 +470,39 @@ export default function ManagerDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Date Picker */}
         <div className="mb-4">
-          <input
-            type="date"
-            id="date-picker"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-auto px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          />
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setSelectedDate(getPreviousWeekJST(selectedDate))}
+              className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              &lt;&lt; 1週間前
+            </button>
+            <button
+              onClick={() => setSelectedDate(getPreviousDayJST(selectedDate))}
+              className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              &lt; 前日
+            </button>
+            <input
+              type="date"
+              id="date-picker"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-auto px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <button
+              onClick={() => setSelectedDate(getNextDayJST(selectedDate))}
+              className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors"
+            >
+              明日 &gt;
+            </button>
+            <button
+              onClick={() => setSelectedDate(getNextWeekJST(selectedDate))}
+              className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              1週間後 &gt;&gt;
+            </button>
+          </div>
         </div>
 
         {/* Statistics Cards */}

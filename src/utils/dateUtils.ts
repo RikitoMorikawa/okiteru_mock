@@ -75,3 +75,30 @@ export function getPreviousDayJST(dateString: string): string {
   date.setDate(date.getDate() - 1);
   return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
+
+/**
+ * 指定された日付の翌日を YYYY-MM-DD 形式で取得
+ */
+export function getNextDayJST(dateString: string): string {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + 1);
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
+
+/**
+ * 指定された日付の1週間後を YYYY-MM-DD 形式で取得
+ */
+export function getNextWeekJST(dateString: string): string {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() + 7);
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
+
+/**
+ * 指定された日付の1週間前を YYYY-MM-DD 形式で取得
+ */
+export function getPreviousWeekJST(dateString: string): string {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() - 7);
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
