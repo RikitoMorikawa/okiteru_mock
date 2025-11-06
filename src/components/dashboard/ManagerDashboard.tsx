@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport, FilterOptions, StaffAvailability } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
-import StaffFilters from "./StaffFilters";
 import StatsDetailModal from "./StatsDetailModal";
 import { getTodayJST, getPreviousDayJST } from "../../utils/dateUtils";
 
@@ -470,16 +469,13 @@ export default function ManagerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Date Picker */}
-        <div className="mb-6">
-          <label htmlFor="date-picker" className="block text-sm font-medium text-gray-700 mb-2">
-            日付を選択
-          </label>
+        <div className="mb-4">
           <input
             type="date"
             id="date-picker"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-auto px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           />
         </div>
 
@@ -528,9 +524,6 @@ export default function ManagerDashboard() {
             pendingCount={stats.totalStaff - stats.completedReports}
           />
         </div>
-
-        {/* Filters */}
-        <StaffFilters filters={filters} onFiltersChange={setFilters} />
 
         {/* Staff Status Grid */}
         <div className="mt-6">
