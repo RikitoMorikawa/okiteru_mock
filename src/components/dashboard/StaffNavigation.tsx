@@ -25,12 +25,12 @@ const navigationItems = [
   //   icon: "📝",
   //   description: "業務報告書作成",
   // },
-  // {
-  //   name: "シフト管理",
-  //   href: "/dashboard/shifts",
-  //   icon: "📅",
-  //   description: "シフト予定提出",
-  // },
+  {
+    name: "シフト管理",
+    href: "/dashboard/shifts",
+    icon: "📅",
+    description: "シフト予定提出",
+  },
   {
     name: "プロフィール",
     href: "/profile",
