@@ -450,17 +450,11 @@ function AttendanceContent() {
                         <span className="text-2xl mr-3">🎉</span>
                         <div>
                           <div>
-                            <h3 className="font-semibold text-green-900">本日のタスク完了</h3>
+                            <h3 className="font-semibold text-green-900">報告完了</h3>
+                            <p className="text-sm text-green-700">お疲れ様でした！</p>
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setShowNewDayConfirm(true)}
-                        disabled={isStartingNewDay}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isStartingNewDay ? "開始中..." : "新規開始"}
-                      </button>
                     </div>
                   </div>
                 )}
