@@ -89,20 +89,20 @@ export default function ShiftUserList() {
             <Link
               key={user.id}
               href={`/manager/shifts/${user.id}`}
-              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-200"
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-3 border border-gray-200"
             >
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 font-semibold text-lg">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-base text-blue-600 font-semibold">
                     {user.name.charAt(0)}
                   </span>
                 </div>
-                <div className="ml-4 flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-sm text-gray-500">{user.email}</p>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-base font-semibold text-gray-900">{user.name}</h3>
+                  <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 <svg
-                  className="w-5 h-5 text-gray-400"
+                  className="w-4 h-4 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
