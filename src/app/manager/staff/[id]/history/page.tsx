@@ -22,7 +22,7 @@ export default function StaffHistoryPage() {
   const [historyData, setHistoryData] = useState<StaffHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTabs, setActiveTabs] = useState<Record<string, "wake_up" | "departure" | "arrival" | "report">>({});
+  const [activeTabs, setActiveTabs] = useState<Record<string, "wake_up" | "departure" | "arrival" | "appearance_photo" | "route_photo" | "report">>({});
   const dateRange = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30日前
     endDate: new Date().toISOString().split("T")[0], // 今日
@@ -125,7 +125,7 @@ export default function StaffHistoryPage() {
     return { completed, total: tasks.length, percentage: Math.round((completed / tasks.length) * 100) };
   };
 
-  const setActiveTab = (sessionId: string, tab: "wake_up" | "departure" | "arrival" | "report") => {
+  const setActiveTab = (sessionId: string, tab: "wake_up" | "departure" | "arrival" | "appearance_photo" | "route_photo" | "report") => {
     setActiveTabs((prev) => ({
       ...prev,
       [sessionId]: tab,
@@ -315,6 +315,26 @@ export default function StaffHistoryPage() {
                                   >
                                     到着
                                   </button>
+                                  <button
+                                    onClick={() => setActiveTab(session.id, "appearance_photo")}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                      getActiveTab(session.id, hasAttendance, hasReport) === "appearance_photo"
+                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    身だしなみ写真
+                                  </button>
+                                  <button
+                                    onClick={() => setActiveTab(session.id, "route_photo")}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                      getActiveTab(session.id, hasAttendance, hasReport) === "route_photo"
+                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    経路写真
+                                  </button>
                                 </>
                               )}
                               {/* 日報が実際に存在し、かつIDが有効な場合のみタブを表示 */}
@@ -359,7 +379,6 @@ export default function StaffHistoryPage() {
                                 <InfoItem label="出発時間" value={formatTime(session.attendanceRecord.departure_time)} />
                                 <InfoItem label="出発場所" value={session.attendanceRecord.departure_location} />
                                 <InfoItem label="備考" value={session.attendanceRecord.departure_notes} />
-                                <ImageItem label="経路写真" url={session.attendanceRecord.route_photo_url} />
                               </div>
                             )}
 
@@ -369,7 +388,18 @@ export default function StaffHistoryPage() {
                                 <InfoItem label="到着場所" value={session.attendanceRecord.arrival_location} />
                                 <LocationItem gpsLocation={session.attendanceRecord.arrival_gps_location} />
                                 <InfoItem label="備考" value={session.attendanceRecord.arrival_notes} />
+                              </div>
+                            )}
+
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "appearance_photo" && hasAttendance && (
+                              <div className="space-y-2">
                                 <ImageItem label="身だしなみ写真" url={session.attendanceRecord.appearance_photo_url} />
+                              </div>
+                            )}
+
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "route_photo" && hasAttendance && (
+                              <div className="space-y-2">
+                                <ImageItem label="経路写真" url={session.attendanceRecord.route_photo_url} />
                               </div>
                             )}
 
