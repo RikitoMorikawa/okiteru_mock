@@ -87,10 +87,7 @@ export default function ManagerDashboard() {
       if (staffError) throw staffError;
 
       // Fetch staff availability for the selected date
-      const { data, error: availabilityError } = await supabase
-        .from("staff_availability")
-        .select("*, worksites(*)")
-        .eq("date", selectedDate);
+      const { data, error: availabilityError } = await supabase.from("staff_availability").select("*, worksites(*)").eq("date", selectedDate);
 
       if (availabilityError) throw availabilityError;
       const availabilities = data as StaffAvailability[];
@@ -141,34 +138,36 @@ export default function ManagerDashboard() {
       }
 
       // Combine data
-      const staffWithStatus: StaffWithStatus[] = ((staff as User[]) || []).map((staffMember) => {
-        const availability = availabilities.find((avail) => avail.staff_id === staffMember.id);
-        if (!availability) return null; // Skip staff not available on this date
+      const staffWithStatus: StaffWithStatus[] = ((staff as User[]) || [])
+        .map((staffMember) => {
+          const availability = availabilities.find((avail) => avail.staff_id === staffMember.id);
+          if (!availability) return null; // Skip staff not available on this date
 
-        const staffAttendanceRecords = ((attendanceRecords as AttendanceRecord[]) || [])
-          .filter((record) => record.staff_id === staffMember.id)
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          const staffAttendanceRecords = ((attendanceRecords as AttendanceRecord[]) || [])
+            .filter((record) => record.staff_id === staffMember.id)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        const todayAttendance = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status));
-        const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
-        const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
-        const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-        const hasPreviousDayReport = ((previousDayReports as DailyReport[]) || []).some((report) => report.staff_id === staffMember.id);
-        const lastLogin = lastLoginMap.get(staffMember.id);
+          const todayAttendance = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status));
+          const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
+          const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
+          const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
+          const hasPreviousDayReport = ((previousDayReports as DailyReport[]) || []).some((report) => report.staff_id === staffMember.id);
+          const lastLogin = lastLoginMap.get(staffMember.id);
 
-        return {
-          ...staffMember,
-          todayAttendance,
-          resetRecord,
-          todayReport,
-          availability, // Add availability info
-          activeAlerts: [],
-          lastLogin,
-          hasResetToday,
-          hasActiveRecord: !!todayAttendance,
-          hasPreviousDayReport,
-        };
-      }).filter(Boolean) as StaffWithStatus[];
+          return {
+            ...staffMember,
+            todayAttendance,
+            resetRecord,
+            todayReport,
+            availability, // Add availability info
+            activeAlerts: [],
+            lastLogin,
+            hasResetToday,
+            hasActiveRecord: !!todayAttendance,
+            hasPreviousDayReport,
+          };
+        })
+        .filter(Boolean) as StaffWithStatus[];
 
       setStaffList(staffWithStatus);
     } catch (error) {
@@ -185,9 +184,7 @@ export default function ManagerDashboard() {
     // Apply search filter
     if (filters.search) {
       filtered = filtered.filter(
-        (staff) =>
-          staff.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          staff.email.toLowerCase().includes(filters.search.toLowerCase())
+        (staff) => staff.name.toLowerCase().includes(filters.search.toLowerCase()) || staff.email.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
@@ -239,21 +236,13 @@ export default function ManagerDashboard() {
   const getStats = () => {
     const totalStaff = staffList.length;
 
-    const preparingStaff = staffList.filter(
-      (staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time
-    ).length;
+    const preparingStaff = staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time).length;
 
-    const activeToday = staffList.filter(
-      (staff) => staff.todayAttendance?.arrival_time && !staff.todayReport
-    ).length;
+    const activeToday = staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport).length;
 
-    const completedReports = staffList.filter(
-      (staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
-    ).length;
+    const completedReports = staffList.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)).length;
 
-    const previousDayReportCount = staffList.filter(
-      (staff) => staff.hasPreviousDayReport
-    ).length;
+    const previousDayReportCount = staffList.filter((staff) => staff.hasPreviousDayReport).length;
 
     return {
       totalStaff,
@@ -270,39 +259,23 @@ export default function ManagerDashboard() {
     switch (type) {
       case "preparing":
         return {
-          completed: staffList.filter(
-            (staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time
-          ),
-          pending: staffList.filter(
-            (staff) => !staff.todayAttendance?.wake_up_time
-          ),
+          completed: staffList.filter((staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time),
+          pending: staffList.filter((staff) => !staff.todayAttendance?.wake_up_time),
         };
       case "active":
         return {
-          completed: staffList.filter(
-            (staff) => staff.todayAttendance?.arrival_time && !staff.todayReport
-          ),
-          pending: staffList.filter(
-            (staff) => !staff.todayAttendance?.arrival_time
-          ),
+          completed: staffList.filter((staff) => staff.todayAttendance?.arrival_time && !staff.todayReport),
+          pending: staffList.filter((staff) => !staff.todayAttendance?.arrival_time),
         };
       case "completed":
         return {
-          completed: staffList.filter(
-            (staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
-          ),
-          pending: staffList.filter(
-            (staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
-          ),
+          completed: staffList.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
+          pending: staffList.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
         };
       case "previousDayReport":
         return {
-          completed: staffList.filter(
-            (staff) => staff.hasPreviousDayReport
-          ),
-          pending: staffList.filter(
-            (staff) => !staff.hasPreviousDayReport
-          ),
+          completed: staffList.filter((staff) => staff.hasPreviousDayReport),
+          pending: staffList.filter((staff) => !staff.hasPreviousDayReport),
         };
       default:
         return { completed: [], pending: [] };
@@ -321,21 +294,9 @@ export default function ManagerDashboard() {
     // Subscribe to real-time updates
     const channel = supabase
       .channel(`manager-dashboard-${selectedDate}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "attendance_records", filter: `date=eq.${selectedDate}` },
-        () => fetchStaffData()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "daily_reports", filter: `date=eq.${selectedDate}` },
-        () => fetchStaffData()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "staff_availability", filter: `date=eq.${selectedDate}` },
-        () => fetchStaffData()
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records", filter: `date=eq.${selectedDate}` }, () => fetchStaffData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports", filter: `date=eq.${selectedDate}` }, () => fetchStaffData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_availability", filter: `date=eq.${selectedDate}` }, () => fetchStaffData())
       .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => fetchStaffData())
       .subscribe();
 
@@ -475,13 +436,13 @@ export default function ManagerDashboard() {
               onClick={() => setSelectedDate(getPreviousWeekJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              &lt;&lt; 1週間前
+              1週間前
             </button>
             <button
               onClick={() => setSelectedDate(getPreviousDayJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              &lt; 前日
+              前日
             </button>
             <input
               type="date"
@@ -494,13 +455,13 @@ export default function ManagerDashboard() {
               onClick={() => setSelectedDate(getNextDayJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors"
             >
-              明日 &gt;
+              明日
             </button>
             <button
               onClick={() => setSelectedDate(getNextWeekJST(selectedDate))}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             >
-              1週間後 &gt;&gt;
+              1週間後
             </button>
           </div>
         </div>
