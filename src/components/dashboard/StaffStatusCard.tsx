@@ -112,72 +112,50 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border-l-4 ${borderColors[color as keyof typeof borderColors]} hover:shadow-md transition-shadow`}>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-600">{staff.name.charAt(0)}</span>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center flex-grow">
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-gray-600">{staff.name.charAt(0)}</span>
             </div>
-            <div className="ml-3 flex-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm mr-4 font-medium text-gray-900">{staff.name}</h3>
-                </div>
+            <div className="ml-2 flex-grow">
+              <h3 className="text-xs font-medium text-gray-900 truncate">{staff.name}</h3>
+              <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                <div
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    color === "green"
+                      ? "bg-green-500"
+                      : color === "yellow"
+                      ? "bg-yellow-500"
+                      : color === "red"
+                      ? "bg-red-500"
+                      : color === "purple"
+                      ? "bg-purple-500"
+                      : "bg-gray-400"
+                  }`}
+                  style={{
+                    width: `${
+                      (staff.hasResetToday && !staff.hasActiveRecord) || staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
+                        ? 100
+                        : percentage
+                    }%`,
+                  }}
+                ></div>
               </div>
             </div>
           </div>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]}`}>{label}</div>
-        </div>
-
-        {/* Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>本日の進捗</span>
-            <span>
-              {staff.hasResetToday && !staff.hasActiveRecord
-                ? "完了"
-                : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
-                ? "完了"
-                : `${completed}/${total}`}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all duration-300 ${
-                color === "green"
-                  ? "bg-green-500"
-                  : color === "yellow"
-                  ? "bg-yellow-500"
-                  : color === "red"
-                  ? "bg-red-500"
-                  : color === "purple"
-                  ? "bg-purple-500"
-                  : "bg-gray-400"
-              }`}
-              style={{
-                width: `${
-                  (staff.hasResetToday && !staff.hasActiveRecord) || staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
-                    ? 100
-                    : percentage
-                }%`,
-              }}
-            ></div>
+          <div className="flex items-center">
+            <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex-shrink-0 ml-1"
+            >
+              <svg className={`w-4 h-4 transform transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
         </div>
-
-        {/* Expand/Collapse Button */}
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center"
-        >
-          {expanded ? "詳細を閉じる" : "詳細を表示"}
-          <svg className={`w-4 h-4 ml-1 transform transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-
-        {/* Expanded Details */}
         {expanded && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             {/* Worksite Info */}
