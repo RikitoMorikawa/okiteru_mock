@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api-client";
 
 interface ArrivalFormProps {
   onSuccess: () => void;
+}
+
+interface Worksite {
+  id: string;
+  name: string;
+  address: string | null;
+  description: string | null;
 }
 
 export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
@@ -15,12 +22,38 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
     return now.toTimeString().slice(0, 5); // HH:MM format
   });
   const [location, setLocation] = useState("");
+  const [worksite, setWorksite] = useState<Worksite | null>(null);
+  const [loadingWorksite, setLoadingWorksite] = useState(true);
   const [gpsLocation, setGpsLocation] = useState("");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [gpsObtained, setGpsObtained] = useState(false);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Fetch today's worksite on mount
+  useEffect(() => {
+    const fetchTodayWorksite = async () => {
+      try {
+        setLoadingWorksite(true);
+        const response = await api.get("/api/attendance/today-worksite");
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.hasWorksite && data.worksite) {
+            setWorksite(data.worksite);
+            setLocation(data.worksite.name);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching today's worksite:", error);
+      } finally {
+        setLoadingWorksite(false);
+      }
+    };
+
+    fetchTodayWorksite();
+  }, []);
 
   const getCurrentLocation = () => {
     setIsGettingLocation(true);
@@ -171,16 +204,38 @@ export default function ArrivalForm({ onSuccess }: ArrivalFormProps) {
           <label htmlFor="location" className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
             到着場所 <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
-            placeholder="例：本社オフィス、顧客先、現場など"
-            required
-            maxLength={100}
-          />
+          {loadingWorksite ? (
+            <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-xs sm:text-sm text-gray-500">
+              読み込み中...
+            </div>
+          ) : worksite ? (
+            <div>
+              <div className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-blue-50 text-xs sm:text-sm">
+                <div className="font-medium text-gray-900">{worksite.name}</div>
+                {worksite.address && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    📍 {worksite.address}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <input
+                type="text"
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm"
+                placeholder="例：本社オフィス、顧客先、現場など"
+                required
+                maxLength={100}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                ⚠️ 本日の勤務予定現場が設定されていません。手動で入力してください。
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Notes */}
