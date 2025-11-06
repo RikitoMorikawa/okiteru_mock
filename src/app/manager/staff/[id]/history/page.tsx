@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { User, AttendanceRecord, DailyReport } from "@/types/database";
+import { parseGPSLocation, getAddressFromCoordinates } from "@/utils/locationUtils";
 
 interface StaffHistoryData {
   user: User;
@@ -21,7 +22,7 @@ export default function StaffHistoryPage() {
   const [historyData, setHistoryData] = useState<StaffHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTabs, setActiveTabs] = useState<Record<string, "attendance" | "report">>({});
+  const [activeTabs, setActiveTabs] = useState<Record<string, "wake_up" | "departure" | "arrival" | "report">>({});
   const dateRange = {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30日前
     endDate: new Date().toISOString().split("T")[0], // 今日
@@ -124,7 +125,7 @@ export default function StaffHistoryPage() {
     return { completed, total: tasks.length, percentage: Math.round((completed / tasks.length) * 100) };
   };
 
-  const setActiveTab = (sessionId: string, tab: "attendance" | "report") => {
+  const setActiveTab = (sessionId: string, tab: "wake_up" | "departure" | "arrival" | "report") => {
     setActiveTabs((prev) => ({
       ...prev,
       [sessionId]: tab,
@@ -135,8 +136,8 @@ export default function StaffHistoryPage() {
     if (activeTabs[sessionId]) {
       return activeTabs[sessionId];
     }
-    // Default to attendance if available, otherwise report (only if report actually exists)
-    return hasAttendance ? "attendance" : hasReport ? "report" : "attendance";
+    // Default to wake_up if attendance is available, otherwise report
+    return hasAttendance ? "wake_up" : hasReport ? "report" : "wake_up";
   };
 
   if (loading) {
@@ -283,16 +284,38 @@ export default function StaffHistoryPage() {
                           {(hasAttendance || hasReport) && (
                             <div className="flex border-b border-gray-200">
                               {hasAttendance && (
-                                <button
-                                  onClick={() => setActiveTab(session.id, "attendance")}
-                                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    getActiveTab(session.id, hasAttendance, hasReport) === "attendance"
-                                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
-                                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                  }`}
-                                >
-                                  勤怠記録
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => setActiveTab(session.id, "wake_up")}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                      getActiveTab(session.id, hasAttendance, hasReport) === "wake_up"
+                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    起床
+                                  </button>
+                                  <button
+                                    onClick={() => setActiveTab(session.id, "departure")}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                      getActiveTab(session.id, hasAttendance, hasReport) === "departure"
+                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    出発
+                                  </button>
+                                  <button
+                                    onClick={() => setActiveTab(session.id, "arrival")}
+                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                      getActiveTab(session.id, hasAttendance, hasReport) === "arrival"
+                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
+                                  >
+                                    到着
+                                  </button>
+                                </>
                               )}
                               {/* 日報が実際に存在し、かつIDが有効な場合のみタブを表示 */}
                               {hasReport && (
@@ -323,49 +346,30 @@ export default function StaffHistoryPage() {
 
                           {/* Tab Content */}
                           <div className="p-4">
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "attendance" && hasAttendance && (
-                              <div>
-                                {/* Time Display */}
-                                <div className="grid grid-cols-3 gap-4 mb-4">
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-500 mb-1">起床</div>
-                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.wake_up_time)}</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-500 mb-1">出発</div>
-                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.departure_time)}</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-500 mb-1">到着</div>
-                                    <div className="text-sm font-medium">{formatTime(session.attendanceRecord.arrival_time)}</div>
-                                  </div>
-                                </div>
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "wake_up" && hasAttendance && (
+                              <div className="space-y-2">
+                                <InfoItem label="起床時間" value={formatTime(session.attendanceRecord.wake_up_time)} />
+                                <InfoItem label="起床場所" value={session.attendanceRecord.wake_up_location} />
+                                <InfoItem label="備考" value={session.attendanceRecord.wake_up_notes} />
+                              </div>
+                            )}
 
-                                {/* Notes */}
-                                {(session.attendanceRecord.wake_up_notes ||
-                                  session.attendanceRecord.departure_notes ||
-                                  session.attendanceRecord.arrival_notes) && (
-                                  <div className="pt-4 border-t border-gray-100">
-                                    <h6 className="text-sm font-medium text-gray-700 mb-2">メモ</h6>
-                                    <div className="space-y-2 text-sm text-gray-600">
-                                      {session.attendanceRecord.wake_up_notes && (
-                                        <div>
-                                          <span className="font-medium">起床:</span> {session.attendanceRecord.wake_up_notes}
-                                        </div>
-                                      )}
-                                      {session.attendanceRecord.departure_notes && (
-                                        <div>
-                                          <span className="font-medium">出発:</span> {session.attendanceRecord.departure_notes}
-                                        </div>
-                                      )}
-                                      {session.attendanceRecord.arrival_notes && (
-                                        <div>
-                                          <span className="font-medium">到着:</span> {session.attendanceRecord.arrival_notes}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "departure" && hasAttendance && (
+                              <div className="space-y-2">
+                                <InfoItem label="出発時間" value={formatTime(session.attendanceRecord.departure_time)} />
+                                <InfoItem label="出発場所" value={session.attendanceRecord.departure_location} />
+                                <InfoItem label="備考" value={session.attendanceRecord.departure_notes} />
+                                <ImageItem label="経路写真" url={session.attendanceRecord.route_photo_url} />
+                              </div>
+                            )}
+
+                            {getActiveTab(session.id, hasAttendance, hasReport) === "arrival" && hasAttendance && (
+                              <div className="space-y-2">
+                                <InfoItem label="到着時間" value={formatTime(session.attendanceRecord.arrival_time)} />
+                                <InfoItem label="到着場所" value={session.attendanceRecord.arrival_location} />
+                                <LocationItem gpsLocation={session.attendanceRecord.arrival_gps_location} />
+                                <InfoItem label="備考" value={session.attendanceRecord.arrival_notes} />
+                                <ImageItem label="身だしなみ写真" url={session.attendanceRecord.appearance_photo_url} />
                               </div>
                             )}
 
@@ -413,3 +417,91 @@ export default function StaffHistoryPage() {
     </div>
   );
 }
+
+// Helper Components
+const InfoItem = ({ label, value }: { label: string; value?: string | null }) => {
+  if (!value) return null;
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700">{label}</p>
+      <p className="text-sm text-gray-600">{value}</p>
+    </div>
+  );
+};
+
+const ImageItem = ({ label, url }: { label: string; url?: string | null }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (url) {
+      if (url.startsWith("http")) {
+        setImageUrl(url);
+      } else {
+        const { data } = supabase.storage.from("photos").getPublicUrl(url);
+        setImageUrl(data.publicUrl);
+      }
+    }
+  }, [url]);
+
+  if (!imageUrl) {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
+      <img
+        src={imageUrl}
+        alt={label}
+        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => setSelectedImage(imageUrl)}
+      />
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+          <img src={selectedImage} alt="拡大表示" className="max-w-full max-h-full object-contain rounded-lg" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const LocationItem = ({ gpsLocation }: { gpsLocation?: string | null }) => {
+  const [address, setAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (gpsLocation) {
+        const gpsData = parseGPSLocation(gpsLocation);
+        if (gpsData) {
+          try {
+            const addr = await getAddressFromCoordinates(gpsData.latitude, gpsData.longitude);
+            setAddress(addr);
+          } catch (error) {
+            console.error("Error getting address:", error);
+            setAddress("住所の取得に失敗しました");
+          }
+        }
+      }
+    };
+    fetchAddress();
+  }, [gpsLocation]);
+
+  if (!gpsLocation) return null;
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700">GPS情報</p>
+      <p className="text-sm text-gray-600">{gpsLocation}</p>
+      {address && <p className="text-sm text-gray-600 mt-1">推定住所: {address}</p>}
+      <a
+        href={`https://www.google.com/maps?q=${gpsLocation}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors mt-2"
+      >
+        Google Mapsで確認
+      </a>
+    </div>
+  );
+};
