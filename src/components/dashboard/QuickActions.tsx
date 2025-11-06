@@ -356,17 +356,17 @@ export default function QuickActions({ attendanceStatus, previousDayReportDate, 
     <div className="mb-6">
       {/* Next Action Card */}
       {nextAction && (
-        <div className={`rounded-lg border-2 p-4 mb-4 ${getPriorityColor(nextAction.priority)}`}>
+        <div className={`rounded-lg border-2 p-3 mb-4 ${getPriorityColor(nextAction.priority)}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <span className="text-2xl mr-3">{nextAction.icon}</span>
+              <span className="text-xl mr-2">{nextAction.icon}</span>
               <div>
-                <h3 className="font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
-                <p className="text-sm text-gray-600">{nextAction.description}</p>
+                <h3 className="text-sm font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
+                <p className="text-xs text-gray-600">{nextAction.description}</p>
               </div>
             </div>
             {nextAction.href && (
-              <Link href={nextAction.href} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+              <Link href={nextAction.href} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
                 開始
               </Link>
             )}

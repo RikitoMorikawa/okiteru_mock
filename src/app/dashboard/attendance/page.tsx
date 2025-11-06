@@ -420,19 +420,19 @@ function AttendanceContent() {
                   (() => {
                     const nextAction = getNextAction();
                     return nextAction ? (
-                      <div className={`rounded-lg border-2 p-4 ${getPriorityColor(nextAction.priority)}`}>
+                      <div className={`rounded-lg border-2 p-3 ${getPriorityColor(nextAction.priority)}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            <span className="text-2xl mr-3">{nextAction.icon}</span>
+                            <span className="text-xl mr-2">{nextAction.icon}</span>
                             <div>
-                              <h3 className="font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
-                              {nextAction.description && <p className="text-sm text-gray-600 mt-1">{nextAction.description}</p>}
+                              <h3 className="text-sm font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
+                              {nextAction.description && <p className="text-xs text-gray-600 mt-0.5">{nextAction.description}</p>}
                             </div>
                           </div>
                           {nextAction.action && (
                             <button
                               onClick={() => setActiveAction(nextAction.action as AttendanceAction)}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
                             >
                               開始
                             </button>
@@ -482,7 +482,7 @@ function AttendanceContent() {
                       <div className="flex items-center">
                         <span className="text-2xl mr-3">🎉</span>
                         <div>
-                          <h3 className="font-semibold text-green-900">本日のタスク完了</h3>
+                          <h3 className="font-semibold text-green-900">報告完了</h3>
                           <p className="text-sm text-green-700">お疲れ様でした！</p>
                         </div>
                       </div>
