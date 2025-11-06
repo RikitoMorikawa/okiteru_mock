@@ -4,13 +4,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { StaffAvailability, Worksite, Database } from "@/types/database";
 
+import { getTodayJST } from "@/utils/dateUtils";
+
 interface ShiftMonthlyCalendarProps {
   userId: string;
   userName: string;
 }
 
 export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date(getTodayJST()));
   const [availabilities, setAvailabilities] = useState<StaffAvailability[]>([]);
   const [worksites, setWorksites] = useState<Worksite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +27,8 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
 
-      const startDate = new Date(year, month, 1).toISOString().split("T")[0];
-      const endDate = new Date(year, month + 1, 0).toISOString().split("T")[0];
+      const startDate = new Date(year, month, 1).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+      const endDate = new Date(year, month + 1, 0).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 
       const { data, error } = await supabase
         .from("staff_availability")
@@ -89,7 +91,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   // Check if a date is available and return availability info
   const getAvailabilityStatus = (date: Date | null): { isAvailable: boolean; worksiteId?: string | null } => {
     if (!date) return { isAvailable: false };
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const availability = availabilities.find((avail) => avail.date === dateStr);
     return {
       isAvailable: !!availability,
@@ -111,7 +113,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     if (!date) return;
 
     // 既存の出社可能日データがあれば、その現場IDを設定
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const existing = availabilities.find((avail) => avail.date === dateStr);
     setSelectedWorksiteId(existing?.worksite_id || "");
 
@@ -123,7 +125,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   const handleToggleAvailability = async (makeAvailable: boolean) => {
     if (!selectedDate) return;
 
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = selectedDate.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const existing = availabilities.find((avail) => avail.date === dateStr);
 
     try {
@@ -171,7 +173,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   };
 
   const calendarDays = getCalendarDays();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayJST();
 
   return (
     <div>
@@ -214,7 +216,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
         {/* Calendar Days */}
         <div className="grid grid-cols-7">
           {calendarDays.map((date, index) => {
-            const dateStr = date?.toISOString().split("T")[0];
+            const dateStr = date?.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
             const isToday = dateStr === today;
             const { isAvailable, worksiteId } = getAvailabilityStatus(date);
             const dayOfWeek = date?.getDay();
@@ -291,7 +293,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
+                {selectedDate.toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "long", day: "numeric" })}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
