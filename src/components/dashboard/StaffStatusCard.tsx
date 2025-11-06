@@ -112,7 +112,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border-l-4 ${borderColors[color as keyof typeof borderColors]} hover:shadow-md transition-shadow`}>
-      <div className="p-4">
+      <div className="p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center flex-grow">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
@@ -125,9 +125,9 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
                   <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
                 )}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+              <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                 <div
-                  className={`h-1 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
                     color === "green"
                       ? "bg-green-500"
                       : color === "yellow"
