@@ -114,8 +114,6 @@ export default function StaffFilters({ filters, onFiltersChange }: StaffFiltersP
               }}
             >
               <option value="all">すべて</option>
-              <option value="active_staff">活動予定のスタッフ</option>
-              <option value="inactive_staff">非活動のスタッフ</option>
             </select>
           </div>
         </div>

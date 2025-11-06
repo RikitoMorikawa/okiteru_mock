@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
-import { User, AttendanceRecord, DailyReport, FilterOptions } from "@/types/database";
+import { User, AttendanceRecord, DailyReport, FilterOptions, StaffAvailability } from "@/types/database";
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
 import StatsDetailModal from "./StatsDetailModal";
@@ -15,10 +15,10 @@ interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
-  previousDayReport?: any; // 前日報告データ
+  availability: StaffAvailability; // staff_availability record
   activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
-  hasResetToday?: boolean; // リセットされたかどうか
+  hasResetToday?: boolean; // リセットされたかどうか;
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
 }
 
@@ -28,17 +28,18 @@ export default function ManagerDashboard() {
   const [staffList, setStaffList] = useState<StaffWithStatus[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<StaffWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(getTodayJST());
   const [filters, setFilters] = useState<FilterOptions>({
     search: "",
-    status: "all",
-    sortBy: "status",
+    status: "all", // This will be simplified
+    sortBy: "name", // Default sort
     dayView: "today",
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [statsModal, setStatsModal] = useState<{
     isOpen: boolean;
-    type: "previous" | "preparing" | "active" | "completed" | null;
+    type: "preparing" | "active" | "completed" | null;
   }>({ isOpen: false, type: null });
 
   // Update current time every minute
@@ -75,40 +76,37 @@ export default function ManagerDashboard() {
     };
   }, [showProfileMenu]);
 
-  // Fetch staff data
+  // Fetch staff data based on selected date
   const fetchStaffData = async () => {
     try {
       setLoading(true);
-      const today = getTodayJST();
 
       // Fetch all staff members
       const { data: staff, error: staffError } = await supabase.from("users").select("*").eq("role", "staff").order("name");
 
       if (staffError) throw staffError;
 
-      // Fetch today's attendance records
-      const { data: attendanceRecords, error: attendanceError } = await supabase.from("attendance_records").select("*").eq("date", today);
+      // Fetch staff availability for the selected date
+      const { data, error: availabilityError } = await supabase
+        .from("staff_availability")
+        .select("*, worksites(*)")
+        .eq("date", selectedDate);
 
+      if (availabilityError) throw availabilityError;
+      const availabilities = data as StaffAvailability[];
+
+      if (availabilityError) throw availabilityError;
+
+      // Fetch attendance and report data for the selected date
+      const { data: attendanceRecords, error: attendanceError } = await supabase.from("attendance_records").select("*").eq("date", selectedDate);
       if (attendanceError) throw attendanceError;
 
-      // Fetch today's daily reports (submitted or archived - any report counts as completion)
       const { data: dailyReports, error: reportsError } = await supabase
         .from("daily_reports")
         .select("*")
-        .eq("date", today)
+        .eq("date", selectedDate)
         .in("status", ["submitted", "archived"]);
-
       if (reportsError) throw reportsError;
-
-      // 日本時間での今日の範囲を計算
-      const todayStart = new Date(`${today}T00:00:00+09:00`).toISOString();
-      const todayEnd = new Date(`${today}T23:59:59+09:00`).toISOString();
-
-      // Fetch previous day reports (report_date < today)
-      // 昨日以前の日付の前日報告を取得
-      const { data: previousDayReports, error: previousDayError } = await supabase.from("previous_day_reports").select("*").lt("report_date", today);
-
-      if (previousDayError) throw previousDayError;
 
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
@@ -135,41 +133,31 @@ export default function ManagerDashboard() {
 
       // Combine data
       const staffWithStatus: StaffWithStatus[] = ((staff as User[]) || []).map((staffMember) => {
-        // Get the most recent active attendance record for this staff member
+        const availability = availabilities.find((avail) => avail.staff_id === staffMember.id);
+        if (!availability) return null; // Skip staff not available on this date
+
         const staffAttendanceRecords = ((attendanceRecords as AttendanceRecord[]) || [])
           .filter((record) => record.staff_id === staffMember.id)
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-        // Find the most recent attendance record (including reset records)
-        // Get the most recent active attendance record (exclude archived, complete, and reset)
-        const todayAttendance = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status)) || undefined;
-
-        // Check if user has been reset today (has reset record but no active record)
+        const todayAttendance = staffAttendanceRecords.find((record) => ["pending", "partial", "active"].includes(record.status));
         const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
-        const hasActiveRecord = staffAttendanceRecords.some((record) => ["pending", "partial", "active"].includes(record.status));
-
-        // Get reset record details if exists
         const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
-
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
-
-        // 前日報告の検索: report_dateが昨日以前の前日報告
-        const previousDayReport = ((previousDayReports as any[]) || []).find((report) => report.user_id === staffMember.id);
-
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
           ...staffMember,
-          todayAttendance: hasActiveRecord ? todayAttendance : undefined, // リセットのみの場合はundefined
-          resetRecord, // リセットレコードの詳細を追加
+          todayAttendance,
+          resetRecord,
           todayReport,
-          previousDayReport,
-          activeAlerts: [], // Keep for compatibility but empty
+          availability, // Add availability info
+          activeAlerts: [],
           lastLogin,
           hasResetToday,
-          hasActiveRecord,
+          hasActiveRecord: !!todayAttendance,
         };
-      });
+      }).filter(Boolean) as StaffWithStatus[];
 
       setStaffList(staffWithStatus);
     } catch (error) {
@@ -186,69 +174,23 @@ export default function ManagerDashboard() {
     // Apply search filter
     if (filters.search) {
       filtered = filtered.filter(
-        (staff) => staff.name.toLowerCase().includes(filters.search.toLowerCase()) || staff.email.toLowerCase().includes(filters.search.toLowerCase())
+        (staff) =>
+          staff.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+          staff.email.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
-    // Apply status filter
-    if (filters.status !== "all") {
-      filtered = filtered.filter((staff) => {
-        switch (filters.status) {
-          case "active_staff":
-            // 活動予定のスタッフ: activeがtrueのスタッフ
-            return staff.active;
-          case "inactive_staff":
-            // 非活動のスタッフ: activeがfalseのスタッフ
-            return !staff.active;
-          case "scheduled":
-            // 活動予定: 起床して到着報告がまだないユーザー
-            return staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time;
-          case "preparing":
-            // 準備中: 何も活動していないユーザー（リセットされたユーザーは除く）
-            return !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday;
-          case "active":
-            // 活動中: 到着報告完了したが日報未提出のユーザー
-            return staff.todayAttendance?.arrival_time && !staff.todayReport;
-          case "completed":
-            // 完了: 当日の日付で日報が1つでもあるユーザー（提出済み・アーカイブ済み含む）+ リセットされたユーザー
-            return staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord);
-          case "inactive":
-            // 未活動: 何も活動していないユーザー（リセットされたユーザーは除く）- 準備中と同じ
-            return !staff.todayAttendance && !staff.todayReport && !staff.hasResetToday;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Apply sorting - 活動中ユーザーを最初に、その中で進捗が遅い順
+    // Simplified sorting
     filtered.sort((a, b) => {
-      // まず活動ステータスで分ける
-      const aActive = a.active;
-      const bActive = b.active;
-
-      if (aActive !== bActive) {
-        return bActive ? 1 : -1; // active: true が先に来る
-      }
-
-      // 同じ活動ステータス内では、選択されたソート方法に従う
       switch (filters.sortBy) {
         case "name":
           return a.name.localeCompare(b.name);
         case "status":
-          // 当日モード: 進捗スコアでソート
           const aScore = getActivityScore(a);
           const bScore = getActivityScore(b);
           return aScore - bScore;
-        case "lastActivity":
-          const aTime = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
-          const bTime = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
-          return bTime - aTime;
         default:
-          // 当日モード: デフォルトは進捗が遅い順
-          const defaultAScore = getActivityScore(a);
-          const defaultBScore = getActivityScore(b);
-          return defaultAScore - defaultBScore;
+          return a.name.localeCompare(b.name);
       }
     });
 
@@ -285,110 +227,57 @@ export default function ManagerDashboard() {
   // Get dashboard statistics
   const getStats = () => {
     const totalStaff = staffList.length;
-    const activeStaffCount = staffList.filter((staff) => staff.active).length; // 当日モード: 当日activeなスタッフ数
 
-    // 前日報告: 昨日前日報告した人数のみ
-    const filtered = staffList.filter((staff) => staff.active && staff.previousDayReport);
-    const activeStaffWithPreviousDayReport = filtered.length;
-
-    // 準備中
     const preparingStaff = staffList.filter(
-      (staff) =>
-        staff.active &&
-        ((staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
-          staff.todayAttendance?.departure_time ||
-          staff.todayAttendance?.arrival_time ||
-          staff.todayReport ||
-          (staff.hasResetToday && !staff.hasActiveRecord))
+      (staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time
     ).length;
 
-    // 活動中
     const activeToday = staffList.filter(
-      (staff) =>
-        staff.active &&
-        ((staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))
+      (staff) => staff.todayAttendance?.arrival_time && !staff.todayReport
     ).length;
 
-    // 完了報告
-    const completedReports = staffList.filter((staff) => staff.active && (staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord))).length;
-
-    const activeStaff = staffList.filter((staff) => staff.todayAttendance || staff.todayReport || staff.hasResetToday);
-
-    // Debug log
-    console.log("[DEBUG] Stats calculation:", {
-      totalStaff,
-      activeStaffCount,
-      activeStaffWithPreviousDayReport,
-      preparingStaff,
-      activeToday,
-      completedReports,
-      staffWithReports: staffList.filter((staff) => staff.todayReport).map((s) => s.name),
-      staffWithReset: staffList.filter((staff) => staff.hasResetToday && !staff.hasActiveRecord).map((s) => s.name),
-      preparingStaffDetails: staffList
-        .filter((staff) => staff.active && staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time)
-        .map((s) => s.name),
-      activeTodayDetails: staffList.filter((staff) => staff.active && staff.todayAttendance?.arrival_time && !staff.todayReport).map((s) => s.name),
-    });
+    const completedReports = staffList.filter(
+      (staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+    ).length;
 
     return {
       totalStaff,
-      activeStaffCount,
-      activeStaffWithPreviousDayReport,
       preparingStaff,
       activeToday,
       completedReports,
-      activeStaff: activeStaff.length,
       activityRate: totalStaff > 0 ? Math.round((activeToday / totalStaff) * 100) : 0,
     };
   };
 
   // Get detailed stats for modal
-  const getStatsDetail = (type: "previous" | "preparing" | "active" | "completed") => {
-    // 当日activeなスタッフのみ対象
-    const activeStaff = staffList.filter((staff) => staff.active);
-
+  const getStatsDetail = (type: "preparing" | "active" | "completed") => {
     switch (type) {
-      case "previous":
-        return {
-          // 当日モード: 昨日前日報告した人
-          completed: activeStaff.filter((staff) => staff.previousDayReport),
-          pending: activeStaff.filter((staff) => !staff.previousDayReport),
-        };
       case "preparing":
         return {
-          // 当日モード: 準備中の計算（起床報告済み）
-          completed: activeStaff.filter(
-            (staff) =>
-              (staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.departure_time) ||
-              staff.todayAttendance?.departure_time ||
-              staff.todayAttendance?.arrival_time ||
-              staff.todayReport ||
-              (staff.hasResetToday && !staff.hasActiveRecord)
+          completed: staffList.filter(
+            (staff) => staff.todayAttendance?.wake_up_time && !staff.todayAttendance?.arrival_time
           ),
-          pending: activeStaff.filter(
-            (staff) =>
-              !staff.todayAttendance?.wake_up_time &&
-              !staff.todayAttendance?.departure_time &&
-              !staff.todayAttendance?.arrival_time &&
-              !staff.todayReport &&
-              !(staff.hasResetToday && !staff.hasActiveRecord)
+          pending: staffList.filter(
+            (staff) => !staff.todayAttendance?.wake_up_time
           ),
         };
       case "active":
         return {
-          // 当日モード: 活動中の計算
-          completed: activeStaff.filter(
-            (staff) => (staff.todayAttendance?.arrival_time && !staff.todayReport) || staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+          completed: staffList.filter(
+            (staff) => staff.todayAttendance?.arrival_time && !staff.todayReport
           ),
-          pending: activeStaff.filter(
-            (staff) => !staff.todayAttendance?.arrival_time && !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+          pending: staffList.filter(
+            (staff) => !staff.todayAttendance?.arrival_time
           ),
         };
       case "completed":
         return {
-          // 当日モード: 完了報告の計算
-          completed: activeStaff.filter((staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)),
-          pending: activeStaff.filter((staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)),
+          completed: staffList.filter(
+            (staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
+          ),
+          pending: staffList.filter(
+            (staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
+          ),
         };
       default:
         return { completed: [], pending: [] };
@@ -396,7 +285,7 @@ export default function ManagerDashboard() {
   };
 
   // Handle stats card click
-  const handleStatsCardClick = (type: "previous" | "preparing" | "active" | "completed") => {
+  const handleStatsCardClick = (type: "preparing" | "active" | "completed") => {
     setStatsModal({ isOpen: true, type });
   };
 
@@ -405,41 +294,30 @@ export default function ManagerDashboard() {
     fetchStaffData();
 
     // Subscribe to real-time updates
-    const attendanceSubscription = supabase
-      .channel("attendance_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "attendance_records" }, () => {
-        fetchStaffData();
-      })
-      .subscribe();
-
-    const reportsSubscription = supabase
-      .channel("reports_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => {
-        fetchStaffData();
-      })
-      .subscribe();
-
-    const previousDaySubscription = supabase
-      .channel("previous_day_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "previous_day_reports" }, () => {
-        fetchStaffData();
-      })
-      .subscribe();
-
-    const usersSubscription = supabase
-      .channel("users_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => {
-        fetchStaffData();
-      })
+    const channel = supabase
+      .channel(`manager-dashboard-${selectedDate}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "attendance_records", filter: `date=eq.${selectedDate}` },
+        () => fetchStaffData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "daily_reports", filter: `date=eq.${selectedDate}` },
+        () => fetchStaffData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "staff_availability", filter: `date=eq.${selectedDate}` },
+        () => fetchStaffData()
+      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, () => fetchStaffData())
       .subscribe();
 
     return () => {
-      supabase.removeChannel(attendanceSubscription);
-      supabase.removeChannel(reportsSubscription);
-      supabase.removeChannel(previousDaySubscription);
-      supabase.removeChannel(usersSubscription);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [selectedDate]);
 
   const stats = getStats();
 
@@ -565,51 +443,61 @@ export default function ManagerDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Date Picker */}
+        <div className="mb-6">
+          <label htmlFor="date-picker" className="block text-sm font-medium text-gray-700 mb-2">
+            日付を選択
+          </label>
+          <input
+            type="date"
+            id="date-picker"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          />
+        </div>
+
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
           <StatCard
-            title="前日報告"
-            mobileTitle="前日報告"
-            value={stats.activeStaffWithPreviousDayReport}
-            subtitle={`/ ${stats.activeStaffCount}`}
-            icon=""
-            color="orange"
-            onClick={() => handleStatsCardClick("previous")}
-            isCompleted={stats.activeStaffWithPreviousDayReport === stats.activeStaffCount}
-            pendingCount={stats.activeStaffCount - stats.activeStaffWithPreviousDayReport}
+            title="出社予定"
+            mobileTitle="出社予定"
+            value={stats.totalStaff}
+            icon="📅"
+            color="blue"
           />
           <StatCard
             title="準備中"
             mobileTitle="準備中"
             value={stats.preparingStaff}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${stats.totalStaff}`}
             icon=""
             color="gray"
             onClick={() => handleStatsCardClick("preparing")}
-            isCompleted={stats.preparingStaff === stats.activeStaffCount}
-            pendingCount={stats.activeStaffCount - stats.preparingStaff}
+            isCompleted={stats.preparingStaff === stats.totalStaff}
+            pendingCount={stats.totalStaff - stats.preparingStaff}
           />
           <StatCard
             title="活動中"
             mobileTitle="活動中"
             value={stats.activeToday}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${stats.totalStaff}`}
             icon=""
             color="green"
             onClick={() => handleStatsCardClick("active")}
-            isCompleted={stats.activeToday === stats.activeStaffCount}
-            pendingCount={stats.activeStaffCount - stats.activeToday}
+            isCompleted={stats.activeToday === stats.totalStaff}
+            pendingCount={stats.totalStaff - stats.activeToday}
           />
           <StatCard
             title="完了報告"
             mobileTitle="完了"
             value={stats.completedReports}
-            subtitle={`/ ${stats.activeStaffCount}`}
+            subtitle={`/ ${stats.totalStaff}`}
             icon=""
             color="purple"
             onClick={() => handleStatsCardClick("completed")}
-            isCompleted={stats.completedReports === stats.activeStaffCount}
-            pendingCount={stats.activeStaffCount - stats.completedReports}
+            isCompleted={stats.completedReports === stats.totalStaff}
+            pendingCount={stats.totalStaff - stats.completedReports}
           />
         </div>
 
@@ -660,18 +548,16 @@ export default function ManagerDashboard() {
           isOpen={statsModal.isOpen}
           onClose={() => setStatsModal({ isOpen: false, type: null })}
           title={
-            statsModal.type === "previous"
-              ? "当日の前日報告"
-              : statsModal.type === "preparing"
+            statsModal.type === "preparing"
               ? "準備中"
               : statsModal.type === "active"
               ? "活動中"
               : "完了報告"
           }
-          icon={statsModal.type === "previous" ? "" : statsModal.type === "preparing" ? "" : statsModal.type === "active" ? "" : ""}
+          icon={statsModal.type === "preparing" ? "" : statsModal.type === "active" ? "" : ""}
           completedStaff={getStatsDetail(statsModal.type).completed}
           pendingStaff={getStatsDetail(statsModal.type).pending}
-          totalActiveStaff={staffList.filter((staff) => staff.active).length}
+          totalActiveStaff={staffList.length}
         />
       )}
     </div>
