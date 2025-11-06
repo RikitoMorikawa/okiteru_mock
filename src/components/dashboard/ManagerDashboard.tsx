@@ -434,13 +434,13 @@ export default function ManagerDashboard() {
           <div className="flex justify-center sm:flex-nowrap sm:space-x-1">
             <button
               onClick={() => setSelectedDate(getPreviousWeekJST(selectedDate))}
-              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             >
               &lt;&lt;
             </button>
             <button
               onClick={() => setSelectedDate(getPreviousDayJST(selectedDate))}
-              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             >
               &lt;
             </button>
@@ -449,17 +449,17 @@ export default function ManagerDashboard() {
               id="date-picker"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="sm:max-w-[100px] px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="sm:max-w-[100px] px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             />
             <button
               onClick={() => setSelectedDate(getNextDayJST(selectedDate))}
-              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors"
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:focus:border-blue-500 transition-colors mx-1"
             >
               &gt;
             </button>
             <button
               onClick={() => setSelectedDate(getNextWeekJST(selectedDate))}
-              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
             >
               &gt;&gt;
             </button>
