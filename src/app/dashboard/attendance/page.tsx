@@ -232,7 +232,6 @@ function AttendanceContent() {
   // Get next action based on current progress
   const getNextAction = () => {
     // 前日報告が未完了の場合は最初に前日報告を促す
-    // ただし、report_dateが今日より後（今日報告済み）の場合は非表示
     if (!attendanceStatus.previousDayReported) {
       return {
         title: "前日報告",
@@ -241,9 +240,15 @@ function AttendanceContent() {
         priority: "high",
       };
     } else if (shouldHidePreviousDayReport()) {
-      // 前日報告済みだが、今日報告したばかりで翌日まで非表示にする場合
-      // 次のアクションをスキップして起床報告以降を表示しない
-      return null;
+      // 前日報告済みだが、今日報告したばかりで翌日まで待機する場合
+      // 案内メッセージを表示
+      return {
+        title: "起床報告",
+        action: null,
+        icon: "⏰",
+        priority: "info",
+        description: "翌日の起床時間に報告してください。",
+      };
     }
 
     if (!attendanceStatus.wakeUpReported) {
@@ -296,6 +301,8 @@ function AttendanceContent() {
       case "medium":
         return "border-yellow-200 bg-yellow-50";
       case "low":
+        return "border-blue-200 bg-blue-50";
+      case "info":
         return "border-blue-200 bg-blue-50";
       default:
         return "border-gray-200 bg-gray-50";
@@ -419,15 +426,17 @@ function AttendanceContent() {
                             <span className="text-2xl mr-3">{nextAction.icon}</span>
                             <div>
                               <h3 className="font-semibold text-gray-900">次のアクション: {nextAction.title}</h3>
-                              {/* <p className="text-sm text-gray-600">{nextAction.description}</p> */}
+                              {nextAction.description && <p className="text-sm text-gray-600 mt-1">{nextAction.description}</p>}
                             </div>
                           </div>
-                          <button
-                            onClick={() => setActiveAction(nextAction.action as AttendanceAction)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-                          >
-                            開始
-                          </button>
+                          {nextAction.action && (
+                            <button
+                              onClick={() => setActiveAction(nextAction.action as AttendanceAction)}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                            >
+                              開始
+                            </button>
+                          )}
                         </div>
                       </div>
                     ) : null;
@@ -580,7 +589,7 @@ function AttendanceContent() {
                             </div>
                           )}
 
-                          {!isDisabled && isCompleted && (
+                          {isCompleted && (action.id !== "previous-day" ? !isDisabled : true) && (
                             <div className="absolute top-2 right-2">
                               <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                 <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">

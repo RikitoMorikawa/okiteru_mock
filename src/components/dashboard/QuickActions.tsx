@@ -118,7 +118,6 @@ export default function QuickActions({ attendanceStatus, previousDayReportDate, 
 
   const getNextAction = () => {
     // 前日報告が未完了の場合は最初に前日報告を促す
-    // ただし、report_dateが今日より後（今日報告済み）の場合は非表示
     if (!attendanceStatus.previousDayReported) {
       return {
         title: "前日報告",
@@ -128,9 +127,15 @@ export default function QuickActions({ attendanceStatus, previousDayReportDate, 
         priority: "high",
       };
     } else if (shouldHidePreviousDayReport()) {
-      // 前日報告済みだが、今日報告したばかりで翌日まで非表示にする場合
-      // 次のアクションをスキップして起床報告以降を表示しない
-      return null;
+      // 前日報告済みだが、今日報告したばかりで翌日まで待機する場合
+      // 案内メッセージを表示
+      return {
+        title: "明日になったら起床報告",
+        description: "前日報告が完了しました。翌日の起床時間になりましたら起床報告を行ってください。",
+        href: null,
+        icon: "⏰",
+        priority: "info",
+      };
     }
 
     if (!attendanceStatus.wakeUpReported) {
@@ -228,6 +233,8 @@ export default function QuickActions({ attendanceStatus, previousDayReportDate, 
       case "medium":
         return "border-yellow-200 bg-yellow-50";
       case "low":
+        return "border-blue-200 bg-blue-50";
+      case "info":
         return "border-blue-200 bg-blue-50";
       default:
         return "border-gray-200 bg-gray-50";
@@ -358,9 +365,11 @@ export default function QuickActions({ attendanceStatus, previousDayReportDate, 
                 <p className="text-sm text-gray-600">{nextAction.description}</p>
               </div>
             </div>
-            <Link href={nextAction.href} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
-              開始
-            </Link>
+            {nextAction.href && (
+              <Link href={nextAction.href} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                開始
+              </Link>
+            )}
           </div>
         </div>
       )}
