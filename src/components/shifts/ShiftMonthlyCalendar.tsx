@@ -86,11 +86,15 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     return days;
   };
 
-  // Check if a date is available
-  const isDateAvailable = (date: Date | null): boolean => {
-    if (!date) return false;
+  // Check if a date is available and return availability info
+  const getAvailabilityStatus = (date: Date | null): { isAvailable: boolean; worksiteId?: string | null } => {
+    if (!date) return { isAvailable: false };
     const dateStr = date.toISOString().split("T")[0];
-    return availabilities.some((avail) => avail.date === dateStr);
+    const availability = availabilities.find((avail) => avail.date === dateStr);
+    return {
+      isAvailable: !!availability,
+      worksiteId: availability?.worksite_id,
+    };
   };
 
   // Handle month navigation
@@ -212,7 +216,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
           {calendarDays.map((date, index) => {
             const dateStr = date?.toISOString().split("T")[0];
             const isToday = dateStr === today;
-            const isAvailable = isDateAvailable(date);
+            const { isAvailable, worksiteId } = getAvailabilityStatus(date);
             const dayOfWeek = date?.getDay();
 
             return (
@@ -221,7 +225,13 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                 onClick={() => handleDateClick(date)}
                 className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${!date ? "bg-gray-50 cursor-default" : ""} ${
                   isToday ? "ring-2 ring-blue-500 ring-inset" : ""
-                } ${isAvailable ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"}`}
+                } ${
+                  isAvailable
+                    ? worksiteId
+                      ? "bg-green-100 hover:bg-green-200"
+                      : "bg-blue-100 hover:bg-blue-200"
+                    : "hover:bg-gray-50"
+                }`}
               >
                 {date && (
                   <div className="flex flex-col items-center justify-center h-full">
@@ -234,7 +244,9 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                           : dayOfWeek === 6
                           ? "text-blue-600"
                           : isAvailable
-                          ? "text-blue-700"
+                          ? worksiteId
+                            ? "text-green-700"
+                            : "text-blue-700"
                           : "text-gray-700"
                       }`}
                     >
@@ -242,12 +254,16 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
                     </div>
                     {isAvailable &&
                       (() => {
-                        const dateStr = date.toISOString().split("T")[0];
-                        const existing = availabilities.find((avail) => avail.date === dateStr);
-                        const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                        const worksite = worksites.find((w) => w.id === worksiteId);
                         return (
                           <>
-                            <div className="text-xs text-blue-700 font-medium bg-blue-200 px-2 py-1 rounded mb-1">出社可</div>
+                            <div
+                              className={`text-xs font-medium px-2 py-1 rounded mb-1 ${
+                                worksiteId ? "bg-green-200 text-green-800" : "bg-blue-200 text-blue-700"
+                              }`}
+                            >
+                              {worksiteId ? "出社確定" : "出社可"}
+                            </div>
                             {worksite && <div className="text-xs text-gray-600 text-center px-1">📍 {worksite.name}</div>}
                           </>
                         );
@@ -288,13 +304,22 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">現在のステータス:</p>
               <p className="text-base font-semibold">
-                {isDateAvailable(selectedDate) ? <span className="text-blue-600">✓ 出社可能</span> : <span className="text-gray-600">✗ 出社不可</span>}
+                {(() => {
+                  const { isAvailable, worksiteId } = getAvailabilityStatus(selectedDate);
+                  if (isAvailable) {
+                    return worksiteId ? (
+                      <span className="text-green-600">✓ 出社確定</span>
+                    ) : (
+                      <span className="text-blue-600">✓ 出社可能</span>
+                    );
+                  }
+                  return <span className="text-gray-600">✗ 出社不可</span>;
+                })()}
               </p>
-              {isDateAvailable(selectedDate) &&
+              {getAvailabilityStatus(selectedDate).isAvailable &&
                 (() => {
-                  const dateStr = selectedDate.toISOString().split("T")[0];
-                  const existing = availabilities.find((avail) => avail.date === dateStr);
-                  const worksite = worksites.find((w) => w.id === existing?.worksite_id);
+                  const { worksiteId } = getAvailabilityStatus(selectedDate);
+                  const worksite = worksites.find((w) => w.id === worksiteId);
                   return worksite ? (
                     <p className="text-sm text-gray-600 mt-2">📍 現場: {worksite.name}</p>
                   ) : (
@@ -332,22 +357,26 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
             <div className="space-y-3">
               <button
                 onClick={() => handleToggleAvailability(true)}
-                disabled={isDateAvailable(selectedDate)}
+                disabled={getAvailabilityStatus(selectedDate).isAvailable}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  isDateAvailable(selectedDate) ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                  getAvailabilityStatus(selectedDate).isAvailable
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
                 }`}
               >
-                {isDateAvailable(selectedDate) ? "✓ すでに出社可能に設定済み" : "出社可能にする"}
+                {getAvailabilityStatus(selectedDate).isAvailable ? "✓ すでに出社可能に設定済み" : "出社可能にする"}
               </button>
 
               <button
                 onClick={() => handleToggleAvailability(false)}
-                disabled={!isDateAvailable(selectedDate)}
+                disabled={!getAvailabilityStatus(selectedDate).isAvailable}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  !isDateAvailable(selectedDate) ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
+                  !getAvailabilityStatus(selectedDate).isAvailable
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
                 }`}
               >
-                {!isDateAvailable(selectedDate) ? "✓ すでに出社不可に設定済み" : "出社不可にする"}
+                {!getAvailabilityStatus(selectedDate).isAvailable ? "✓ すでに出社不可に設定済み" : "出社不可にする"}
               </button>
 
               <button
