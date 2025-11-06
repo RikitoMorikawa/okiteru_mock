@@ -155,9 +155,9 @@ function AttendanceContent() {
     const today = new Date().toISOString().split("T")[0];
     const reportDate = previousDayReportDate;
 
-    // report_dateが昨日以前（当日に翌日の準備として登録したものが過去になった）なら有効
-    // report_dateが今日（当日に登録したばかり）なら無効
-    return reportDate < today;
+    // report_date が今日の日付と一致する場合、アクションを有効にする
+    // つまり、今日の日付の予定を前日報告済みであれば、起床報告以降を有効にする
+    return reportDate === today;
   };
 
   // 前日報告完了後の待機状態かどうかを判定
