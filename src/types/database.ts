@@ -61,7 +61,18 @@ export interface StaffAvailability {
   id: string;
   staff_id: string;
   date: string;
+  worksite_id?: string; // 勤務予定の現場ID
   notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Worksite {
+  id: string;
+  name: string;
+  address?: string;
+  description?: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -146,6 +157,15 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Omit<StaffAvailability, "id" | "created_at" | "updated_at">>;
+      };
+      worksites: {
+        Row: Worksite;
+        Insert: Omit<Worksite, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<Worksite, "id" | "created_at" | "updated_at">>;
       };
     };
     Views: {
