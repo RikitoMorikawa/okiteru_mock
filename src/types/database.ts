@@ -1,9 +1,6 @@
 export type UserRole = "manager" | "staff";
-export type AttendanceStatus = "pending" | "partial" | "complete" | "active" | "reset" | "archived";
-export type ReportStatus = "draft" | "submitted" | "archived";
-export type ShiftStatus = "scheduled" | "confirmed" | "completed";
-export type AlertType = "missing_wakeup" | "missing_departure" | "missing_arrival" | "missing_report";
-export type AlertStatus = "active" | "dismissed";
+export type AttendanceStatus = "pending" | "partial" | "complete" | "active" | "reset" | "reopened" | "archived";
+export type ReportStatus = "draft" | "submitted" | "archived" | "superseded";
 
 // Filter types for UI components
 export interface FilterOptions {
@@ -29,18 +26,23 @@ export interface AttendanceRecord {
   staff_id: string;
   date: string;
   wake_up_time?: string;
-  wake_up_notes?: string;
   departure_time?: string;
-  departure_notes?: string;
   arrival_time?: string;
-  arrival_location?: string;
-  arrival_gps_location?: string;
-  arrival_notes?: string;
   route_photo_url?: string;
   appearance_photo_url?: string;
   status: AttendanceStatus;
   created_at: string;
   updated_at: string;
+  notes?: string; // 一般的な備考
+  location?: string; // 到着場所（手動入力）
+  destination?: string; // 出発時の目的地
+  wake_up_location?: string; // 起床場所
+  wake_up_notes?: string; // 起床時の備考
+  departure_location?: string; // 出発場所
+  departure_notes?: string; // 出発時の備考
+  arrival_location?: string; // 到着場所（GPS座標等）
+  arrival_notes?: string; // 到着時の備考
+  arrival_gps_location?: string; // 到着時のGPS座標（自動取得）
 }
 
 export interface DailyReport {
@@ -136,6 +138,15 @@ export interface Database {
         };
         Update: Partial<Omit<PreviousDayReport, "id" | "created_at" | "updated_at">>;
       };
+      staff_availability: {
+        Row: StaffAvailability;
+        Insert: Omit<StaffAvailability, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<StaffAvailability, "id" | "created_at" | "updated_at">>;
+      };
     };
     Views: {
       [_ in never]: never;
@@ -154,9 +165,6 @@ export interface Database {
       user_role: UserRole;
       attendance_status: AttendanceStatus;
       report_status: ReportStatus;
-      shift_status: ShiftStatus;
-      alert_type: AlertType;
-      alert_status: AlertStatus;
     };
     CompositeTypes: {
       [_ in never]: never;
