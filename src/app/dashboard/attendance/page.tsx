@@ -551,7 +551,8 @@ function AttendanceContent() {
                     // 前日報告カード自体を無効化（今日報告済みで、report_dateが明日の場合）
                     const isPreviousDayReportDisabled = action.id === "previous-day" && shouldHidePreviousDayReport();
 
-                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay || isPreviousDayReportDisabled;
+                    // 完了済みのアクションも無効化
+                    const isDisabled = isDayCompleted || isPreviousDayRequired || isWaitingForNewDay || isPreviousDayReportDisabled || isCompleted;
 
                     return (
                       <button
