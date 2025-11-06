@@ -29,7 +29,15 @@ export default function ManagerDashboard() {
   const [staffList, setStaffList] = useState<StaffWithStatus[]>([]);
   const [filteredStaff, setFilteredStaff] = useState<StaffWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(getTodayJST());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedDate = sessionStorage.getItem("managerDashboard_selectedDate");
+      if (savedDate) {
+        return savedDate;
+      }
+    }
+    return getTodayJST();
+  });
   const [filters, setFilters] = useState<FilterOptions>({
     search: "",
     status: "all", // This will be simplified
@@ -51,6 +59,12 @@ export default function ManagerDashboard() {
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("managerDashboard_selectedDate", selectedDate);
+    }
+  }, [selectedDate]);
 
   // Handle logout
   const handleLogout = async () => {
