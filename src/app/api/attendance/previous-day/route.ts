@@ -18,9 +18,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: { message: "身だしなみ写真と経路スクリーンショットをアップロードしてください" } }, { status: 400 });
       }
 
-      // 今日の日付を取得
-      const today = new Date();
-      const todayDateString = today.toISOString().split("T")[0];
+      // 今日の日付を日本時間で取得
+      const nowJST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+      const todayJSTString = nowJST.toISOString().split("T")[0]; // 今日の日付 (JST)
+
+      // 報告対象日（翌日）を日本時間で計算
+      const targetReportDateJST = new Date(nowJST);
+      targetReportDateJST.setDate(nowJST.getDate() + 1); // 日本時間で翌日に設定
+      const targetReportDateString = targetReportDateJST.toISOString().split("T")[0]; // 翌日の日付 (JST)
 
       // 新しいサイクルを開始するため、既存のattendance_recordをarchivedにする
 
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("staff_id", req.user.id)
-        .eq("date", todayDateString)
+        .eq("date", todayJSTString)
         .in("status", ["pending", "partial", "active", "complete"]);
 
       if (archiveError) {
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("staff_id", req.user.id)
-        .eq("date", todayDateString)
+        .eq("date", todayJSTString)
         .in("status", ["draft", "submitted"]);
 
       if (reportArchiveError) {
@@ -59,7 +64,7 @@ export async function POST(request: NextRequest) {
       // 常に新しい前日報告を作成
       const reportData = {
         user_id: req.user.id,
-        report_date: todayDateString,
+        report_date: targetReportDateString,
         next_wake_up_time,
         next_departure_time,
         next_arrival_time,
@@ -70,6 +75,8 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       };
 
+      console.log(`[PreviousDayReport POST] Inserting reportData: ${JSON.stringify(reportData, null, 2)}`);
+
       const { data: result, error } = await (supabaseAdmin as any).from("previous_day_reports").insert(reportData).select().single();
 
       if (error) {
@@ -78,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`Previous day report created/updated for user ${req.user.id}:`, {
-        report_date: todayDateString,
+        report_date: targetReportDateString,
         actual_attendance_record_id: result.actual_attendance_record_id,
         id: result.id,
       });

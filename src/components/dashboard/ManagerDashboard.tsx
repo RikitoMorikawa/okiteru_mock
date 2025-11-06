@@ -106,13 +106,11 @@ export default function ManagerDashboard() {
         .in("status", ["submitted", "archived"]);
       if (reportsError) throw reportsError;
 
-      // Fetch previous day's reports
-      const previousDay = getPreviousDayJST(selectedDate);
+      // Fetch previous day's reports (for the selectedDate)
       const { data: previousDayReports, error: previousDayReportsError } = await supabase
-        .from("daily_reports")
+        .from("previous_day_reports") // previous_day_reports テーブルから取得
         .select("*")
-        .eq("date", previousDay)
-        .in("status", ["submitted", "archived"]);
+        .eq("report_date", selectedDate); // report_date が selectedDate と一致するものを検索
       if (previousDayReportsError) throw previousDayReportsError;
 
       // Fetch the most recent access log for each user more efficiently
