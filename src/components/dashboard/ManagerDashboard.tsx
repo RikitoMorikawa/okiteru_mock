@@ -40,7 +40,7 @@ export default function ManagerDashboard() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [statsModal, setStatsModal] = useState<{
     isOpen: boolean;
-    type: "preparing" | "active" | "completed" | null;
+    type: "preparing" | "active" | "completed" | "previousDayReport" | null;
   }>({ isOpen: false, type: null });
 
   // Update current time every minute
@@ -296,6 +296,15 @@ export default function ManagerDashboard() {
             (staff) => !staff.todayReport && !(staff.hasResetToday && !staff.hasActiveRecord)
           ),
         };
+      case "previousDayReport":
+        return {
+          completed: staffList.filter(
+            (staff) => staff.hasPreviousDayReport
+          ),
+          pending: staffList.filter(
+            (staff) => !staff.hasPreviousDayReport
+          ),
+        };
       default:
         return { completed: [], pending: [] };
     }
@@ -483,6 +492,7 @@ export default function ManagerDashboard() {
             subtitle={`/ ${stats.totalStaff}`}
             icon="📅"
             color="blue"
+            onClick={() => handleStatsCardClick("previousDayReport")}
           />
           <StatCard
             title="準備中"
@@ -570,7 +580,11 @@ export default function ManagerDashboard() {
               ? "準備中"
               : statsModal.type === "active"
               ? "活動中"
-              : "完了報告"
+              : statsModal.type === "completed"
+              ? "完了報告"
+              : statsModal.type === "previousDayReport"
+              ? "前日報告"
+              : ""
           }
           icon={statsModal.type === "preparing" ? "" : statsModal.type === "active" ? "" : ""}
           completedStaff={getStatsDetail(statsModal.type).completed}
