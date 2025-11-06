@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { AttendanceRecord, DailyReport, Alert, AccessLog } from "@/types/database";
+import { AttendanceRecord, DailyReport } from "@/types/database";
 
 interface TimelineEvent {
   id: string;
@@ -144,20 +144,6 @@ export default function StaffActivityTimeline({ staffId }: StaffActivityTimeline
             metadata: { reportId: report.id, date: report.date, content: report.content },
           });
         }
-      });
-
-      // Process alerts
-      ((alerts as Alert[]) || []).forEach((alert) => {
-        timelineEvents.push({
-          id: `alert_${alert.id}`,
-          type: "alert",
-          timestamp: alert.triggered_at,
-          title: "アラート発生",
-          description: alert.message,
-          icon: "🚨",
-          color: "red",
-          metadata: { alertId: alert.id, alertType: alert.type, status: alert.status },
-        });
       });
 
       // Process access logs
