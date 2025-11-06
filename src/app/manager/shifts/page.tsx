@@ -55,11 +55,6 @@ export default function ManagerShiftsPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">スタッフ一覧</h2>
-          <p className="text-sm text-gray-600 mt-1">シフトを管理するスタッフを選択してください</p>
-        </div>
-
         <ShiftUserList />
       </div>
     </div>
