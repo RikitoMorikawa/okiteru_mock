@@ -9,7 +9,7 @@ import { User, AttendanceRecord, DailyReport, FilterOptions, StaffAvailability }
 import StaffStatusCard from "./StaffStatusCard";
 import StaffFilters from "./StaffFilters";
 import StatsDetailModal from "./StatsDetailModal";
-import { getTodayJST } from "../../utils/dateUtils";
+import { getTodayJST, getPreviousDayJST } from "../../utils/dateUtils";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
@@ -20,6 +20,7 @@ interface StaffWithStatus extends User {
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか;
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
+  hasPreviousDayReport?: boolean; // 前日報告があるかどうか
 }
 
 export default function ManagerDashboard() {
@@ -108,6 +109,15 @@ export default function ManagerDashboard() {
         .in("status", ["submitted", "archived"]);
       if (reportsError) throw reportsError;
 
+      // Fetch previous day's reports
+      const previousDay = getPreviousDayJST(selectedDate);
+      const { data: previousDayReports, error: previousDayReportsError } = await supabase
+        .from("daily_reports")
+        .select("*")
+        .eq("date", previousDay)
+        .in("status", ["submitted", "archived"]);
+      if (previousDayReportsError) throw previousDayReportsError;
+
       // Fetch the most recent access log for each user more efficiently
       const staffIds = ((staff as User[]) || []).map((s) => s.id);
       const { data: accessLogs } = await supabase
@@ -144,6 +154,7 @@ export default function ManagerDashboard() {
         const hasResetToday = staffAttendanceRecords.some((record) => record.status === "reset");
         const resetRecord = staffAttendanceRecords.find((record) => record.status === "reset");
         const todayReport = ((dailyReports as DailyReport[]) || []).find((report) => report.staff_id === staffMember.id);
+        const hasPreviousDayReport = ((previousDayReports as DailyReport[]) || []).some((report) => report.staff_id === staffMember.id);
         const lastLogin = lastLoginMap.get(staffMember.id);
 
         return {
@@ -156,6 +167,7 @@ export default function ManagerDashboard() {
           lastLogin,
           hasResetToday,
           hasActiveRecord: !!todayAttendance,
+          hasPreviousDayReport,
         };
       }).filter(Boolean) as StaffWithStatus[];
 
@@ -240,11 +252,16 @@ export default function ManagerDashboard() {
       (staff) => staff.todayReport || (staff.hasResetToday && !staff.hasActiveRecord)
     ).length;
 
+    const previousDayReportCount = staffList.filter(
+      (staff) => staff.hasPreviousDayReport
+    ).length;
+
     return {
       totalStaff,
       preparingStaff,
       activeToday,
       completedReports,
+      previousDayReportCount,
       activityRate: totalStaff > 0 ? Math.round((activeToday / totalStaff) * 100) : 0,
     };
   };
@@ -460,9 +477,10 @@ export default function ManagerDashboard() {
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-8">
           <StatCard
-            title="出社予定"
-            mobileTitle="出社予定"
-            value={stats.totalStaff}
+            title="前日報告"
+            mobileTitle="前日報告"
+            value={stats.previousDayReportCount}
+            subtitle={`/ ${stats.totalStaff}`}
             icon="📅"
             color="blue"
           />

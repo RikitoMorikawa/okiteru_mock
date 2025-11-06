@@ -66,3 +66,12 @@ export function formatTimeJST(date: Date | string, options?: Intl.DateTimeFormat
 
   return dateObj.toLocaleTimeString("ja-JP", defaultOptions);
 }
+
+/**
+ * 日本時間での前日の日付を YYYY-MM-DD 形式で取得
+ */
+export function getPreviousDayJST(dateString: string): string {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() - 1);
+  return date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+}
