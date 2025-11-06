@@ -477,6 +477,12 @@ export default function ManagerDashboard() {
             >
               &gt;&gt;
             </button>
+            <button
+              onClick={() => setSelectedDate(getTodayJST())}
+              className="px-1.5 py-0.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors mx-1"
+            >
+              当日
+            </button>
           </div>
         </div>
 
