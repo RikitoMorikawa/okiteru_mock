@@ -243,7 +243,48 @@
 
 ---
 
-## 10. RLSポリシー
+## 10. ストアドファンクション
+
+データベースには以下のストアドファンクションが定義されています。
+
+| 関数名 | 戻り値型 | 用途 |
+|-------|---------|------|
+| `update_updated_at_column()` | trigger | レコード更新時に`updated_at`を自動更新 |
+| `get_user_role()` | user_role | 現在のユーザーのロールを取得 |
+| `is_manager(user_id)` | boolean | 指定されたユーザーがマネージャーかどうかを判定 |
+| `handle_new_user()` | trigger | 新規ユーザー作成時に`users`テーブルにプロフィールを作成 |
+| `handle_user_delete()` | trigger | 認証ユーザー削除時に`users`テーブルからも削除 |
+| `update_user_dashboard_preference(user_id, preference)` | void | ユーザーのダッシュボード表示設定を更新 |
+
+### 詳細
+
+**`update_updated_at_column()`**
+- トリガー関数として使用
+- レコード更新時に自動的に`updated_at`カラムを現在時刻に設定
+
+**`get_user_role()`**
+- 現在認証されているユーザー（`auth.uid()`）のロールを返す
+- RLSポリシーで使用
+
+**`is_manager(user_id)`**
+- 指定されたユーザーIDがマネージャーロールを持っているかを判定
+- RLSポリシーで使用
+
+**`handle_new_user()`**
+- Supabase Authで新規ユーザーが作成された時に自動実行
+- `public.users`テーブルにユーザープロフィールを作成（デフォルトロール: staff）
+
+**`handle_user_delete()`**
+- Supabase Authからユーザーが削除された時に自動実行
+- `public.users`テーブルから対応するレコードを削除
+
+**`update_user_dashboard_preference(user_id, preference)`**
+- ユーザーのダッシュボード表示設定（'today' または 'next_day'）を安全に更新
+- バリデーション機能付き
+
+---
+
+## 11. RLSポリシー
 
 _（次のクエリ結果を待っています...）_
 
