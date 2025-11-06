@@ -196,11 +196,6 @@
 | `user_role` | `manager`, `staff` | `users.role` |
 | `attendance_status` | `pending`, `partial`, `complete`, `active`, `reset`, `reopened`, `archived` | `attendance_records.status` |
 | `report_status` | `draft`, `submitted`, `archived`, `superseded` | `daily_reports.status` |
-| `alert_type` | `missing_wakeup`, `missing_departure`, `missing_arrival`, `missing_report` | `alerts.type` (※現在未使用) |
-| `alert_status` | `active`, `dismissed` | `alerts.status` (※現在未使用) |
-| `shift_status` | `scheduled`, `confirmed`, `completed` | `shift_schedules.status` (※現在未使用) |
-
-**注意**: `alerts` と `shift_schedules` テーブルは定義されていますが、現在のデータベースには存在しません。
 
 ---
 
