@@ -13,6 +13,8 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availabilities, setAvailabilities] = useState<StaffAvailability[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch availability data for the current month
   const fetchAvailabilities = async () => {
@@ -85,30 +87,42 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
-  // Handle date click - toggle availability
-  const handleDateClick = async (date: Date | null) => {
+  // Handle date click - open modal
+  const handleDateClick = (date: Date | null) => {
     if (!date) return;
+    setSelectedDate(date);
+    setIsModalOpen(true);
+  };
 
-    const dateStr = date.toISOString().split("T")[0];
+  // Handle availability toggle in modal
+  const handleToggleAvailability = async (makeAvailable: boolean) => {
+    if (!selectedDate) return;
+
+    const dateStr = selectedDate.toISOString().split("T")[0];
     const existing = availabilities.find((avail) => avail.date === dateStr);
 
     try {
-      if (existing) {
-        // Remove availability (出社不可にする)
-        const { error } = await supabase.from("staff_availability").delete().eq("id", existing.id);
-
-        if (error) throw error;
-      } else {
+      if (makeAvailable) {
         // Add availability (出社可能にする)
-        const { error } = await supabase.from("staff_availability").insert({
-          staff_id: userId,
-          date: dateStr,
-        });
+        if (!existing) {
+          const { error } = await supabase.from("staff_availability").insert({
+            staff_id: userId,
+            date: dateStr,
+          });
 
-        if (error) throw error;
+          if (error) throw error;
+        }
+      } else {
+        // Remove availability (出社不可にする)
+        if (existing) {
+          const { error } = await supabase.from("staff_availability").delete().eq("id", existing.id);
+
+          if (error) throw error;
+        }
       }
 
       await fetchAvailabilities();
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Error toggling availability:", error);
       alert("出社可能日の更新に失敗しました");
@@ -146,7 +160,7 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
       {/* Instructions */}
       <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-800">
-          📅 日付をクリックすると出社可能日として登録・解除できます
+          📅 日付をクリックすると詳細モーダルが開きます。そこで出社可否を設定できます。
         </p>
       </div>
 
@@ -221,6 +235,74 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
           <span className="text-lg font-semibold text-gray-900">{availabilities.length}日</span>
         </div>
       </div>
+
+      {/* Modal */}
+      {isModalOpen && selectedDate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Current Status */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">現在のステータス:</p>
+              <p className="text-base font-semibold">
+                {isDateAvailable(selectedDate) ? (
+                  <span className="text-blue-600">✓ 出社可能</span>
+                ) : (
+                  <span className="text-gray-600">✗ 出社不可</span>
+                )}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => handleToggleAvailability(true)}
+                disabled={isDateAvailable(selectedDate)}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
+                  isDateAvailable(selectedDate)
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+                }`}
+              >
+                {isDateAvailable(selectedDate) ? "✓ すでに出社可能に設定済み" : "出社可能にする"}
+              </button>
+
+              <button
+                onClick={() => handleToggleAvailability(false)}
+                disabled={!isDateAvailable(selectedDate)}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
+                  !isDateAvailable(selectedDate)
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
+                }`}
+              >
+                {!isDateAvailable(selectedDate) ? "✓ すでに出社不可に設定済み" : "出社不可にする"}
+              </button>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-full py-3 px-4 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
