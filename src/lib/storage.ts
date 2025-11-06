@@ -134,10 +134,11 @@ export async function uploadAppearancePhoto(file: File, staffId: string, date: s
 }
 
 /**
- * Get today's date string in YYYY-MM-DD format
+ * Get today's date string in YYYY-MM-DD format (JST)
  */
 export function getTodayDateString(): string {
-  return new Date().toISOString().split("T")[0];
+  const jstDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  return jstDate.toISOString().split("T")[0];
 }
 
 /**

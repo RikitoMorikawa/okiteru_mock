@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return withAuth(request, async (req) => {
     try {
-      // 今日の日付を取得
-      const today = new Date();
-      const todayDateString = today.toISOString().split("T")[0];
+      // 今日の日付を日本時間で取得
+      const nowJST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+      const todayDateString = nowJST.toISOString().split("T")[0];
 
       // 今日の前日報告を取得
       const { data: report, error } = await (supabaseAdmin as any)

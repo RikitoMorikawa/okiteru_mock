@@ -24,9 +24,13 @@ export default function StaffHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTabs, setActiveTabs] = useState<Record<string, "wake_up" | "departure" | "arrival" | "appearance_photo" | "route_photo" | "report">>({});
+  // 日本時間で日付範囲を計算
+  const nowJST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const startDateJST = new Date(nowJST.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const endDateJST = new Date(nowJST.getTime() + 24 * 60 * 60 * 1000); // 翌日まで含める（前日報告のため）
   const dateRange = {
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30日前
-    endDate: new Date().toISOString().split("T")[0], // 今日
+    startDate: startDateJST.toISOString().split("T")[0], // 30日前
+    endDate: endDateJST.toISOString().split("T")[0], // 明日まで
   };
 
   // Redirect if not manager
@@ -146,12 +150,15 @@ export default function StaffHistoryPage() {
     }));
   };
 
-  const getActiveTab = (sessionId: string, hasAttendance: boolean, hasReport: boolean) => {
+  const getActiveTab = (sessionId: string, hasAttendance: boolean, hasReport: boolean, hasPhotos?: boolean) => {
     if (activeTabs[sessionId]) {
       return activeTabs[sessionId];
     }
-    // Default to wake_up if attendance is available, otherwise report
-    return hasAttendance ? "wake_up" : hasReport ? "report" : "wake_up";
+    // Default to wake_up if attendance is available, otherwise report, otherwise appearance_photo
+    if (hasAttendance) return "wake_up";
+    if (hasReport) return "report";
+    if (hasPhotos) return "appearance_photo";
+    return "wake_up";
   };
 
   if (loading) {
@@ -210,7 +217,7 @@ export default function StaffHistoryPage() {
             <h3 className="text-lg font-semibold text-gray-900">履歴タイムライン（{historyData.attendanceRecords.length}日）</h3>
           </div>
 
-          {historyData.attendanceRecords.length === 0 && historyData.dailyReports.length === 0 ? (
+          {historyData.attendanceRecords.length === 0 && historyData.dailyReports.length === 0 && historyData.previousDayReports.length === 0 ? (
             <div className="p-6 text-center text-gray-500">選択した期間にデータがありません</div>
           ) : (
             <div className="p-6">
@@ -227,13 +234,9 @@ export default function StaffHistoryPage() {
                 // For each attendance record, find matching daily report
                 historyData.attendanceRecords.forEach((record) => {
                   // Find the corresponding previous day report
+                  // The previous day report's report_date should match the attendance record's date
                   const previousDayReport = historyData.previousDayReports.find((prevReport) => {
-                    const prevReportDate = new Date(prevReport.report_date);
-                    const recordDate = new Date(record.date);
-                    // The report_date should be one day before the attendance record date
-                    return prevReportDate.getFullYear() === recordDate.getFullYear() &&
-                           prevReportDate.getMonth() === recordDate.getMonth() &&
-                           prevReportDate.getDate() === recordDate.getDate() - 1;
+                    return prevReport.report_date === record.date;
                   });
 
                   // Merge photo URLs into the attendance record
@@ -287,6 +290,36 @@ export default function StaffHistoryPage() {
                   }
                 });
 
+                // Add standalone previous day reports (previous day reports without matching attendance)
+                historyData.previousDayReports.forEach((prevReport) => {
+                  // 既にワークセッションに含まれているかチェック
+                  const alreadyIncluded = workSessions.some((session) =>
+                    session.attendanceRecord.appearance_photo_url === prevReport.appearance_photo_url ||
+                    session.attendanceRecord.route_photo_url === prevReport.route_photo_url
+                  );
+
+                  if (!alreadyIncluded) {
+                    // 対応する勤怠記録がない前日報告を表示
+                    const hasMatchingAttendance = historyData.attendanceRecords.some(
+                      (record) => record.date === prevReport.report_date
+                    );
+
+                    if (!hasMatchingAttendance) {
+                      workSessions.push({
+                        id: `prev-report-only-${prevReport.id}`,
+                        attendanceRecord: {
+                          date: prevReport.report_date,
+                          appearance_photo_url: prevReport.appearance_photo_url,
+                          route_photo_url: prevReport.route_photo_url,
+                          staff_id: staffId,
+                        } as unknown as AttendanceRecord,
+                        dailyReport: undefined,
+                        sortDate: new Date(prevReport.created_at),
+                      });
+                    }
+                  }
+                });
+
                 // Sort by creation time (newest first)
                 const sortedSessions = workSessions.sort((a, b) => {
                   return b.sortDate.getTime() - a.sortDate.getTime();
@@ -295,6 +328,7 @@ export default function StaffHistoryPage() {
                 return sortedSessions.map((session) => {
                   const hasAttendance = !!session.attendanceRecord.id;
                   const hasReport = !!(session.dailyReport && session.dailyReport.id && session.dailyReport.content);
+                  const hasPhotos = !!(session.attendanceRecord.appearance_photo_url || session.attendanceRecord.route_photo_url);
 
                   const attendanceStatus = hasAttendance ? getAttendanceStatus(session.attendanceRecord) : null;
 
@@ -304,22 +338,22 @@ export default function StaffHistoryPage() {
                         <div className="flex-shrink-0 w-3 h-3 bg-indigo-600 rounded-full"></div>
                         <div className="ml-4">
                           <h4 className="text-base font-semibold text-gray-900">
-                            {formatDate(hasAttendance ? session.attendanceRecord.date : session.dailyReport!.date)}
+                            {formatDate(session.attendanceRecord.date || session.dailyReport!.date)}
                           </h4>
                         </div>
                       </div>
 
                       <div className="ml-7">
                         <div className="bg-white rounded-lg border border-gray-200">
-                          {/* Tab Navigation - 勤怠記録または日報が存在する場合のみ表示 */}
-                          {(hasAttendance || hasReport) && (
+                          {/* Tab Navigation - 勤怠記録、日報、または写真が存在する場合のみ表示 */}
+                          {(hasAttendance || hasReport || hasPhotos) && (
                             <div className="flex border-b border-gray-200">
                               {hasAttendance && (
                                 <>
                                   <button
                                     onClick={() => setActiveTab(session.id, "wake_up")}
                                     className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                      getActiveTab(session.id, hasAttendance, hasReport) === "wake_up"
+                                      getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "wake_up"
                                         ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                     }`}
@@ -329,7 +363,7 @@ export default function StaffHistoryPage() {
                                   <button
                                     onClick={() => setActiveTab(session.id, "departure")}
                                     className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                      getActiveTab(session.id, hasAttendance, hasReport) === "departure"
+                                      getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "departure"
                                         ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                     }`}
@@ -339,41 +373,46 @@ export default function StaffHistoryPage() {
                                   <button
                                     onClick={() => setActiveTab(session.id, "arrival")}
                                     className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                      getActiveTab(session.id, hasAttendance, hasReport) === "arrival"
+                                      getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "arrival"
                                         ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                     }`}
                                   >
                                     到着
                                   </button>
-                                  <button
-                                    onClick={() => setActiveTab(session.id, "appearance_photo")}
-                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                      getActiveTab(session.id, hasAttendance, hasReport) === "appearance_photo"
-                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                    }`}
-                                  >
-                                    身だしなみ写真
-                                  </button>
-                                  <button
-                                    onClick={() => setActiveTab(session.id, "route_photo")}
-                                    className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                      getActiveTab(session.id, hasAttendance, hasReport) === "route_photo"
-                                        ? "border-indigo-500 text-indigo-600 bg-indigo-50"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                    }`}
-                                  >
-                                    経路写真
-                                  </button>
                                 </>
+                              )}
+                              {/* 写真タブは hasPhotos の時に表示 */}
+                              {hasPhotos && session.attendanceRecord.appearance_photo_url && (
+                                <button
+                                  onClick={() => setActiveTab(session.id, "appearance_photo")}
+                                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                    getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "appearance_photo"
+                                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                  }`}
+                                >
+                                  身だしなみ写真
+                                </button>
+                              )}
+                              {hasPhotos && session.attendanceRecord.route_photo_url && (
+                                <button
+                                  onClick={() => setActiveTab(session.id, "route_photo")}
+                                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                    getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "route_photo"
+                                      ? "border-indigo-500 text-indigo-600 bg-indigo-50"
+                                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                  }`}
+                                >
+                                  経路写真
+                                </button>
                               )}
                               {/* 日報が実際に存在し、かつIDが有効な場合のみタブを表示 */}
                               {hasReport && (
                                 <button
                                   onClick={() => setActiveTab(session.id, "report")}
                                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                    getActiveTab(session.id, hasAttendance, hasReport) === "report"
+                                    getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "report"
                                       ? "border-indigo-500 text-indigo-600 bg-indigo-50"
                                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                   }`}
@@ -397,7 +436,7 @@ export default function StaffHistoryPage() {
 
                           {/* Tab Content */}
                           <div className="p-4">
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "wake_up" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "wake_up" && hasAttendance && (
                               <div className="space-y-2">
                                 <InfoItem label="起床時間" value={formatTime(session.attendanceRecord.wake_up_time)} />
                                 <InfoItem label="起床場所" value={session.attendanceRecord.wake_up_location} />
@@ -405,7 +444,7 @@ export default function StaffHistoryPage() {
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "departure" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "departure" && hasAttendance && (
                               <div className="space-y-2">
                                 <InfoItem label="出発時間" value={formatTime(session.attendanceRecord.departure_time)} />
                                 <InfoItem label="出発場所" value={session.attendanceRecord.departure_location} />
@@ -413,7 +452,7 @@ export default function StaffHistoryPage() {
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "arrival" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "arrival" && hasAttendance && (
                               <div className="space-y-2">
                                 <InfoItem label="到着時間" value={formatTime(session.attendanceRecord.arrival_time)} />
                                 <InfoItem label="到着場所" value={session.attendanceRecord.arrival_location} />
@@ -422,19 +461,19 @@ export default function StaffHistoryPage() {
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "appearance_photo" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "appearance_photo" && hasPhotos && (
                               <div className="space-y-2">
                                 <ImageItem label="身だしなみ写真" url={session.attendanceRecord.appearance_photo_url} />
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "route_photo" && hasAttendance && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "route_photo" && hasPhotos && (
                               <div className="space-y-2">
                                 <ImageItem label="経路写真" url={session.attendanceRecord.route_photo_url} />
                               </div>
                             )}
 
-                            {getActiveTab(session.id, hasAttendance, hasReport) === "report" && (
+                            {getActiveTab(session.id, hasAttendance, hasReport, hasPhotos) === "report" && (
                               <div>
                                 {session.dailyReport ? (
                                   <>
@@ -459,7 +498,7 @@ export default function StaffHistoryPage() {
                             )}
 
                             {/* No data message */}
-                            {!hasAttendance && !hasReport && (
+                            {!hasAttendance && !hasReport && !hasPhotos && (
                               <div className="text-center text-gray-500 py-8">
                                 <div className="text-sm">データがありません</div>
                               </div>
