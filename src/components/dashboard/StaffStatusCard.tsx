@@ -119,7 +119,12 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
               <span className="text-xs font-medium text-gray-600">{staff.name.charAt(0)}</span>
             </div>
             <div className="ml-2 flex-grow">
-              <h3 className="text-xs font-medium text-gray-900 truncate">{staff.name}</h3>
+              <div className="flex items-center">
+                <h3 className="text-xs font-medium text-gray-900 truncate">{staff.name}</h3>
+                {label === "未開始" && (
+                  <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+                )}
+              </div>
               <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
                 <div
                   className={`h-1 rounded-full transition-all duration-300 ${
@@ -145,7 +150,9 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             </div>
           </div>
           <div className="flex items-center">
-            <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+            {label !== "未開始" && (
+              <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+            )}
             <button
               onClick={() => setExpanded(!expanded)}
               className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex-shrink-0 ml-1"
