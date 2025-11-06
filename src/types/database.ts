@@ -65,6 +65,7 @@ export interface StaffAvailability {
   notes?: string;
   created_at: string;
   updated_at: string;
+  worksites?: Worksite; // 追加
 }
 
 export interface Worksite {

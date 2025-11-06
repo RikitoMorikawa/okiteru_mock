@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, AttendanceRecord, DailyReport } from "@/types/database";
-import StaffDetailModal from "@/components/staff/StaffDetailModal";
-import { supabase } from "@/lib/supabase";
+import { User, AttendanceRecord, DailyReport, StaffAvailability } from "@/types/database";
+import StaffDetailModal from "../staff/StaffDetailModal";
 
 interface StaffWithStatus extends User {
   todayAttendance?: AttendanceRecord;
   resetRecord?: AttendanceRecord; // リセットレコードの詳細
   todayReport?: DailyReport;
-  previousDayReport?: any; // 前日報告データ
+  availability: StaffAvailability; // staff_availability record
+  activeAlerts: any[]; // Keep for compatibility but will be empty
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
@@ -23,25 +23,9 @@ interface StaffStatusCardProps {
 export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [updatingActive, setUpdatingActive] = useState(false);
 
   // Calculate completion status
   const getCompletionStatus = () => {
-    // 非活動のユーザーは進捗0
-    if (!staff.active) {
-      const tasks = [
-        { name: "前日報告", completed: false },
-        { name: "起床報告", completed: false },
-        { name: "出発報告", completed: false },
-        { name: "到着報告", completed: false },
-        { name: "日報提出", completed: false },
-      ];
-
-      return { tasks, completed: 0, total: tasks.length, percentage: 0 };
-    }
-
-    // 活動中のユーザー：シンプルに4段階の進捗
-    // リセットされた場合はリセット前の記録を使用
     const attendanceRecord = staff.hasResetToday && !staff.hasActiveRecord ? staff.resetRecord : staff.todayAttendance;
 
     const tasks = [
@@ -62,18 +46,10 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   const getOverallStatus = () => {
     const { percentage } = getCompletionStatus();
 
-    // 非活動のユーザーは常に「非活動」
-    if (!staff.active) {
-      return { status: "inactive", label: "非活動", color: "gray" };
-    }
-
-    // 活動中のユーザーは従来通りの詳細な判定
-    // リセットされたユーザーは「完了」として表示（緑色）
     if (staff.hasResetToday && !staff.hasActiveRecord) {
       return { status: "complete", label: "完了", color: "green" };
     }
 
-    // 日報が提出されている場合は「完了」として表示
     if (staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived") {
       return { status: "complete", label: "完了", color: "green" };
     }
@@ -81,15 +57,6 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     if (percentage === 100) return { status: "complete", label: "完了", color: "green" };
     if (percentage > 0) return { status: "partial", label: "進行中", color: "yellow" };
     return { status: "inactive", label: "未開始", color: "gray" };
-  };
-
-  // Format time
-  const formatTime = (timeString?: string) => {
-    if (!timeString) return "--:--";
-    return new Date(timeString).toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   // Format last login
@@ -123,50 +90,10 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
     });
   };
 
-  // Toggle active status
-  const toggleActiveStatus = async () => {
-    try {
-      setUpdatingActive(true);
-
-      // Check if current user is a manager
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        alert("認証が必要です。再度ログインしてください。");
-        return;
-      }
-
-      // Check if user is a manager
-      const { data: currentUser } = await supabase.from("users").select("role").eq("id", session.user.id).single();
-
-      if (!currentUser || (currentUser as any).role !== "manager") {
-        alert("管理者権限が必要です。");
-        return;
-      }
-
-      // Update the staff member's active status directly
-      const { error } = await (supabase as any).from("users").update({ active: !staff.active }).eq("id", staff.id).eq("role", "staff");
-
-      if (error) {
-        console.error("Error updating active status:", error);
-        throw new Error("activeステータスの更新に失敗しました");
-      }
-
-      // Refresh the page to update the data
-      window.location.reload();
-    } catch (error) {
-      console.error("Error updating active status:", error);
-      alert("activeステータスの更新に失敗しました");
-    } finally {
-      setUpdatingActive(false);
-    }
-  };
 
 
-  const { tasks, completed, total, percentage } = getCompletionStatus();
   const { status, label, color } = getOverallStatus();
+  const { completed, total, percentage } = getCompletionStatus();
 
   const statusColors = {
     red: "bg-red-100 text-red-800 border-red-200",
@@ -198,32 +125,6 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
                 <div>
                   <h3 className="text-sm mr-4 font-medium text-gray-900">{staff.name}</h3>
                 </div>
-                {/* Active Status */}
-                <button
-                  onClick={toggleActiveStatus}
-                  disabled={updatingActive}
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                    staff.active
-                      ? "bg-green-100 text-green-800 hover:bg-green-200"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  } ${updatingActive ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                >
-                  {updatingActive ? (
-                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  ) : (
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full mr-1 ${staff.active ? "bg-green-500" : "bg-gray-400"}`}
-                    ></div>
-                  )}
-                  {staff.active ? "活動中" : "非活動"}
-                </button>
               </div>
             </div>
           </div>
@@ -235,9 +136,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>本日の進捗</span>
             <span>
-              {!staff.active
-                ? "非活動"
-                : staff.hasResetToday && !staff.hasActiveRecord
+              {staff.hasResetToday && !staff.hasActiveRecord
                 ? "完了"
                 : staff.todayReport?.status === "submitted" || staff.todayReport?.status === "archived"
                 ? "完了"
@@ -282,6 +181,13 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
         {/* Expanded Details */}
         {expanded && (
           <div className="mt-4 pt-4 border-t border-gray-200">
+            {/* Worksite Info */}
+            {staff.availability && (
+              <div className="text-xs text-gray-600 mb-2">
+                <span className="font-medium">勤務先:</span> {staff.availability.worksites?.name || "未設定"}
+              </div>
+            )}
+
             {/* Additional Info */}
             <div className="text-xs text-gray-500 space-y-1 mb-4">
               <div>最終ログイン: {formatLastLogin(staff.lastLogin)}</div>
