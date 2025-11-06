@@ -359,29 +359,31 @@ export default function ShiftMonthlyCalendar({ userId, userName }: ShiftMonthlyC
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <button
-                onClick={() => handleToggleAvailability(true)}
-                disabled={getAvailabilityStatus(selectedDate).isAvailable}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  getAvailabilityStatus(selectedDate).isAvailable
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
-                }`}
-              >
-                {getAvailabilityStatus(selectedDate).isAvailable ? "✓ すでに出社可能に設定済み" : "出社可能にする"}
-              </button>
-
-              <button
-                onClick={() => handleToggleAvailability(false)}
-                disabled={!getAvailabilityStatus(selectedDate).isAvailable}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  !getAvailabilityStatus(selectedDate).isAvailable
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-red-600 text-white hover:bg-red-700 active:scale-95"
-                }`}
-              >
-                {!getAvailabilityStatus(selectedDate).isAvailable ? "✓ すでに出社不可に設定済み" : "出社不可にする"}
-              </button>
+              {getAvailabilityStatus(selectedDate).isAvailable ? (
+                // If already available, show Update and Make Unavailable buttons
+                <>
+                  <button
+                    onClick={() => handleToggleAvailability(true)}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all bg-green-600 text-white hover:bg-green-700 active:scale-95`}
+                  >
+                    勤務地を更新
+                  </button>
+                  <button
+                    onClick={() => handleToggleAvailability(false)}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all bg-red-600 text-white hover:bg-red-700 active:scale-95`}
+                  >
+                    出社不可にする
+                  </button>
+                </>
+              ) : (
+                // If not available, show Make Available button
+                <button
+                  onClick={() => handleToggleAvailability(true)}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-all bg-blue-600 text-white hover:bg-blue-700 active:scale-95`}
+                >
+                  出社可能にする
+                </button>
+              )}
 
               <button
                 onClick={() => setIsModalOpen(false)}
