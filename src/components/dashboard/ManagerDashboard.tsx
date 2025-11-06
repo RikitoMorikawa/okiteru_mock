@@ -20,6 +20,7 @@ interface StaffWithStatus extends User {
   hasResetToday?: boolean; // リセットされたかどうか;
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
   hasPreviousDayReport?: boolean; // 前日報告があるかどうか
+  isConfirmed?: boolean; // 出社確定かどうか
 }
 
 export default function ManagerDashboard() {
@@ -163,10 +164,10 @@ export default function ManagerDashboard() {
             activeAlerts: [],
             lastLogin,
             hasResetToday,
-            hasActiveRecord: !!todayAttendance,
-            hasPreviousDayReport,
-          };
-        })
+                      hasActiveRecord: !!todayAttendance,
+                      hasPreviousDayReport,
+                      isConfirmed: !!availability.worksite_id,
+                    };        })
         .filter(Boolean) as StaffWithStatus[];
 
       setStaffList(staffWithStatus);

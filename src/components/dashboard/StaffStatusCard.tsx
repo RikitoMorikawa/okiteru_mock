@@ -13,6 +13,8 @@ interface StaffWithStatus extends User {
   lastLogin?: string;
   hasResetToday?: boolean; // リセットされたかどうか
   hasActiveRecord?: boolean; // アクティブな記録があるかどうか
+  hasPreviousDayReport?: boolean; // 前日報告があるかどうか
+  isConfirmed?: boolean; // 出社確定かどうか
 }
 
 interface StaffStatusCardProps {
@@ -111,8 +113,8 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border-l-4 ${borderColors[color as keyof typeof borderColors]} hover:shadow-md transition-shadow`}>
-      <div className="p-3">
+    <div className={`bg-white rounded-lg shadow-sm border-l-4 ${borderColors[color as keyof typeof borderColors]} ${staff.isConfirmed ? "border-blue-500" : ""} hover:shadow-md transition-shadow`}>
+      <div className="p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center flex-grow">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
@@ -121,8 +123,11 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
             <div className="ml-2 flex-grow">
               <div className="flex items-center">
                 <h3 className="text-xs font-medium text-gray-900 truncate">{staff.name}</h3>
+                {staff.isConfirmed && (
+                  <span className="ml-2 px-1.5 py-0.5 text-[0.6rem] font-medium bg-blue-100 text-blue-800 rounded-full flex-shrink-0">確定</span>
+                )}
                 {label === "未開始" && (
-                  <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+                  <div className={`px-1.5 py-0.5 text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
                 )}
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
@@ -151,7 +156,7 @@ export default function StaffStatusCard({ staff }: StaffStatusCardProps) {
           </div>
           <div className="flex items-center">
             {label !== "未開始" && (
-              <div className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
+              <div className={`px-1.5 py-0.5 text-xs font-medium border ${statusColors[color as keyof typeof statusColors]} ml-2 flex-shrink-0`}>{label}</div>
             )}
             <button
               onClick={() => setExpanded(!expanded)}
