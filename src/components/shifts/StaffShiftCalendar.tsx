@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
-import { StaffAvailability } from "@/types/database";
+import { StaffAvailability, Worksite } from "@/types/database";
 import { getTodayJST } from "@/utils/dateUtils";
 
 export default function StaffShiftCalendar() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date(getTodayJST()));
   const [availabilities, setAvailabilities] = useState<StaffAvailability[]>([]);
+  const [worksites, setWorksites] = useState<Worksite[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAvailabilities = async () => {
@@ -38,9 +39,21 @@ export default function StaffShiftCalendar() {
     }
   };
 
+  const fetchWorksites = async () => {
+    try {
+      const { data, error } = await supabase.from("worksites").select("*").eq("is_active", true).order("name");
+
+      if (error) throw error;
+      setWorksites((data as Worksite[]) || []);
+    } catch (error) {
+      console.error("Error fetching worksites:", error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchAvailabilities();
+      fetchWorksites();
     }
   }, [currentDate, user]);
 
@@ -61,10 +74,14 @@ export default function StaffShiftCalendar() {
     return days;
   };
 
-  const getAvailabilityStatus = (date: Date | null): boolean => {
-    if (!date) return false;
+  const getAvailabilityStatus = (date: Date | null): { isAvailable: boolean; worksiteId?: string | null } => {
+    if (!date) return { isAvailable: false };
     const dateStr = date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
-    return availabilities.some((avail) => avail.date === dateStr);
+    const availability = availabilities.find((avail) => avail.date === dateStr);
+    return {
+      isAvailable: !!availability,
+      worksiteId: availability?.worksite_id,
+    };
   };
 
   const handleDateToggle = async (date: Date | null) => {
@@ -72,6 +89,12 @@ export default function StaffShiftCalendar() {
 
     const dateStr = date.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
     const existing = availabilities.find((avail) => avail.date === dateStr);
+
+    // Do not allow changes if a worksite is assigned (shift is confirmed)
+    if (existing?.worksite_id) {
+      alert("この日付のシフトは確定済みのため、変更できません。");
+      return;
+    }
 
     try {
       if (existing) {
@@ -142,24 +165,66 @@ export default function StaffShiftCalendar() {
             {calendarDays.map((date, index) => {
               const dateStr = date?.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
               const isToday = dateStr === today;
-              const isAvailable = getAvailabilityStatus(date);
+              const { isAvailable, worksiteId } = getAvailabilityStatus(date);
               const dayOfWeek = date?.getDay();
+
+              const isConfirmed = isAvailable && worksiteId;
 
               return (
                 <div
                   key={index}
-                  onClick={() => handleDateToggle(date)}
-                  className={`min-h-20 p-2 border-b border-r border-gray-200 cursor-pointer transition-all ${!date ? "bg-gray-50 cursor-default" : ""} ${isToday ? "ring-2 ring-blue-500 ring-inset" : ""} ${isAvailable ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"}`}>
+                  onClick={() => (isConfirmed ? null : handleDateToggle(date))}
+                  className={`min-h-20 p-2 border-b border-r border-gray-200 transition-all ${
+                    !date ? "bg-gray-50" : ""
+                  } ${isToday ? "ring-2 ring-blue-500 ring-inset" : ""} ${
+                    isConfirmed
+                      ? "bg-green-100"
+                      : isAvailable
+                      ? "bg-blue-100 hover:bg-blue-200"
+                      : "hover:bg-gray-50"
+                  } ${isConfirmed ? "cursor-default" : "cursor-pointer"}`}
+                >
                   {date && (
                     <div className="flex flex-col items-center justify-center h-full">
-                      <div className={`text-sm font-semibold mb-1 ${isToday ? "text-blue-600" : dayOfWeek === 0 ? "text-red-600" : dayOfWeek === 6 ? "text-blue-600" : isAvailable ? "text-blue-700" : "text-gray-700"}`}>
+                      <div
+                        className={`text-sm font-semibold mb-1 ${
+                          isToday
+                            ? "text-blue-600"
+                            : dayOfWeek === 0
+                            ? "text-red-600"
+                            : dayOfWeek === 6
+                            ? "text-blue-600"
+                            : isConfirmed
+                            ? "text-green-700"
+                            : isAvailable
+                            ? "text-blue-700"
+                            : "text-gray-700"
+                        }`}
+                      >
                         {date.getDate()}
                       </div>
-                      {isAvailable && (
-                        <div className="text-xs font-medium bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                          出勤希望
-                        </div>
-                      )}
+                      {isAvailable &&
+                        (() => {
+                          const worksite = worksites.find((w) => w.id === worksiteId);
+                          return (
+                            <>
+                              <div
+                                className={`text-xs font-medium px-2 py-1 rounded mb-1 ${
+                                  isConfirmed
+                                    ? "bg-green-200 text-green-800"
+                                    : "bg-blue-200 text-blue-800"
+                                }`}
+                              >
+                                {isConfirmed ? "出勤確定" : "出勤希望"}
+                              </div>
+                              {worksite && (
+                                <div className="text-xs text-gray-600 text-center px-1">
+                                  📍 {worksite.name}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                     </div>
                   )}
                 </div>
@@ -172,7 +237,15 @@ export default function StaffShiftCalendar() {
       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600">今月の出勤希望日数:</span>
-          <span className="text-lg font-semibold text-gray-900">{availabilities.length}日</span>
+          <span className="text-lg font-semibold text-gray-900">
+            {availabilities.filter((a) => !a.worksite_id).length}日
+          </span>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-sm text-gray-600">今月の出勤確定日数:</span>
+          <span className="text-lg font-semibold text-gray-900">
+            {availabilities.filter((a) => a.worksite_id).length}日
+          </span>
         </div>
       </div>
     </div>
